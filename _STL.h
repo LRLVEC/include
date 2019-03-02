@@ -29,9 +29,17 @@ struct STL
 
 namespace OpenGL
 {
-	struct STLRenderData :Buffer<ArrayBuffer>::Data
+	struct STLData :Buffer<ArrayBuffer>::Data
 	{
-
+		STL stl;
+		virtual void* pointer()override
+		{
+			return stl.triangles.data;
+		}
+		virtual unsigned int size()override
+		{
+			return sizeof(STL::Triangle)* stl.num;
+		}
 	};
 }
 
@@ -82,3 +90,4 @@ inline void STL::printInfo() const
 			return true;
 		});
 }
+
