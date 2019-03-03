@@ -29,6 +29,7 @@ struct STL
 
 namespace OpenGL
 {
+	//Some bugs...
 	struct STLData :Buffer<ArrayBuffer>::Data
 	{
 		STL stl;
@@ -40,10 +41,9 @@ namespace OpenGL
 		{
 			return sizeof(STL::Triangle)* stl.num;
 		}
+		STLData() = default;
 	};
 }
-
-
 
 inline void STL::Triangle::print() const
 {
@@ -90,4 +90,3 @@ inline void STL::printInfo() const
 			return true;
 		});
 }
-

@@ -1042,7 +1042,7 @@ namespace OpenGL
 
 	template<BufferType _vboType>inline Buffer<_vboType>::Data::Data()
 		:
-		usage(GL_STATIC_DRAW)
+		usage(StaticDraw)
 	{
 	}
 	template<BufferType _vboType>inline Buffer<_vboType>::Data::Data(Usage _usage)
