@@ -42,7 +42,6 @@ struct STL
 
 namespace OpenGL
 {
-	//Some bugs.....
 	struct STLData :Buffer<ArrayBuffer>::Data
 	{
 		STL stl;
