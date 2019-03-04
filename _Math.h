@@ -43,8 +43,9 @@ namespace Math
 		template<class R>vec<T, _dim>& operator-=(R const&);
 		template<class R>vec<T, _dim>& operator*=(R const&);
 		template<class R>vec<T, _dim>& operator/=(R const&);
-		template<class R>bool operator==(R const&);
-		template<class R>bool operator!=(R const&);
+		bool operator==(vec<T, _dim>const&)const;
+		template<class R>bool operator==(R const&)const;
+		template<class R>bool operator!=(R const&)const;
 		template<class R, unsigned int _dim1>vec<T, _dim>& operator =(vec<R, _dim1>const&);
 		template<class R, unsigned int _dim1>vec<T, _dim>& operator+=(vec<R, _dim1>const&);
 		template<class R, unsigned int _dim1>vec<T, _dim>& operator-=(vec<R, _dim1>const&);
@@ -111,6 +112,7 @@ namespace Math
 		col column(int);
 		template<class R, unsigned int _dim>mat<T, _rowDim, _colDim>& setCol(vec<R, _dim>&, unsigned int);
 		mat<T, _rowDim, _colDim>& operator=(mat<T, _rowDim, _colDim>const&) = default;
+		bool operator==(mat<T, _rowDim, _colDim>const&)const;
 
 		template<class R>mat<T, _rowDim, _colDim>& operator= (R const&);
 		template<class R>mat<T, _rowDim, _colDim>& operator+=(R const&);
@@ -203,6 +205,8 @@ namespace Math
 		return data[a];
 	}
 
+
+
 	template<class T, unsigned int _dim>template<class R>						inline vec<T, _dim>& vec<T, _dim>::operator= (R const& a)
 	{
 		CheckNumType(T);
@@ -238,7 +242,11 @@ namespace Math
 		for (T& d : data)d /= (T)a;
 		return *this;
 	}
-	template<class T, unsigned int _dim>template<class R>						inline bool vec<T, _dim>::operator==(R const& a)
+	template<class T, unsigned int _dim>										inline bool vec<T, _dim>::operator==(vec<T, _dim> const& a)const
+	{
+		return !memcmp(data, a.data, sizeof(data));
+	}
+	template<class T, unsigned int _dim>template<class R>						inline bool vec<T, _dim>::operator==(R const& a)const
 	{
 		CheckNumType(T);
 		CheckNumType(R);
@@ -247,16 +255,16 @@ namespace Math
 				return false;
 		return true;
 	}
-	template<class T, unsigned int _dim>template<class R>						inline bool vec<T, _dim>::operator!=(R const& a)
+	template<class T, unsigned int _dim>template<class R>						inline bool vec<T, _dim>::operator!=(R const& a)const
 	{
 		CheckNumType(T);
 		CheckNumType(R);
-		for (T& d : data)
+		for (T const& d : data)
 			if (d != T(a))
 				return true;
 		return false;
 	}
-	template<class T, unsigned int _dim>template<class R, unsigned int _dim1>	inline vec<T, _dim> & vec<T, _dim>::operator =(vec<R, _dim1>const& a)
+	template<class T, unsigned int _dim>template<class R, unsigned int _dim1>	inline vec<T, _dim>& vec<T, _dim>::operator =(vec<R, _dim1>const& a)
 	{
 		static constexpr unsigned int const MinDim = Min<unsigned int, _dim, _dim1>::value;
 		static constexpr unsigned int const DifferDim = Differ<unsigned int, _dim, _dim1>::value;
@@ -643,6 +651,10 @@ namespace Math
 		int c0{ 0 };
 		for (T& d : temp.data)d = array[c0++][a];
 		return temp;
+	}
+	template<class T, unsigned int _rowDim, unsigned int _colDim>	inline bool mat<T, _rowDim, _colDim>::operator==(mat<T, _rowDim, _colDim> const& a) const
+	{
+		return !memcmp(array, a.array, sizeof(array));
 	}
 	template<class T, unsigned int _rowDim, unsigned int _colDim>
 	template<class R, unsigned int _dim>							inline mat<T, _rowDim, _colDim>& mat<T, _rowDim, _colDim>::setCol(vec<R, _dim> & a, unsigned int b)
