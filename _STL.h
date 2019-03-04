@@ -42,39 +42,6 @@ struct STL
 
 namespace OpenGL
 {
-<<<<<<< HEAD
-
-=======
-	//Some bugs.....
-	struct STLData :Buffer<ArrayBuffer>::Data
-	{
-		STL stl;
-		virtual void* pointer()override
-		{
-			return stl.verticesRepeated.data;
-		}
-		virtual unsigned int size()override
-		{
-			return sizeof(Math::vec3<float>)* stl.verticesRepeated.length;
-		}
-		STLData() = default;
-		STLData(String<char>const&);
-		STLData(STL const&);
-		STLData(STLData const&) = default;
-	};
-
-
-	inline STLData::STLData(String<char> const& _name)
-		:
-		stl(_name)
-	{
-	}
-	inline STLData::STLData(STL const& _stl)
-		:
-		stl(_stl)
-	{
-	}
->>>>>>> 9cf570fbf3d1ebf2a2ef969713e1fd6003bbaf71
 }
 
 inline bool STL::Triangle::operator==(Triangle const& a)
