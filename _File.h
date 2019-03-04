@@ -1,12 +1,11 @@
 #pragma once
 #include <_Vector.h>
 #include <_String.h>
-#include <_STL.h>
 #include <cstdlib>
 #include <io.h>
 //#include <direct.h>
 
-
+struct STL;
 
 //Support path format: [C:/] [./abc/] [../abc/]
 struct File
@@ -57,7 +56,7 @@ struct File
 	//Create file
 	File& createText(String<char>const&, String<char>const&);
 	File& createBinary(String<char>const&, void*, unsigned int);
-	File& createSTL(String<char>&, STL const&);
+	File& createSTL(String<char>const&, STL const&);
 	//Read file
 	String<char>readText()const;
 	String<char>readText(String<char>const&)const;
@@ -299,17 +298,6 @@ inline File& File::createBinary(String<char>const& _name, void* _data, unsigned 
 	build();
 	return *this;
 }
-inline File& File::createSTL(String<char> & _name, STL const& _stl)
-{
-	FILE* temp(::fopen((property.path + _name).data, "wb+"));
-	::fwrite(_stl.name, 1, _stl.name.length + 1, temp);
-	::fseek(temp, 80, SEEK_SET);
-	::fwrite(&_stl.num, 4, 1, temp);
-	::fwrite(_stl.triangles.data, sizeof(STL::Triangle), _stl.num, temp);
-	::fclose(temp);
-	build();
-	return *this;
-}
 //Read file
 inline String<char>File::readText()const
 {
@@ -336,47 +324,6 @@ inline String<char>File::readText(String<char>const& _name)const
 	r[_length] = 0;
 	::fclose(temp);
 	return String<char>(r, _length, 0);
-}
-inline STL File::readSTL() const
-{
-	if (!this)return String<char>();
-	FILE* temp(::fopen((property.path + property.file.name).data, "rb+"));
-	::fseek(temp, 0, SEEK_SET);
-	char t[100];
-	::fread(t, 1, 80, temp);
-	STL r(t);
-	unsigned int _num;
-	::fread(&_num, 4, 1, temp);
-	r.num = _num;
-	int c(1);
-	while (c < _num)c <<= 1;
-	r.triangles.data = (STL::Triangle*)::malloc(sizeof(STL::Triangle) * c);
-	r.triangles.length = _num;
-	r.triangles.lengthAll = c;
-	::fread(r.triangles.data, sizeof(STL::Triangle), _num, temp);
-	::fclose(temp);
-	return r;
-}
-inline STL File::readSTL(String<char> const& _name) const
-{
-	if (!this)return String<char>();
-	FILE* temp(::fopen((property.path + _name).data, "rb+"));
-	::fseek(temp, 0, SEEK_SET);
-	char t[100];
-	::fread(t, 1, 80, temp);
-	STL r(t);
-	unsigned int _num;
-	::fread(&_num, 4, 1, temp);
-	r.num = _num;
-	int c(1);
-	while (c < _num)c <<= 1;
-	r.triangles.data = (STL::Triangle*)::malloc(sizeof(STL::Triangle) * c);
-	r.triangles.length = _num;
-	r.triangles.lengthAll = c;
-	::printf("%d\n", ::fread(r.triangles.data, sizeof(STL::Triangle), _num, temp));
-	::printf("%d\n", ::ftell(temp));
-	::fclose(temp);
-	return r;
 }
 //Print info
 inline void File::print()const

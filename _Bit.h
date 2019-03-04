@@ -13,9 +13,10 @@ void printBit(void const* a, int bits, int num)
 			for (int c1(7); c1 >= 0; --c1)
 				::printf("%d", (*(ptr + c0)&(1 << c1)) != 0);
 		}
-		::printf("\n");
+		::printf(" ");
 		ptr += bits >> 3;
 	}
+	::printf("\n");
 }
 void printFloatBit(float const* a, int num)
 {
