@@ -160,7 +160,7 @@ namespace OpenGL
 		}
 		void create()
 		{
-			glCreateBuffers(1, &buffer);
+			glGenBuffers(1, &buffer);
 		}
 		void bind()
 		{
@@ -214,7 +214,7 @@ namespace OpenGL
 		}
 		void create()
 		{
-			glCreateBuffers(1, &buffer);
+			glGenBuffers(1, &buffer);
 		}
 		void bind()
 		{
@@ -268,7 +268,7 @@ namespace OpenGL
 		}
 		void create()
 		{
-			glCreateBuffers(1, &buffer);
+			glGenBuffers(1, &buffer);
 		}
 		void bind()
 		{
@@ -341,7 +341,7 @@ namespace OpenGL
 		}
 		void create()
 		{
-			glCreateBuffers(1, &buffer);
+			glGenBuffers(1, &buffer);
 		}
 		void bind()
 		{
@@ -697,7 +697,7 @@ namespace OpenGL
 	}
 	template<BufferType _vboType>inline void Buffer<_vboType>::create()
 	{
-		glCreateBuffers(1, &buffer);
+		glGenBuffers(1, &buffer);
 	}
 	template<BufferType _vboType>inline void Buffer<_vboType>::bind()
 	{
@@ -848,7 +848,7 @@ namespace OpenGL
 	}
 	inline void VertexArrayBuffer::init()
 	{
-		glCreateVertexArrays(1, &vao);
+		glGenVertexArrays(1, &vao);
 		attribs.traverse([](VertexAttrib * &_vertexAttrib)
 			{
 				_vertexAttrib->bind();
