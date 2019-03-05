@@ -183,9 +183,33 @@ namespace OpenGL
 	{
 		struct Data
 		{
-			GLuint usage;
+			enum Usage
+			{
+				StreamDraw = GL_STREAM_DRAW,
+				StreamRead = GL_STREAM_READ,
+				StreamCopy = GL_STREAM_COPY,
+				StaticDraw = GL_STATIC_DRAW,
+				StaticRead = GL_STATIC_READ,
+				StaticCopy = GL_STATIC_COPY,
+				DynamicDraw = GL_DYNAMIC_DRAW,
+				DynamicRead = GL_DYNAMIC_READ,
+				DynamicCopy = GL_DYNAMIC_COPY
+			};
+			Usage usage;
 			virtual void* pointer() = 0;
 			virtual unsigned int size() = 0;
+			Data()
+				:
+				usage(StaticDraw)
+			{
+
+			}
+			Data(Usage _usage)
+				:
+				usage(_usage)
+			{
+
+			}
 		};
 		//Then other data types inherit from this.
 		Data* data;
@@ -203,10 +227,6 @@ namespace OpenGL
 			:
 			data(_data),
 			binding(_index)
-		{
-
-		}
-		void init()
 		{
 			create();
 			bind();
@@ -400,9 +420,10 @@ namespace OpenGL
 		bool normalized;
 		int stride;
 		int offset;
+		int divisor;
 
 		VertexAttrib();
-		VertexAttrib(Buffer<ArrayBuffer>*, unsigned int, Size, Type, bool, int, int);
+		VertexAttrib(Buffer<ArrayBuffer>*, unsigned int, Size, Type, bool, int, int, int);
 		void init();
 		void bind();
 		void enable()const;
@@ -674,7 +695,8 @@ namespace OpenGL
 		glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
 		if (!success)
 		{
-			glGetShaderInfoLog(shader, 2014, NULL, log);
+			glGetShaderInfoLog(shader, 1024, NULL, log);
+			::printf("%s\n", log);
 			exit(-1);
 		}
 	}
@@ -726,15 +748,16 @@ namespace OpenGL
 	}
 	inline VertexAttrib::VertexAttrib(Buffer<ArrayBuffer> * _buffer,
 		unsigned int _index, Size _size, Type _type,
-		bool _normalized, int _stride, int _offset)
+		bool _normalized, int _stride, int _offset, int _divisor)
 		:
 		buffer(_buffer),
 		binding(_index),
 		size(_size),
 		type(_type),
 		normalized(_normalized),
-		stride(_stride),///////
-		offset(_offset)
+		stride(_stride),
+		offset(_offset),
+		divisor(_divisor)
 	{
 	}
 	inline void VertexAttrib::init()
@@ -742,6 +765,8 @@ namespace OpenGL
 		buffer->bind();
 		enable();
 		glVertexAttribPointer(binding, size, type, normalized, stride, (void const*)offset);
+		if (divisor)
+			glVertexAttribDivisor(binding, divisor);
 	}
 	inline void VertexAttrib::bind()
 	{
