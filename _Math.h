@@ -151,7 +151,19 @@ namespace Math
 		void printInfo(char const*)const;
 	};
 
-
+	template<class T>vec3<T>eulerAngle(vec3<T>const& a)
+	{
+		CheckNumType(T);
+		T c_phi(cos(a.data[0])), s_phi(sin(a.data[0]));
+		T c_theta(cos(a.data[1])), s_theta(sin(a.data[1]));
+		T c_psi(cos(a.data[2])), s_psi(sin(a.data[2]));
+		return vec3<T>
+		{
+			c_phi* c_psi - s_phi * c_theta * s_psi,
+				c_psi* s_phi + c_phi * c_theta * s_psi,
+				s_theta* s_psi
+		};
+	}
 	//==============================================vec====================================
 	template<class T, unsigned int _dim>										inline vec<T, _dim>::vec()
 		:
@@ -264,7 +276,7 @@ namespace Math
 				return true;
 		return false;
 	}
-	template<class T, unsigned int _dim>template<class R, unsigned int _dim1>	inline vec<T, _dim>& vec<T, _dim>::operator =(vec<R, _dim1>const& a)
+	template<class T, unsigned int _dim>template<class R, unsigned int _dim1>	inline vec<T, _dim> & vec<T, _dim>::operator =(vec<R, _dim1>const& a)
 	{
 		static constexpr unsigned int const MinDim = Min<unsigned int, _dim, _dim1>::value;
 		static constexpr unsigned int const DifferDim = Differ<unsigned int, _dim, _dim1>::value;
