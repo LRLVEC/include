@@ -27,7 +27,7 @@ struct STL
 	Vector<Math::vec3<float>>vertices;
 	bool verticesRepeatedUpdate;
 	Vector<Math::vec3<float>>verticesRepeated;
-
+	Vector<Math::vec4<float>>normals;
 
 	STL();
 	STL(String<char>const&);
@@ -35,6 +35,7 @@ struct STL
 
 	Vector<Math::vec3<float>>& getVertices();
 	Vector<Math::vec3<float>>& getVerticesRepeated();
+	Vector<Math::vec4<float>>& getNormals();
 	void removeUseless();
 	double getMinTriangleScale();
 	void printInfo()const;
@@ -42,30 +43,44 @@ struct STL
 
 namespace OpenGL
 {
-	struct STLData :Buffer<ArrayBuffer>::Data
+	struct STLVertices :Buffer::Data
 	{
-		STL stl;
+		STL* stl;
 		virtual void* pointer()override
 		{
-			return stl.verticesRepeated.data;
+			return stl->verticesRepeated.data;
 		}
 		virtual unsigned int size()override
 		{
-			return sizeof(Math::vec3<float>)* stl.verticesRepeated.length;
+			return sizeof(Math::vec3<float>)* stl->verticesRepeated.length;
 		}
-		STLData() = default;
-		STLData(String<char>const&);
-		STLData(STL const&);
-		STLData(STLData const&) = default;
+		STLVertices() = default;
+		STLVertices(STL*);
+		STLVertices(STLVertices const&) = default;
+	};
+	struct STLNormals :Buffer::Data
+	{
+		STL* stl;
+		virtual void* pointer()override
+		{
+			return stl->normals.data;
+		}
+		virtual unsigned int size()override
+		{
+			return sizeof(Math::vec4<float>)* stl->triangles.length;
+		}
+		STLNormals() = default;
+		STLNormals(STL*);
+		STLNormals(STLNormals const&) = default;
 	};
 
 
-	inline STLData::STLData(String<char> const& _name)
+	inline STLVertices::STLVertices(STL* _stl)
 		:
-		stl(_name)
+		stl(_stl)
 	{
 	}
-	inline STLData::STLData(STL const& _stl)
+	inline STLNormals::STLNormals(STL* _stl)
 		:
 		stl(_stl)
 	{
@@ -145,6 +160,14 @@ inline Vector<Math::vec3<float>>& STL::getVerticesRepeated()
 		verticesRepeated.data[3 * c0 + 2] = triangles.data[c0].vertices.rowVec[2];
 	}
 	return verticesRepeated;
+}
+inline Vector<Math::vec4<float>>& STL::getNormals()
+{
+	normals.malloc(triangles.length);
+	normals.length = triangles.length;
+	for (int c0(0); c0 < triangles.length; ++c0)
+		normals.data[c0] = triangles.data[c0].normal;
+	return normals;
 }
 inline void STL::removeUseless()
 {

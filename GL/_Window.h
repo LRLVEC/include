@@ -150,7 +150,7 @@ namespace Window
 
 		WindowManager();
 		WindowManager(Window::Data const&);
-		void init(unsigned int,OpenGL::OpenGL*);
+		void init(unsigned int, OpenGL::OpenGL*);
 		void createWindow(Window::Data const&);
 		Window& find(GLFWwindow* const);
 		void render();
@@ -238,6 +238,9 @@ namespace Window
 				return true;
 			}
 		}
+		mode = *glfwGetVideoMode(monitors[0]);
+		monitor = monitors[0];
+		num = 0;
 		return false;
 	}
 	inline String<char>& Window::Monitor::getName()
@@ -277,9 +280,9 @@ namespace Window
 	{
 		glfwWindowHint(GLFW_RESIZABLE, _resizable);
 	}
-	inline void Window::Size::set(GLFWwindow * _window, int _w, int _h)
+	inline void Window::Size::set(GLFWwindow* _window, int _w, int _h)
 	{
-		if (!fullScreen.fullScreen&& resizable)
+		if (!fullScreen.fullScreen && resizable)
 			glfwSetWindowSize(_window, size.w = _w, size.h = _h);
 	}
 
@@ -334,10 +337,12 @@ namespace Window
 	{
 		if (size.fullScreen.fullScreen)
 		{
-			if (monitor.search(size.size.w, size.size.h))
-				window = glfwCreateWindow(size.size.w, size.size.h, title.title, monitor.monitor, NULL);
-			else
-				window = glfwCreateWindow(size.size.w, size.size.h, title.title, monitor.monitors[0], NULL);
+			monitor.search(size.size.w, size.size.h);
+			window = glfwCreateWindow(
+				size.size.w = monitor.mode.width,
+				size.size.h = monitor.mode.height,
+				title.title, monitor.monitor,
+				NULL);
 		}
 		else
 			window = glfwCreateWindow(size.size.w, size.size.h, title.title, NULL, NULL);
@@ -354,7 +359,7 @@ namespace Window
 	{
 		return window == _window;
 	}
-	inline void Window::init(OpenGL::OpenGL*_openGL)
+	inline void Window::init(OpenGL::OpenGL * _openGL)
 	{
 		openGL = _openGL;
 		callback.init(window);
@@ -372,7 +377,7 @@ namespace Window
 		windows((__windowManager = this, Window(_data, callbackFun)))
 	{
 	}
-	inline void WindowManager::init(unsigned int _num, OpenGL::OpenGL*_openGL)
+	inline void WindowManager::init(unsigned int _num, OpenGL::OpenGL * _openGL)
 	{
 		windows[_num].data.init(_openGL);
 	}

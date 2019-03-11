@@ -253,15 +253,32 @@ template<class T>inline Vector<T>& Vector<T>::pushBack(T const& a)
 	{
 		lengthAll = (lengthAll ? (lengthAll << 1) : 1);
 		T * tp = (T*)std::malloc(lengthAll * sizeof(T));
-		for (int c1 = 0; c1 < length; c1++)
+		if (&a >= data && &a < data + length)
 		{
-			new(tp + c1)T(data[c1]);
-			(data + c1)->~T();
+			T temp(a);
+			for (int c1 = 0; c1 < length; c1++)
+			{
+				new(tp + c1)T(data[c1]);
+				(data + c1)->~T();
+			}
+			free(data);
+			data = tp;
+			new(data + length++)T(temp);
 		}
-		free(data);
-		data = tp;
+		else
+		{
+			for (int c1 = 0; c1 < length; c1++)
+			{
+				new(tp + c1)T(data[c1]);
+				(data + c1)->~T();
+			}
+			free(data);
+			data = tp;
+			new(data + length++)T(a);
+		}
 	}
-	new(data + length++)T(a);
+	else
+		new(data + length++)T(a);
 	return *this;
 }
 template<class T>inline Vector<T>& Vector<T>::popBack()
