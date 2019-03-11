@@ -92,94 +92,7 @@ namespace OpenGL
 		void check()const;
 		void omit();
 	};
-	template<BufferType _vboType>struct Buffer
-	{
-		struct Data
-		{
-			enum Usage
-			{
-				StreamDraw = GL_STREAM_DRAW,
-				StreamRead = GL_STREAM_READ,
-				StreamCopy = GL_STREAM_COPY,
-				StaticDraw = GL_STATIC_DRAW,
-				StaticRead = GL_STATIC_READ,
-				StaticCopy = GL_STATIC_COPY,
-				DynamicDraw = GL_DYNAMIC_DRAW,
-				DynamicRead = GL_DYNAMIC_READ,
-				DynamicCopy = GL_DYNAMIC_COPY
-			};
-			Usage usage;
-			virtual void* pointer() = 0;
-			virtual unsigned int size() = 0;
-			Data();
-			Data(Usage);
-		};
-		//Then other data types inherit from this.
-		Data* data;
-		GLuint buffer;
-
-		Buffer();
-		Buffer(Data*);
-		void create();
-		void bind();
-		static void unbind();
-		void dataStore();
-	};
-	template<>struct Buffer<AtomicCounterBuffer>
-	{
-		struct Data
-		{
-			GLuint usage;
-			virtual void* pointer() = 0;
-			virtual unsigned int size() = 0;
-		};
-		//Then other data types inherit from this.
-		Data* data;
-		GLuint buffer;
-		unsigned int binding;
-
-		Buffer()
-			:
-			data(nullptr),
-			buffer(0)
-		{
-
-		}
-		Buffer(Data* _data, unsigned int _index)
-			:
-			data(_data),
-			binding(_index)
-		{
-
-		}
-		void init()
-		{
-			create();
-			bind();
-			bindBase();
-		}
-		void create()
-		{
-			glCreateBuffers(1, &buffer);
-		}
-		void bind()
-		{
-			glBindBuffer(AtomicCounterBuffer, buffer);
-		}
-		void bindBase()
-		{
-			glBindBufferBase(AtomicCounterBuffer, binding, buffer);
-		}
-		static void unbind()
-		{
-			glBindBuffer(AtomicCounterBuffer, 0);
-		}
-		void dataStore()
-		{
-			glBufferData(AtomicCounterBuffer, data->size(), data->pointer(), data->usage);
-		}
-	};
-	template<>struct Buffer<ShaderStorageBuffer>
+	struct Buffer
 	{
 		struct Data
 		{
@@ -202,188 +115,87 @@ namespace OpenGL
 				:
 				usage(StaticDraw)
 			{
-
 			}
 			Data(Usage _usage)
 				:
 				usage(_usage)
 			{
-
 			}
 		};
-		//Then other data types inherit from this.
 		Data* data;
 		GLuint buffer;
-		unsigned int binding;
-
-		Buffer()
-			:
-			data(nullptr),
-			buffer(0)
-		{
-
-		}
-		Buffer(Data* _data, unsigned int _index)
-			:
-			data(_data),
-			binding(_index)
-		{
-			create();
-			bind();
-			bindBase();
-		}
-		void create()
-		{
-			glCreateBuffers(1, &buffer);
-		}
-		void bind()
-		{
-			glBindBuffer(ShaderStorageBuffer, buffer);
-		}
-		void bindBase()
-		{
-			glBindBufferBase(ShaderStorageBuffer, binding, buffer);
-		}
-		static void unbind()
-		{
-			glBindBuffer(ShaderStorageBuffer, 0);
-		}
-		void dataStore()
-		{
-			glBufferData(ShaderStorageBuffer, data->size(), data->pointer(), data->usage);
-		}
-	};
-	template<>struct Buffer<TransformFeedbackBuffer>
-	{
-		struct Data
-		{
-			GLuint usage;
-			virtual void* pointer() = 0;
-			virtual unsigned int size() = 0;
-		};
-		//Then other data types inherit from this.
-		Data* data;
-		GLuint buffer;
-		unsigned int binding;
-
-		Buffer()
-			:
-			data(nullptr),
-			buffer(0)
-		{
-
-		}
-		Buffer(Data* _data, unsigned int _index)
-			:
-			data(_data),
-			binding(_index)
-		{
-
-		}
-		void init()
-		{
-			create();
-			bind();
-			bindBase();
-		}
-		void create()
-		{
-			glCreateBuffers(1, &buffer);
-		}
-		void bind()
-		{
-			glBindBuffer(TransformFeedbackBuffer, buffer);
-		}
-		void bindBase()
-		{
-			glBindBufferBase(TransformFeedbackBuffer, binding, buffer);
-		}
-		static void unbind()
-		{
-			glBindBuffer(TransformFeedbackBuffer, 0);
-		}
-		void dataStore()
-		{
-			glBufferData(TransformFeedbackBuffer, data->size(), data->pointer(), data->usage);
-		}
-	};
-	template<>struct Buffer<UniformBuffer>
-	{
-		struct Data
-		{
-			enum Usage
-			{
-				StreamDraw = GL_STREAM_DRAW,
-				StreamRead = GL_STREAM_READ,
-				StreamCopy = GL_STREAM_COPY,
-				StaticDraw = GL_STATIC_DRAW,
-				StaticRead = GL_STATIC_READ,
-				StaticCopy = GL_STATIC_COPY,
-				DynamicDraw = GL_DYNAMIC_DRAW,
-				DynamicRead = GL_DYNAMIC_READ,
-				DynamicCopy = GL_DYNAMIC_COPY
-			};
-			Usage usage;
-			virtual void* pointer() = 0;
-			virtual unsigned int size() = 0;
-			Data()
-				:
-				usage(StaticDraw)
-			{
-
-			}
-			Data(Usage _usage)
-				:
-				usage(_usage)
-			{
-
-			}
-		};
-		//Then other data types inherit from this.
-		Data* data;
-		GLuint buffer;
-		unsigned int binding;
-
 		Buffer()
 			:
 			data(nullptr)
 		{
 			create();
 		}
-		Buffer(Data* _data, unsigned int _index)
+		Buffer(Data* _data)
 			:
-			data(_data),
-			binding(_index)
+			data(_data)
 		{
 			create();
-			bind();
-			bindBase();
 		}
 		void create()
 		{
-			glCreateBuffers(1, &buffer);
+			glGenBuffers(1, &buffer);
+		}
+	};
+	struct BufferConfig
+	{
+		Buffer* buffer;
+		BufferType type;
+		int binding;
+		BufferConfig() = delete;
+		BufferConfig(Buffer* _buffer, BufferType _type)
+			:
+			buffer(_buffer),
+			type(_type),
+			binding(-1)
+		{
+		}
+		BufferConfig(Buffer* _buffer, BufferType _type, int _binding)
+			:
+			buffer(_buffer),
+			type(_type),
+			binding(_binding)
+		{
+			init();
+		}
+		void init()
+		{
+			bind();
+			bindBase();
 		}
 		void bind()
 		{
-			glBindBuffer(UniformBuffer, buffer);
+			glBindBuffer(type, buffer->buffer);
+		}
+		void unbind()
+		{
+			glBindBuffer(type, 0);
 		}
 		void bindBase()
 		{
-			glBindBufferBase(UniformBuffer, binding, buffer);
+			switch (type)
+			{
+				case AtomicCounterBuffer:
+				case ShaderStorageBuffer:
+				case TransformFeedbackBuffer:
+				case UniformBuffer:
+ 					glBindBufferBase(type, binding, buffer->buffer);
+					break;
+			}
 		}
-		static void unbind()
-		{
-			glBindBuffer(UniformBuffer, 0);
-		}
-		void dataStore()
+		void dataInit()
 		{
 			bind();
-			glBufferData(UniformBuffer, data->size(), data->pointer(), data->usage);
+			glBufferData(type, buffer->data->size(), buffer->data->pointer(), buffer->data->usage);
 		}
 		void refreshData()
 		{
 			bind();
-			glBufferSubData(UniformBuffer, 0, data->size(), data->pointer());
+			glBufferSubData(type, 0, buffer->data->size(), buffer->data->pointer());
 		}
 	};
 	struct VertexAttrib
@@ -413,7 +225,7 @@ namespace OpenGL
 			UINT_10_11_11 = GL_UNSIGNED_INT_10F_11F_11F_REV,
 		};
 
-		Buffer<ArrayBuffer>* buffer;
+		BufferConfig* buffer;
 		unsigned int binding;
 		Size size;
 		Type type;
@@ -422,22 +234,90 @@ namespace OpenGL
 		int offset;
 		int divisor;
 
-		VertexAttrib();
-		VertexAttrib(Buffer<ArrayBuffer>*, unsigned int, Size, Type, bool, int, int, int);
-		void init();
-		void bind();
-		void enable()const;
-		void disable()const;
+		VertexAttrib()
+			:
+			binding(0),
+			size(four),
+			type(Float),
+			normalized(false),
+			stride(0),
+			offset(0),
+			buffer(nullptr)
+		{
+		}
+		VertexAttrib(BufferConfig* _buffer,
+			unsigned int _index, Size _size, Type _type,
+			bool _normalized, int _stride, int _offset, int _divisor)
+			:
+			buffer(_buffer),
+			binding(_index),
+			size(_size),
+			type(_type),
+			normalized(_normalized),
+			stride(_stride),
+			offset(_offset),
+			divisor(_divisor)
+		{
+		}
+		void init()
+		{
+			buffer->bind();
+			enable();
+			glVertexAttribPointer(binding, size, type, normalized, stride, (void const*)offset);
+			if (divisor)
+				glVertexAttribDivisor(binding, divisor);
+		}
+		void bind()
+		{
+			buffer->bind();
+		}
+		void enable()const
+		{
+			glEnableVertexAttribArray(binding);
+		}
+		void disable()const
+		{
+			glDisableVertexAttribArray(binding);
+		}
 	};
 	struct VertexArrayBuffer
 	{
 		GLuint vao;
 		Vector<VertexAttrib*>attribs;
-		VertexArrayBuffer();
-		VertexArrayBuffer(Vector<VertexAttrib*>const&);
-		void init();
-		void bind();
-		static void unbind();
+		VertexArrayBuffer()
+			:
+			vao(0)
+		{
+		}
+		VertexArrayBuffer(Vector<VertexAttrib*> const& _attribs)
+			:
+			attribs(_attribs)
+		{
+		}
+		void init()
+		{
+			glCreateVertexArrays(1, &vao);
+			attribs.traverse([](VertexAttrib * &_vertexAttrib)
+				{
+					_vertexAttrib->bind();
+					return true;
+				});
+			bind();
+			attribs.traverse([](VertexAttrib * &_vertexAttrib)
+				{
+					_vertexAttrib->init();
+					return true;
+				});
+		}
+		void bind()
+		{
+			if(vao)
+				glBindVertexArray(vao);
+		}
+		static void unbind()
+		{
+			glBindVertexArray(0);
+		}
 	};
 	struct ShaderManager
 	{
@@ -493,9 +373,8 @@ namespace OpenGL
 		void link();
 		void check();
 		void use();
-		virtual void setBufferData() = 0;
+		virtual void initBufferData() = 0;
 		virtual void run() = 0;
-		virtual void resize(int, int) = 0;
 		//In order to run:
 		//	init the buffers
 		//	init();
@@ -583,7 +462,7 @@ namespace OpenGL
 			void refreshButton(int, bool);
 			Math::vec2<double> operate();
 		};
-		struct BufferData :Buffer<UniformBuffer>::Data
+		struct BufferData :Buffer::Data
 		{
 			Math::mat4<float>ans;
 			BufferData();
@@ -705,81 +584,6 @@ namespace OpenGL
 		glDeleteShader(shader);
 	}
 
-	template<BufferType _vboType>inline Buffer<_vboType>::Buffer()
-		:
-		data(nullptr)
-	{
-		create();
-	}
-	template<BufferType _vboType>inline Buffer<_vboType>::Buffer(Data * _data)
-		:
-		data(_data)
-	{
-		create();
-	}
-	template<BufferType _vboType>inline void Buffer<_vboType>::create()
-	{
-		glCreateBuffers(1, &buffer);
-	}
-	template<BufferType _vboType>inline void Buffer<_vboType>::bind()
-	{
-		glBindBuffer(_vboType, buffer);
-	}
-	template<BufferType _vboType>inline void Buffer<_vboType>::unbind()
-	{
-		glBindBuffer(_vboType, 0);
-	}
-	template<BufferType _vboType>inline void Buffer<_vboType>::dataStore()
-	{
-		bind();
-		glBufferData(_vboType, data->size(), data->pointer(), data->usage);
-	}
-
-	inline VertexAttrib::VertexAttrib()
-		:
-		binding(0),
-		size(four),
-		type(Float),
-		normalized(false),
-		stride(0),
-		offset(0),
-		buffer(nullptr)
-	{
-	}
-	inline VertexAttrib::VertexAttrib(Buffer<ArrayBuffer> * _buffer,
-		unsigned int _index, Size _size, Type _type,
-		bool _normalized, int _stride, int _offset, int _divisor)
-		:
-		buffer(_buffer),
-		binding(_index),
-		size(_size),
-		type(_type),
-		normalized(_normalized),
-		stride(_stride),
-		offset(_offset),
-		divisor(_divisor)
-	{
-	}
-	inline void VertexAttrib::init()
-	{
-		buffer->bind();
-		enable();
-		glVertexAttribPointer(binding, size, type, normalized, stride, (void const*)offset);
-		if (divisor)
-			glVertexAttribDivisor(binding, divisor);
-	}
-	inline void VertexAttrib::bind()
-	{
-		buffer->bind();
-	}
-	inline void VertexAttrib::enable()const
-	{
-		glEnableVertexAttribArray(binding);
-	}
-	inline void VertexAttrib::disable()const
-	{
-		glDisableVertexAttribArray(binding);
-	}
 
 
 	inline ShaderManager::ShaderManager(Array<Vector<String<char>>, 6> const& _sources)
@@ -861,41 +665,6 @@ namespace OpenGL
 
 
 
-	inline VertexArrayBuffer::VertexArrayBuffer()
-		:
-		vao(0)
-	{
-	}
-	inline VertexArrayBuffer::VertexArrayBuffer(Vector<VertexAttrib*> const& _attribs)
-		:
-		attribs(_attribs)
-	{
-	}
-	inline void VertexArrayBuffer::init()
-	{
-		glCreateVertexArrays(1, &vao);
-		attribs.traverse([](VertexAttrib * &_vertexAttrib)
-			{
-				_vertexAttrib->bind();
-				return true;
-			});
-		bind();
-		attribs.traverse([](VertexAttrib * &_vertexAttrib)
-			{
-				_vertexAttrib->init();
-				return true;
-			});
-	}
-	inline void VertexArrayBuffer::bind()
-	{
-		glBindVertexArray(vao);
-	}
-	inline void VertexArrayBuffer::unbind()
-	{
-		glBindVertexArray(0);
-	}
-
-
 
 	inline Program::Program(SourceManager * _sourceManage, String<char>const& _name)
 		:
@@ -963,7 +732,7 @@ namespace OpenGL
 	{
 		glUseProgram(program);
 		vao.bind();
-		setBufferData();
+		initBufferData();
 	}
 
 
@@ -1065,16 +834,7 @@ namespace OpenGL
 		return false;
 	}
 
-	template<BufferType _vboType>inline Buffer<_vboType>::Data::Data()
-		:
-		usage(StaticDraw)
-	{
-	}
-	template<BufferType _vboType>inline Buffer<_vboType>::Data::Data(Usage _usage)
-		:
-		usage(_usage)
-	{
-	}
+
 
 	inline Transform::Perspective::Perspective()
 		:

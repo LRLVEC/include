@@ -43,7 +43,7 @@ struct STL
 
 namespace OpenGL
 {
-	struct STLVertices :Buffer<ArrayBuffer>::Data
+	struct STLVertices :Buffer::Data
 	{
 		STL* stl;
 		virtual void* pointer()override
@@ -58,7 +58,7 @@ namespace OpenGL
 		STLVertices(STL*);
 		STLVertices(STLVertices const&) = default;
 	};
-	struct STLNormals :Buffer<ShaderStorageBuffer>::Data
+	struct STLNormals :Buffer::Data
 	{
 		STL* stl;
 		virtual void* pointer()override
