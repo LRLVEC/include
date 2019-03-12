@@ -381,6 +381,11 @@ namespace OpenGL
 		//	use();
 		//	run();
 	};
+	struct Computers
+	{
+		virtual void initBufferData() = 0;
+		virtual void run() = 0;
+	};
 	struct Transform
 	{
 		struct Data
