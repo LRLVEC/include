@@ -16,10 +16,10 @@ namespace RayTracing
 		{
 			vec4 r;
 			vec4 t;
-			vec3 glwo;
+			vec3 g;
 			float n;
 		};
-		struct TriangleData :OpenGL::Buffer<OpenGL::ShaderStorageBuffer>::Data
+		struct TriangleData :OpenGL::Buffer::Data
 		{
 			struct Triangle
 			{
@@ -50,7 +50,7 @@ namespace RayTracing
 				return sizeof(Triangle)* triangles.length;
 			}
 		};
-		struct PlaneData :OpenGL::Buffer<OpenGL::ShaderStorageBuffer>::Data
+		struct PlaneData :OpenGL::Buffer::Data
 		{
 			struct Plane
 			{
@@ -73,8 +73,5 @@ namespace RayTracing
 				return sizeof(Plane)* planes.length;
 			}
 		};
-
-
-
 	};
 }

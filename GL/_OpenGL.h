@@ -179,12 +179,12 @@ namespace OpenGL
 		{
 			switch (type)
 			{
-				case AtomicCounterBuffer:
-				case ShaderStorageBuffer:
-				case TransformFeedbackBuffer:
-				case UniformBuffer:
- 					glBindBufferBase(type, binding, buffer->buffer);
-					break;
+			case AtomicCounterBuffer:
+			case ShaderStorageBuffer:
+			case TransformFeedbackBuffer:
+			case UniformBuffer:
+				glBindBufferBase(type, binding, buffer->buffer);
+				break;
 			}
 		}
 		void dataInit()
@@ -311,7 +311,7 @@ namespace OpenGL
 		}
 		void bind()
 		{
-			if(vao)
+			if (vao)
 				glBindVertexArray(vao);
 		}
 		static void unbind()
@@ -710,12 +710,12 @@ namespace OpenGL
 		for (int c0(0); c0 < attach.length; ++c0)
 			switch (attach.data[c0].data0)
 			{
-				case 0:glAttachShader(program, shaders.vertex[attach.data[c0].data1].shader); break;
-				case 1:glAttachShader(program, shaders.tessControl[attach.data[c0].data1].shader); break;
-				case 2:glAttachShader(program, shaders.tessEvaluation[attach.data[c0].data1].shader); break;
-				case 3:glAttachShader(program, shaders.geometry[attach.data[c0].data1].shader); break;
-				case 4:glAttachShader(program, shaders.fragment[attach.data[c0].data1].shader); break;
-				case 5:glAttachShader(program, shaders.compute[attach.data[c0].data1].shader); break;
+			case 0:glAttachShader(program, shaders.vertex[attach.data[c0].data1].shader); break;
+			case 1:glAttachShader(program, shaders.tessControl[attach.data[c0].data1].shader); break;
+			case 2:glAttachShader(program, shaders.tessEvaluation[attach.data[c0].data1].shader); break;
+			case 3:glAttachShader(program, shaders.geometry[attach.data[c0].data1].shader); break;
+			case 4:glAttachShader(program, shaders.fragment[attach.data[c0].data1].shader); break;
+			case 5:glAttachShader(program, shaders.compute[attach.data[c0].data1].shader); break;
 			}
 	}
 	inline void Program::link()
@@ -794,8 +794,7 @@ namespace OpenGL
 				if (s < 2)break;
 				if (!sources.end().addSource(t0, shaders.findInThis(program + t0 + t1 + ".cpp").readText()))
 					::printf("Cannot read Program: %s\n", program.data);
-			}
-			while (s == 2);
+			} while (s == 2);
 		}
 	}
 	inline void SourceManager::deleteSource()
@@ -808,6 +807,7 @@ namespace OpenGL
 		for (int c0(0); c0 < sources.length; ++c0)
 			if (sources.data[c0].name == _name)
 				return sources.data[c0];
+		::printf("Cannot find program: %s\n", _name.data);
 		return *(Source*)NULL;
 	}
 
@@ -922,10 +922,10 @@ namespace OpenGL
 	{
 		switch (_key)
 		{
-			case 0:left = _operation; break;
-			case 1:right = _operation; break;
-			case 2:up = _operation; break;
-			case 3:down = _operation; break;
+		case 0:left = _operation; break;
+		case 1:right = _operation; break;
+		case 2:up = _operation; break;
+		case 3:down = _operation; break;
 		}
 	}
 	inline Math::vec2<double> Transform::Key::operate()
@@ -979,9 +979,9 @@ namespace OpenGL
 	{
 		switch (_button)
 		{
-			case 0:	left = _operation; break;
-			case 1:	middle = _operation; break;
-			case 2:	right = _operation; break;
+		case 0:	left = _operation; break;
+		case 1:	middle = _operation; break;
+		case 2:	right = _operation; break;
 		}
 
 	}
