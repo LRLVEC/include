@@ -6,6 +6,74 @@
 
 namespace RayTracing
 {
+	struct View :OpenGL::Buffer::Data
+	{
+		Math::mat< float, 4, 2>vertices;
+		View()
+			:
+			Data(StaticDraw),
+			vertices
+			({ {-1.0f,-1.0f},
+				{1.0f,-1.0f},
+				{1.0f,1.0f},
+				{-1.0f,1.0f} })
+		{
+		}
+		virtual void* pointer()override
+		{
+			return vertices.array;
+		}
+		virtual unsigned int size()override
+		{
+			return sizeof(vertices);
+		}
+	};
+
+
+	struct FrameSize :OpenGL::Buffer::Data
+	{
+		Math::vec2<unsigned int>scale;
+		FrameSize(Math::vec2<unsigned int>const& _scale)
+			:
+			Data(StaticDraw),
+			scale(_scale)
+		{
+		}
+		virtual void* pointer()override
+		{
+			return scale.data;
+		}
+		virtual unsigned int size()override
+		{
+			return sizeof(scale);
+		}
+	};
+	struct FrameData :OpenGL::Buffer::Data
+	{
+		FrameSize* frameSize;
+		FrameData() = delete;
+		FrameData(FrameSize*_frameSize)
+			:
+			Data(DynamicDraw),
+			frameSize(_frameSize)
+		{
+		}
+		virtual void* pointer()override
+		{
+			return nullptr;
+		}
+		virtual unsigned int size()override
+		{
+			return sizeof(Math::vec4<float>)*
+				frameSize->size.data[0] *
+				frameSize->size.data[1];
+		}
+	};
+
+
+
+
+
 	struct Model
 	{
 		using vec4 = Math::vec4<float>;
