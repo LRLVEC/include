@@ -574,14 +574,14 @@ namespace OpenGL
 	}
 	template<ShaderType _shaderType>inline void Shader<_shaderType>::check() const
 	{
-		char log[1024];
+		char log[512];
 		GLint success(1);
 		glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
 		if (!success)
 		{
-			glGetShaderInfoLog(shader, 1024, NULL, log);
+			glGetShaderInfoLog(shader, 512, NULL, log);
 			::printf("%s\n", log);
-			exit(-1);
+			//exit(-1);
 		}
 	}
 	template<ShaderType _shaderType>inline void Shader<_shaderType>::omit()
@@ -729,7 +729,8 @@ namespace OpenGL
 		glGetProgramiv(program, GL_LINK_STATUS, &success);
 		if (!success)
 		{
-			glGetProgramInfoLog(program, 2014, NULL, log);
+			glGetProgramInfoLog(program, 1024, NULL, log);
+			::printf("%s\n", log);
 			exit(-1);
 		}
 	}
