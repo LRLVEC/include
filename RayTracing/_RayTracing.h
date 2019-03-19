@@ -28,8 +28,6 @@ namespace RayTracing
 			return sizeof(vertices);
 		}
 	};
-
-
 	struct FrameScale :OpenGL::Buffer::Data
 	{
 		Math::vec2<unsigned int>scale;
@@ -69,10 +67,10 @@ namespace RayTracing
 				frameSize->scale.data[1];
 		}
 	};
+	struct Transform
+	{
 
-
-
-
+	};
 
 	struct Model
 	{
@@ -103,7 +101,6 @@ namespace RayTracing
 				:
 				Data(StaticDraw)
 			{
-
 			}
 			virtual void* pointer()
 			{
@@ -126,7 +123,6 @@ namespace RayTracing
 				:
 				Data(StaticDraw)
 			{
-
 			}
 			virtual void* pointer()
 			{
