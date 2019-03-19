@@ -269,7 +269,7 @@ namespace RayTracing
 				if (now.valid && pre.valid)
 				{
 					pre.valid = false;
-					return { now.y - pre.y  , now.x - pre.x };
+					return { pre.y - now.y    ,pre.x - now.x };
 				}
 				else return { 0.0,0.0 };
 			}
@@ -336,7 +336,7 @@ namespace RayTracing
 		void init(OpenGL::FrameScale const& _size)
 		{
 			persp.init(_size);
-			bufferData.trans.z0 = float(_size.h) / (2.0 * tan(persp.fovy));
+			bufferData.trans.z0 = float(_size.h) / (2.0 * tan(Math::Pi * persp.fovy / 180.0));
 			calcAns();
 			updated = true;
 		}
@@ -352,7 +352,7 @@ namespace RayTracing
 		void operate()
 		{
 			Math::vec3<double>dxyz(key.operate());
-			dxyz.data[2] = -scroll.operate();
+			dxyz.data[2] = scroll.operate();
 			Math::vec2<double>axis(mouse.operate());
 			bool operated(false);
 			if (dxyz != 0.0)
@@ -368,7 +368,7 @@ namespace RayTracing
 			}
 			if (persp.updated)
 			{
-				bufferData.trans.z0 = persp.y / (2.0 * tan(persp.fovy));
+				bufferData.trans.z0 = persp.y / (2.0 * tan(Math::Pi * persp.fovy / 180.0));
 				persp.updated = false;
 				operated = true;
 			}
