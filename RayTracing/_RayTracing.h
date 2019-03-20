@@ -396,26 +396,6 @@ namespace RayTracing
 			vec3 g;
 			float n;
 		};
-		struct Plane
-		{
-			vec4 paras;	//Ax + By + Cz + W = 0, this is (A, B, C, W).
-			Color color;
-		};
-		struct Triangle
-		{
-			mat34 vertices;
-			Color color;
-		};
-		struct TriangleGPU
-		{
-			vec4 plane;
-			vec4 p1;
-			vec4 e1;
-			vec4 e2;
-			vec4 k1;
-			vec4 k2;
-			Color color;
-		};
 		struct Sphere
 		{
 			vec4 sphere;
@@ -427,58 +407,217 @@ namespace RayTracing
 			vec4 sphere;
 			Color color;
 		};
-		struct TriangleOriginData :OpenGL::Buffer::Data
+
+
+		struct Planes
 		{
+			struct PlaneData :OpenGL::Buffer::Data
+			{
+				struct Plane
+				{
+					vec4 paras;	//Ax + By + Cz + W = 0, this is (A, B, C, W).
+					Color color;
+				};
+				Vector<Plane>planes;
+				PlaneData()
+					:
+					OpenGL::Buffer::Data(DynamicDraw)
+				{
+				}
+				virtual void* pointer()
+				{
+					return planes.data;
+				}
+				virtual unsigned int size()
+				{
+					return sizeof(Plane)* planes.length;
+				}
+			};
+			struct Info
+			{
+				OpenGL::BufferType type;
+				unsigned int index;
+			};
+
 			unsigned int num;
-			TriangleOriginData(unsigned int _num)
+			PlaneData planes;
+			OpenGL::Buffer buffer;
+			OpenGL::BufferConfig config;
+			Planes(Info const& _info)
 				:
-				Data(StaticDraw),
-				num(_num)
+				num(0),
+				buffer(&planes),
+				config(&buffer, _info.type, _info.index)
 			{
 			}
-			virtual void* pointer()
+			void dataInit()
 			{
-				return nullptr;
-			}
-			virtual unsigned int size()
-			{
-				return sizeof(Triangle)* num;
+				config.dataInit();
 			}
 		};
-		struct TriangleData :OpenGL::Buffer::Data
+		struct Triangles
 		{
-			Vector<TriangleGPU>triangles;
-			TriangleData()
+			struct TriangleOriginData :OpenGL::Buffer::Data
+			{
+				struct TriangleOrigin
+				{
+					mat34 vertices;
+					Color color;
+				};
+				unsigned int num;
+				TriangleOriginData()
+					:
+					OpenGL::Buffer::Data(DynamicDraw),
+					num(0)
+				{
+				}
+				virtual void* pointer()
+				{
+					return nullptr;
+				}
+				virtual unsigned int size()
+				{
+					return sizeof(TriangleOrigin)* num;
+				}
+			};
+			struct TriangleGPUData :OpenGL::Buffer::Data
+			{
+				struct TriangleGPU
+				{
+					vec4 plane;
+					vec4 p1;
+					vec4 k1;
+					vec4 k2;
+					Color color;
+				};
+				Vector<TriangleGPU>triangles;
+				TriangleGPUData()
+					:
+					OpenGL::Buffer::Data(DynamicDraw)
+				{
+				}
+				virtual void* pointer()
+				{
+					return triangles.data;
+				}
+				virtual unsigned int size()
+				{
+					return sizeof(TriangleGPU)* triangles.length;
+				}
+			};
+			struct Info
+			{
+				unsigned int indexOrigin;
+				unsigned int indexGPU;
+			};
+			unsigned int num;
+			TriangleOriginData trianglesOrigin;
+			TriangleGPUData trianglesGPU;
+			OpenGL::Buffer trianglesOriginBuffer;
+			OpenGL::Buffer trianglesGPUBuffer;
+			OpenGL::BufferConfig trianglesOriginConfig;
+			OpenGL::BufferConfig trianglesGPUConfig;
+			Triangles(Info const& _info)
 				:
-				Data(StaticDraw)
+				num(0),
+				trianglesOriginBuffer(&trianglesOrigin),
+				trianglesGPUBuffer(&trianglesGPU),
+				trianglesOriginConfig(&trianglesOriginBuffer, OpenGL::ShaderStorageBuffer, _info.indexOrigin),
+				trianglesGPUConfig(&trianglesGPUBuffer, OpenGL::ShaderStorageBuffer, _info.indexGPU)
 			{
 			}
-			virtual void* pointer()
+			void dataInit()
 			{
-				return triangles.data;
-			}
-			virtual unsigned int size()
-			{
-				return sizeof(TriangleGPU)* triangles.length;
+				trianglesOriginConfig.dataInit();
+				trianglesGPUConfig.dataInit();
 			}
 		};
-		struct PlaneData :OpenGL::Buffer::Data
+		struct GeometryNum
 		{
-			Vector<Plane>planes;
-			PlaneData()
+			struct Data :OpenGL::Buffer::Data
+			{
+				struct Num
+				{
+					unsigned int planeNum;
+					unsigned int triangleNum;
+					unsigned int sphereNum;
+					unsigned int circleNum;
+					Num()
+						:
+						planeNum(0),
+						triangleNum(0),
+						sphereNum(0),
+						circleNum(0)
+					{
+					}
+				};
+				Num num;
+				Data()
+					:
+					OpenGL::Buffer::Data(StaticDraw),
+					num()
+				{
+
+				}
+				Data(Num const& _num)
+					:
+					OpenGL::Buffer::Data(StaticDraw),
+					num(_num)
+				{
+				}
+				virtual void* pointer()override
+				{
+					return &num;
+				}
+				virtual unsigned int size()override
+				{
+					return sizeof(Num);
+				}
+			};
+			struct Info
+			{
+				unsigned int index;
+			};
+			Data data;
+			OpenGL::Buffer buffer;
+			OpenGL::BufferConfig config;
+			GeometryNum(Info const& _info)
 				:
-				Data(StaticDraw)
+				buffer(&data),
+				config(&buffer, OpenGL::UniformBuffer, _info.index)
 			{
 			}
-			virtual void* pointer()
+			void dataInit()
 			{
-				return planes.data;
-			}
-			virtual unsigned int size()
-			{
-				return sizeof(Plane)* planes.length;
+				config.dataInit();
 			}
 		};
 
+		struct Info
+		{
+			Planes::Info planesInfo;
+			Triangles::Info trianglesInfo;
+			GeometryNum::Info geometryNumInfo;
+		};
+
+
+		Planes planes;
+		Triangles triangles;
+		GeometryNum geometryNum;
+
+
+		Model(Info const& _info)
+			:
+			planes(_info.planesInfo),
+			triangles(_info.trianglesInfo),
+			geometryNum(_info.geometryNumInfo)
+		{
+		}
+		void dataInit()
+		{
+			planes.dataInit();
+			triangles.dataInit();
+			geometryNum.dataInit();
+		}
 	};
 }
