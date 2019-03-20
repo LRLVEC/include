@@ -382,8 +382,11 @@ namespace RayTracing
 
 	struct Model
 	{
+		//Notice:	Something small can be placed in uniform buffer;
+		//			but something much bigger(more than 64KB for example)
+		//			must be placed in shader storage buffer...
 		using vec4 = Math::vec4<float>;
-		using vec3 =Math::vec3<float>;
+		using vec3 = Math::vec3<float>;
 		using mat34 = Math::mat<float, 3, 4>;
 
 		struct Color
@@ -393,18 +396,58 @@ namespace RayTracing
 			vec3 g;
 			float n;
 		};
+		struct Plane
+		{
+			vec4 paras;	//Ax + By + Cz + W = 0, this is (A, B, C, W).
+			Color color;
+		};
+		struct Triangle
+		{
+			mat34 vertices;
+			Color color;
+		};
+		struct TriangleGPU
+		{
+			vec4 plane;
+			vec4 p1;
+			vec4 e1;
+			vec4 e2;
+			vec4 k1;
+			vec4 k2;
+			Color color;
+		};
+		struct Sphere
+		{
+			vec4 sphere;
+			Color color;
+		};
+		struct Circle
+		{
+			vec4 plane;
+			vec4 sphere;
+			Color color;
+		};
+		struct TriangleOriginData :OpenGL::Buffer::Data
+		{
+			unsigned int num;
+			TriangleOriginData(unsigned int _num)
+				:
+				Data(StaticDraw),
+				num(_num)
+			{
+			}
+			virtual void* pointer()
+			{
+				return nullptr;
+			}
+			virtual unsigned int size()
+			{
+				return sizeof(Triangle)* num;
+			}
+		};
 		struct TriangleData :OpenGL::Buffer::Data
 		{
-			struct Triangle
-			{
-				mat34 vertices;
-				mat34 cross;
-				mat34 delta;
-				vec4 sphere;
-				vec4 paras;
-				Color color;
-			};
-			Vector<Triangle>triangles;
+			Vector<TriangleGPU>triangles;
 			TriangleData()
 				:
 				Data(StaticDraw)
@@ -416,16 +459,11 @@ namespace RayTracing
 			}
 			virtual unsigned int size()
 			{
-				return sizeof(Triangle)* triangles.length;
+				return sizeof(TriangleGPU)* triangles.length;
 			}
 		};
 		struct PlaneData :OpenGL::Buffer::Data
 		{
-			struct Plane
-			{
-				vec4 paras;
-				Color color;
-			};
 			Vector<Plane>planes;
 			PlaneData()
 				:
@@ -441,5 +479,6 @@ namespace RayTracing
 				return sizeof(Plane)* planes.length;
 			}
 		};
+
 	};
 }
