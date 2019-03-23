@@ -421,7 +421,7 @@ namespace RayTracing
 				Vector<Plane>planes;
 				PlaneData()
 					:
-					OpenGL::Buffer::Data(DynamicDraw)
+					Data(DynamicDraw)
 				{
 				}
 				virtual void* pointer()
@@ -439,20 +439,39 @@ namespace RayTracing
 				unsigned int index;
 			};
 
-			unsigned int num;
 			PlaneData planes;
 			OpenGL::Buffer buffer;
 			OpenGL::BufferConfig config;
+			bool numChanged;
+			bool upToDate;
+			bool updated;
 			Planes(Info const& _info)
 				:
-				num(0),
 				buffer(&planes),
-				config(&buffer, _info.type, _info.index)
+				config(&buffer, _info.type, _info.index),
+				numChanged(true),
+				updated(true)
 			{
 			}
 			void dataInit()
 			{
-				config.dataInit();
+				if (numChanged)
+				{
+
+				}
+				if (updated)
+				{
+					updated = false;
+					if (numChanged)
+					{
+						config.dataInit();
+						numChanged = false;
+					}
+					else
+					{
+						config.refreshData();
+					}
+				}
 			}
 		};
 		struct Triangles
@@ -464,11 +483,10 @@ namespace RayTracing
 					mat34 vertices;
 					Color color;
 				};
-				unsigned int num;
+				Vector<TriangleOrigin>trianglesOrigin;
 				TriangleOriginData()
 					:
-					OpenGL::Buffer::Data(DynamicDraw),
-					num(0)
+					Data(DynamicDraw)
 				{
 				}
 				virtual void* pointer()
@@ -477,7 +495,7 @@ namespace RayTracing
 				}
 				virtual unsigned int size()
 				{
-					return sizeof(TriangleOrigin)* num;
+					return sizeof(TriangleOrigin)* trianglesOrigin.length;
 				}
 			};
 			struct TriangleGPUData :OpenGL::Buffer::Data
@@ -490,7 +508,7 @@ namespace RayTracing
 					vec4 k2;
 					Color color;
 				};
-				Vector<TriangleGPU>triangles;
+				unsigned int num;
 				TriangleGPUData()
 					:
 					OpenGL::Buffer::Data(DynamicDraw)
@@ -498,11 +516,11 @@ namespace RayTracing
 				}
 				virtual void* pointer()
 				{
-					return triangles.data;
+					return nullptr;
 				}
 				virtual unsigned int size()
 				{
-					return sizeof(TriangleGPU)* triangles.length;
+					return sizeof(TriangleGPU)* num;
 				}
 			};
 			struct Info
@@ -510,26 +528,40 @@ namespace RayTracing
 				unsigned int indexOrigin;
 				unsigned int indexGPU;
 			};
-			unsigned int num;
 			TriangleOriginData trianglesOrigin;
 			TriangleGPUData trianglesGPU;
 			OpenGL::Buffer trianglesOriginBuffer;
 			OpenGL::Buffer trianglesGPUBuffer;
 			OpenGL::BufferConfig trianglesOriginConfig;
 			OpenGL::BufferConfig trianglesGPUConfig;
+			bool updated;
+			bool numChanged;
+			bool recalculate;
 			Triangles(Info const& _info)
 				:
-				num(0),
 				trianglesOriginBuffer(&trianglesOrigin),
 				trianglesGPUBuffer(&trianglesGPU),
 				trianglesOriginConfig(&trianglesOriginBuffer, OpenGL::ShaderStorageBuffer, _info.indexOrigin),
-				trianglesGPUConfig(&trianglesGPUBuffer, OpenGL::ShaderStorageBuffer, _info.indexGPU)
+				trianglesGPUConfig(&trianglesGPUBuffer, OpenGL::ShaderStorageBuffer, _info.indexGPU),
+				updated(true),
+				numChanged(false),
+				recalculate(false)
 			{
 			}
 			void dataInit()
 			{
-				trianglesOriginConfig.dataInit();
-				trianglesGPUConfig.dataInit();
+				if (updated)
+				{
+					trianglesOriginConfig.dataInit();
+					if (trianglesGPU.num != trianglesOrigin.trianglesOrigin.length)
+					{
+						trianglesGPU.num = trianglesOrigin.trianglesOrigin.length;
+						numChanged = true;
+						trianglesGPUConfig.dataInit();
+					}
+					updated = false;
+					recalculate = true;
+				}
 			}
 		};
 		struct GeometryNum
@@ -581,15 +613,21 @@ namespace RayTracing
 			Data data;
 			OpenGL::Buffer buffer;
 			OpenGL::BufferConfig config;
+			bool updated;
 			GeometryNum(Info const& _info)
 				:
 				buffer(&data),
-				config(&buffer, OpenGL::UniformBuffer, _info.index)
+				config(&buffer, OpenGL::UniformBuffer, _info.index),
+				updated(true)
 			{
 			}
 			void dataInit()
 			{
-				config.dataInit();
+				if (updated)
+				{
+					config.dataInit();
+					updated = false;
+				}
 			}
 		};
 
@@ -615,9 +653,24 @@ namespace RayTracing
 		}
 		void dataInit()
 		{
-			planes.dataInit();
+			bool updated(false);
+			if (planes.u)
+				planes.dataInit();
 			triangles.dataInit();
 			geometryNum.dataInit();
+		}
+		void refresh()
+		{
+			if (geometryNum.data.num.planeNum != planes.planes.planes.length)
+			{
+				geometryNum.data.num.planeNum = planes.planes.planes.length;
+				geometryNum.updated = true;
+			}
+			if (geometryNum.data.num.triangleNum != triangles.trianglesOrigin..planes.planes.length)
+			{
+				geometryNum.data.num.planeNum = planes.planes.planes.length;
+				geometryNum.updated = true;
+			}
 		}
 	};
 }
