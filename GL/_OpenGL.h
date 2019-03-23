@@ -78,6 +78,20 @@ namespace OpenGL
 		TransformFeedbackBuffer = GL_TRANSFORM_FEEDBACK_BUFFER,	//binding
 		UniformBuffer = GL_UNIFORM_BUFFER,						//binding
 	};
+	enum TextureType
+	{
+		Texture1D = GL_TEXTURE_1D,
+		Texture2D = GL_TEXTURE_2D,
+		Texture3D = GL_TEXTURE_3D,
+		Texture1DArray = GL_TEXTURE_1D_ARRAY,
+		Texture2DArray = GL_TEXTURE_2D_ARRAY,
+		TextureRectangle = GL_TEXTURE_RECTANGLE,
+		TextureCubeMap = GL_TEXTURE_CUBE_MAP,
+		TextureCubeMapArray = GL_TEXTURE_CUBE_MAP_ARRAY,
+		TextureTextureBuffer = GL_TEXTURE_BUFFER,
+		Texture2DMultiSample = GL_TEXTURE_2D_MULTISAMPLE,
+		Texture2DMultiSampleArray = GL_TEXTURE_2D_MULTISAMPLE_ARRAY,
+	};
 	template<ShaderType _shaderType>struct Shader
 	{
 		GLuint shader;
@@ -179,12 +193,12 @@ namespace OpenGL
 		{
 			switch (type)
 			{
-				case AtomicCounterBuffer:
-				case ShaderStorageBuffer:
-				case TransformFeedbackBuffer:
-				case UniformBuffer:
- 					glBindBufferBase(type, binding, buffer->buffer);
-					break;
+			case AtomicCounterBuffer:
+			case ShaderStorageBuffer:
+			case TransformFeedbackBuffer:
+			case UniformBuffer:
+				glBindBufferBase(type, binding, buffer->buffer);
+				break;
 			}
 		}
 		void dataInit()
@@ -311,7 +325,7 @@ namespace OpenGL
 		}
 		void bind()
 		{
-			if(vao)
+			if (vao)
 				glBindVertexArray(vao);
 		}
 		static void unbind()
@@ -386,6 +400,82 @@ namespace OpenGL
 		virtual void initBufferData() = 0;
 		virtual void run() = 0;
 	};
+	/*struct Texture
+	{
+		enum TextureFormat
+		{
+			R8 = GL_R8,
+			R8Snorm = GL_R8_SNORM,
+			R16 = GL_R16,
+			R16Snorm = GL_R16_SNORM,
+			RG8 = GL_RG8,
+			RG8Snorm = GL_RG8_SNORM,
+			RG16 = GL_RG16,
+			RG16Snorm = GL_RG16_SNORM,
+			R3G3B2 = GL_R3_G3_B2,
+			RGB4 = GL_RGB4,
+			RGB5 = GL_RGB5,
+			RGB8 = GL_RGB8,
+			RGB8Snorm = GL_RGB8_SNORM,
+			RGB10 = GL_RGB10,
+			RGB12 = GL_RGB12,
+			RGB16Snorm = GL_RGB16_SNORM,
+			RGBA2 = GL_RGBA2,
+			RGBA4 = GL_RGBA4,
+			RGB5A1 = GL_RGB5_A1,
+			RGBA8 = GL_RGBA8,
+			RGBA8Snorm = GL_RGBA8_SNORM,
+			RGB10A2 = GL_RGB10_A2,
+			RGB10A2ui = GL_RGB10_A2UI,
+			RGBA12 = GL_RGBA12,
+			RGBA16 = GL_RGBA16,
+			SRGB8 = GL_SRGB8,
+			SRGB8Alpha8 = GL_SRGB8_ALPHA8,
+			R16f = GL_R16F,
+			RG16f = GL_RG16F,
+			RGB16f = GL_RGB16F,
+			RGBA16f = GL_RGBA16F,
+			R32f = GL_R32F,
+			RG32f = GL_RG32F,
+			RGB32f = GL_RGB32F,
+			RGBA32f = GL_RGBA32F,
+			R11fG11fB10f = GL_R11F_G11F_B10F,
+			RGB9E5 = GL_RGB9_E5,
+			R8i = GL_R8I,
+			R8ui = GL_R8UI,
+			R16i = GL_R16I,
+			R16ui = GL_R16UI,
+			R32i = GL_R32I,
+			R32ui = GL_R32UI,
+			RG8i = GL_RG8I,
+			RG8ui = GL_RG8UI,
+			RG16i = GL_RG16I,
+			RG16ui = GL_RG16UI,
+			RG32i = GL_RG32I,
+			RG32ui = GL_RG32UI,
+			RGB8i = GL_RGB8I,
+			RGB8ui = GL_RGB8UI,
+			RGB16i = GL_RGB16I,
+			RGB16ui = GL_RGB16UI,
+			RGB32i = GL_RGB32I,
+			RGB32ui = GL_RGB32UI,
+			RGBA8i = GL_RGBA8I,
+			RGBA8ui = GL_RGBA8UI,
+			RGBA16i = GL_RGBA16I,
+			RGBA16ui = GL_RGBA16UI,
+			RGBA32i = GL_RGBA32I,
+			RGBA32ui = GL_RGBA32UI,
+		};
+
+		TextureType type;
+		GLuint buffer;
+		unsigned int layers;
+		void storage()
+		{
+
+		}
+	};*/
+
 	struct Transform
 	{
 		struct Data
@@ -574,14 +664,14 @@ namespace OpenGL
 	}
 	template<ShaderType _shaderType>inline void Shader<_shaderType>::check() const
 	{
-		char log[1024];
+		char log[512];
 		GLint success(1);
 		glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
 		if (!success)
 		{
-			glGetShaderInfoLog(shader, 1024, NULL, log);
+			glGetShaderInfoLog(shader, 512, NULL, log);
 			::printf("%s\n", log);
-			exit(-1);
+			//exit(-1);
 		}
 	}
 	template<ShaderType _shaderType>inline void Shader<_shaderType>::omit()
@@ -710,12 +800,12 @@ namespace OpenGL
 		for (int c0(0); c0 < attach.length; ++c0)
 			switch (attach.data[c0].data0)
 			{
-				case 0:glAttachShader(program, shaders.vertex[attach.data[c0].data1].shader); break;
-				case 1:glAttachShader(program, shaders.tessControl[attach.data[c0].data1].shader); break;
-				case 2:glAttachShader(program, shaders.tessEvaluation[attach.data[c0].data1].shader); break;
-				case 3:glAttachShader(program, shaders.geometry[attach.data[c0].data1].shader); break;
-				case 4:glAttachShader(program, shaders.fragment[attach.data[c0].data1].shader); break;
-				case 5:glAttachShader(program, shaders.compute[attach.data[c0].data1].shader); break;
+			case 0:glAttachShader(program, shaders.vertex[attach.data[c0].data1].shader); break;
+			case 1:glAttachShader(program, shaders.tessControl[attach.data[c0].data1].shader); break;
+			case 2:glAttachShader(program, shaders.tessEvaluation[attach.data[c0].data1].shader); break;
+			case 3:glAttachShader(program, shaders.geometry[attach.data[c0].data1].shader); break;
+			case 4:glAttachShader(program, shaders.fragment[attach.data[c0].data1].shader); break;
+			case 5:glAttachShader(program, shaders.compute[attach.data[c0].data1].shader); break;
 			}
 	}
 	inline void Program::link()
@@ -729,7 +819,8 @@ namespace OpenGL
 		glGetProgramiv(program, GL_LINK_STATUS, &success);
 		if (!success)
 		{
-			glGetProgramInfoLog(program, 2014, NULL, log);
+			glGetProgramInfoLog(program, 1024, NULL, log);
+			::printf("%s\n", log);
 			exit(-1);
 		}
 	}
@@ -794,8 +885,7 @@ namespace OpenGL
 				if (s < 2)break;
 				if (!sources.end().addSource(t0, shaders.findInThis(program + t0 + t1 + ".cpp").readText()))
 					::printf("Cannot read Program: %s\n", program.data);
-			}
-			while (s == 2);
+			} while (s == 2);
 		}
 	}
 	inline void SourceManager::deleteSource()
@@ -808,6 +898,7 @@ namespace OpenGL
 		for (int c0(0); c0 < sources.length; ++c0)
 			if (sources.data[c0].name == _name)
 				return sources.data[c0];
+		::printf("Cannot find program: %s\n", _name.data);
 		return *(Source*)NULL;
 	}
 
@@ -922,10 +1013,10 @@ namespace OpenGL
 	{
 		switch (_key)
 		{
-			case 0:left = _operation; break;
-			case 1:right = _operation; break;
-			case 2:up = _operation; break;
-			case 3:down = _operation; break;
+		case 0:left = _operation; break;
+		case 1:right = _operation; break;
+		case 2:up = _operation; break;
+		case 3:down = _operation; break;
 		}
 	}
 	inline Math::vec2<double> Transform::Key::operate()
@@ -979,9 +1070,9 @@ namespace OpenGL
 	{
 		switch (_button)
 		{
-			case 0:	left = _operation; break;
-			case 1:	middle = _operation; break;
-			case 2:	right = _operation; break;
+		case 0:	left = _operation; break;
+		case 1:	middle = _operation; break;
+		case 2:	right = _operation; break;
 		}
 
 	}
