@@ -654,7 +654,7 @@ namespace RayTracing
 		void dataInit()
 		{
 			bool updated(false);
-			if (planes.u)
+			if (planes.updated)
 				planes.dataInit();
 			triangles.dataInit();
 			geometryNum.dataInit();
@@ -666,7 +666,7 @@ namespace RayTracing
 				geometryNum.data.num.planeNum = planes.planes.planes.length;
 				geometryNum.updated = true;
 			}
-			if (geometryNum.data.num.triangleNum != triangles.trianglesOrigin..planes.planes.length)
+			if (geometryNum.data.num.triangleNum != triangles.trianglesOrigin.trianglesOrigin.length)
 			{
 				geometryNum.data.num.planeNum = planes.planes.planes.length;
 				geometryNum.updated = true;
