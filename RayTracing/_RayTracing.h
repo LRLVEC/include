@@ -396,11 +396,7 @@ namespace RayTracing
 			vec3 g;
 			float n;
 		};
-		struct Sphere
-		{
-			vec4 sphere;
-			Color color;
-		};
+
 		struct Circle
 		{
 			vec4 plane;
@@ -535,9 +531,9 @@ namespace RayTracing
 				trianglesGPUBuffer(&trianglesGPU),
 				trianglesOriginConfig(&trianglesOriginBuffer, OpenGL::ShaderStorageBuffer, _info.indexOrigin),
 				trianglesGPUConfig(&trianglesGPUBuffer, OpenGL::ShaderStorageBuffer, _info.indexGPU),
-				numChanged(false),
-				originUpToDate(true),
-				GPUUpToDate(true)
+				numChanged(true),
+				originUpToDate(false),
+				GPUUpToDate(false)
 			{
 			}
 			void dataInit()
@@ -554,7 +550,64 @@ namespace RayTracing
 					trianglesOriginConfig.refreshData();
 					GPUUpToDate = false;
 				}
+				if (!trianglesOrigin.trianglesOrigin.length)
+					GPUUpToDate = false;
 				originUpToDate = true;
+			}
+		};
+		struct Spheres
+		{
+			struct SphereData :OpenGL::Buffer::Data
+			{
+				struct Sphere
+				{
+					vec4 sphere;
+					Color color;
+				};
+				Vector<Sphere>spheres;
+				SphereData()
+					:
+					Data(DynamicDraw)
+				{
+				}
+				virtual void* pointer()override
+				{
+					return spheres.data;
+				}
+				virtual unsigned int size()override
+				{
+					return sizeof(Sphere)* spheres.length;
+				}
+			};
+			struct Info
+			{
+				unsigned int index;
+			};
+
+			SphereData data;
+			OpenGL::Buffer buffer;
+			OpenGL::BufferConfig config;
+			bool numChanged;
+			bool upToDate;
+			Spheres(Info const& _info)
+				:
+				buffer(&data),
+				config(&buffer, OpenGL::ShaderStorageBuffer, _info.index),
+				numChanged(true),
+				upToDate(false)
+			{
+			}
+			void dataInit()
+			{
+				if (numChanged)
+				{
+					config.dataInit();
+				}
+				else if (!upToDate)
+				{
+					config.refreshData();
+				}
+				upToDate = true;
 			}
 		};
 		struct GeometryNum
@@ -621,12 +674,14 @@ namespace RayTracing
 		{
 			Planes::Info planesInfo;
 			Triangles::Info trianglesInfo;
+			Spheres::Info spheresInfo;
 			GeometryNum::Info geometryNumInfo;
 		};
 
 
 		Planes planes;
 		Triangles triangles;
+		Spheres spheres;
 		GeometryNum geometryNum;
 
 
@@ -634,6 +689,7 @@ namespace RayTracing
 			:
 			planes(_info.planesInfo),
 			triangles(_info.trianglesInfo),
+			spheres(_info.spheresInfo),
 			geometryNum(_info.geometryNumInfo)
 		{
 		}
@@ -642,6 +698,7 @@ namespace RayTracing
 			bool numChanged(false);
 			planes.dataInit();
 			triangles.dataInit();
+			spheres.dataInit();
 			if (planes.numChanged)
 			{
 				geometryNum.data.num.planeNum = planes.data.planes.length;
@@ -652,6 +709,12 @@ namespace RayTracing
 			{
 				geometryNum.data.num.triangleNum = triangles.trianglesOrigin.trianglesOrigin.length;
 				triangles.numChanged = false;
+				numChanged = true;
+			}
+			if (spheres.numChanged)
+			{
+				geometryNum.data.num.sphereNum = spheres.data.spheres.length;
+				planes.numChanged = false;
 				numChanged = true;
 			}
 			if (numChanged)
