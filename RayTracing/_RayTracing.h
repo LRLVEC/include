@@ -269,7 +269,7 @@ namespace RayTracing
 				if (now.valid && pre.valid)
 				{
 					pre.valid = false;
-					return { pre.y - now.y    ,pre.x - now.x };
+					return { now.y - pre.y   ,now.x - pre.x };
 				}
 				else return { 0.0,0.0 };
 			}
@@ -336,7 +336,7 @@ namespace RayTracing
 		void init(OpenGL::FrameScale const& _size)
 		{
 			persp.init(_size);
-			bufferData.trans.z0 = float(_size.h) / (2.0 * tan(Math::Pi * persp.fovy / 180.0));
+			bufferData.trans.z0 = -float(_size.h) / (2.0 * tan(Math::Pi * persp.fovy / 180.0));
 			calcAns();
 			updated = true;
 		}
@@ -352,7 +352,7 @@ namespace RayTracing
 		void operate()
 		{
 			Math::vec3<double>dxyz(key.operate());
-			dxyz.data[2] = scroll.operate();
+			dxyz.data[2] = -scroll.operate();
 			Math::vec2<double>axis(mouse.operate());
 			bool operated(false);
 			if (dxyz != 0.0)
@@ -368,7 +368,7 @@ namespace RayTracing
 			}
 			if (persp.updated)
 			{
-				bufferData.trans.z0 = persp.y / (2.0 * tan(Math::Pi * persp.fovy / 180.0));
+				bufferData.trans.z0 = -(persp.y / (2.0 * tan(Math::Pi * persp.fovy / 180.0)));
 				persp.updated = false;
 				operated = true;
 			}
@@ -379,5 +379,348 @@ namespace RayTracing
 			}
 		}
 	};
+	struct Model
+	{
+		//Notice:	Something small can be placed in uniform buffer;
+		//			but something much bigger(more than 64KB for example)
+		//			must be placed in shader storage buffer...
+		using vec4 = Math::vec4<float>;
+		using vec3 = Math::vec3<float>;
+		using mat34 = Math::mat<float, 3, 4>;
 
+		struct Color
+		{
+			vec4 r;
+			vec4 t;
+			vec3 g;
+			float n;
+		};
+
+		struct Circle
+		{
+			vec4 plane;
+			vec4 sphere;
+			Color color;
+		};
+
+
+		struct Planes
+		{
+			struct PlaneData :OpenGL::Buffer::Data
+			{
+				struct Plane
+				{
+					vec4 paras;	//Ax + By + Cz + W = 0, this is (A, B, C, W).
+					Color color;
+				};
+				Vector<Plane>planes;
+				PlaneData()
+					:
+					Data(DynamicDraw)
+				{
+				}
+				virtual void* pointer()
+				{
+					return planes.data;
+				}
+				virtual unsigned int size()
+				{
+					return sizeof(Plane)* planes.length;
+				}
+			};
+			struct Info
+			{
+				OpenGL::BufferType type;
+				unsigned int index;
+			};
+
+			PlaneData data;
+			OpenGL::Buffer buffer;
+			OpenGL::BufferConfig config;
+			bool numChanged;
+			bool upToDate;
+			Planes(Info const& _info)
+				:
+				buffer(&data),
+				config(&buffer, _info.type, _info.index),
+				numChanged(false),
+				upToDate(true)
+			{
+			}
+			void dataInit()
+			{
+				if (numChanged)
+				{
+					config.dataInit();
+				}
+				else if (!upToDate)
+				{
+					config.refreshData();
+				}
+				upToDate = true;
+			}
+		};
+		struct Triangles
+		{
+			struct TriangleOriginData :OpenGL::Buffer::Data
+			{
+				struct TriangleOrigin
+				{
+					mat34 vertices;
+					Color color;
+				};
+				Vector<TriangleOrigin>trianglesOrigin;
+				TriangleOriginData()
+					:
+					Data(DynamicDraw)
+				{
+				}
+				virtual void* pointer()
+				{
+					return trianglesOrigin.data;
+				}
+				virtual unsigned int size()
+				{
+					return sizeof(TriangleOrigin)* trianglesOrigin.length;
+				}
+			};
+			struct TriangleGPUData :OpenGL::Buffer::Data
+			{
+				struct TriangleGPU
+				{
+					vec4 plane;
+					vec4 p1;
+					vec4 k1;
+					vec4 k2;
+					Color color;
+				};
+				unsigned int num;
+				TriangleGPUData()
+					:
+					OpenGL::Buffer::Data(DynamicDraw),
+					num(0)
+				{
+				}
+				virtual void* pointer()
+				{
+					return nullptr;
+				}
+				virtual unsigned int size()
+				{
+					return sizeof(TriangleGPU)* num;
+				}
+			};
+			struct Info
+			{
+				unsigned int indexOrigin;
+				unsigned int indexGPU;
+			};
+			TriangleOriginData trianglesOrigin;
+			TriangleGPUData trianglesGPU;
+			OpenGL::Buffer trianglesOriginBuffer;
+			OpenGL::Buffer trianglesGPUBuffer;
+			OpenGL::BufferConfig trianglesOriginConfig;
+			OpenGL::BufferConfig trianglesGPUConfig;
+			bool numChanged;
+			bool originUpToDate;
+			bool GPUUpToDate;
+			Triangles(Info const& _info)
+				:
+				trianglesOriginBuffer(&trianglesOrigin),
+				trianglesGPUBuffer(&trianglesGPU),
+				trianglesOriginConfig(&trianglesOriginBuffer, OpenGL::ShaderStorageBuffer, _info.indexOrigin),
+				trianglesGPUConfig(&trianglesGPUBuffer, OpenGL::ShaderStorageBuffer, _info.indexGPU),
+				numChanged(true),
+				originUpToDate(false),
+				GPUUpToDate(false)
+			{
+			}
+			void dataInit()
+			{
+				if (numChanged)
+				{
+					trianglesOriginConfig.dataInit();
+					trianglesGPU.num = trianglesOrigin.trianglesOrigin.length;
+					trianglesGPUConfig.dataInit();
+					GPUUpToDate = false;
+				}
+				else if (!originUpToDate)
+				{
+					trianglesOriginConfig.refreshData();
+					GPUUpToDate = false;
+				}
+				if (!trianglesOrigin.trianglesOrigin.length)
+					GPUUpToDate = false;
+				originUpToDate = true;
+			}
+		};
+		struct Spheres
+		{
+			struct SphereData :OpenGL::Buffer::Data
+			{
+				struct Sphere
+				{
+					vec4 sphere;
+					Color color;
+				};
+				Vector<Sphere>spheres;
+				SphereData()
+					:
+					Data(DynamicDraw)
+				{
+				}
+				virtual void* pointer()override
+				{
+					return spheres.data;
+				}
+				virtual unsigned int size()override
+				{
+					return sizeof(Sphere)* spheres.length;
+				}
+			};
+			struct Info
+			{
+				unsigned int index;
+			};
+
+			SphereData data;
+			OpenGL::Buffer buffer;
+			OpenGL::BufferConfig config;
+			bool numChanged;
+			bool upToDate;
+			Spheres(Info const& _info)
+				:
+				buffer(&data),
+				config(&buffer, OpenGL::ShaderStorageBuffer, _info.index),
+				numChanged(true),
+				upToDate(false)
+			{
+			}
+			void dataInit()
+			{
+				if (numChanged)
+				{
+					config.dataInit();
+				}
+				else if (!upToDate)
+				{
+					config.refreshData();
+				}
+				upToDate = true;
+			}
+		};
+		struct GeometryNum
+		{
+			struct Data :OpenGL::Buffer::Data
+			{
+				struct Num
+				{
+					unsigned int planeNum;
+					unsigned int triangleNum;
+					unsigned int sphereNum;
+					unsigned int circleNum;
+					Num()
+						:
+						planeNum(0),
+						triangleNum(0),
+						sphereNum(0),
+						circleNum(0)
+					{
+					}
+				};
+				Num num;
+				Data()
+					:
+					OpenGL::Buffer::Data(StaticDraw),
+					num()
+				{
+				}
+				Data(Num const& _num)
+					:
+					OpenGL::Buffer::Data(StaticDraw),
+					num(_num)
+				{
+				}
+				virtual void* pointer()override
+				{
+					return &num;
+				}
+				virtual unsigned int size()override
+				{
+					return sizeof(Num);
+				}
+			};
+			struct Info
+			{
+				unsigned int index;
+			};
+			Data data;
+			OpenGL::Buffer buffer;
+			OpenGL::BufferConfig config;
+			GeometryNum(Info const& _info)
+				:
+				buffer(&data),
+				config(&buffer, OpenGL::UniformBuffer, _info.index)
+			{
+			}
+			void dataInit()
+			{
+				config.dataInit();
+			}
+		};
+
+		struct Info
+		{
+			Planes::Info planesInfo;
+			Triangles::Info trianglesInfo;
+			Spheres::Info spheresInfo;
+			GeometryNum::Info geometryNumInfo;
+		};
+
+
+		Planes planes;
+		Triangles triangles;
+		Spheres spheres;
+		GeometryNum geometryNum;
+
+
+		Model(Info const& _info)
+			:
+			planes(_info.planesInfo),
+			triangles(_info.trianglesInfo),
+			spheres(_info.spheresInfo),
+			geometryNum(_info.geometryNumInfo)
+		{
+		}
+		void dataInit()
+		{
+			bool numChanged(false);
+			planes.dataInit();
+			triangles.dataInit();
+			spheres.dataInit();
+			if (planes.numChanged)
+			{
+				geometryNum.data.num.planeNum = planes.data.planes.length;
+				planes.numChanged = false;
+				numChanged = true;
+			}
+			if (triangles.numChanged)
+			{
+				geometryNum.data.num.triangleNum = triangles.trianglesOrigin.trianglesOrigin.length;
+				triangles.numChanged = false;
+				numChanged = true;
+			}
+			if (spheres.numChanged)
+			{
+				geometryNum.data.num.sphereNum = spheres.data.spheres.length;
+				planes.numChanged = false;
+				numChanged = true;
+			}
+			if (numChanged)
+			{
+				geometryNum.dataInit();
+			}
+		}
+	};
+>>>>>>> 0ba8e9f12a9f2ba42d9657b40122eafab85bf802
 }
