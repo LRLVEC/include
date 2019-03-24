@@ -640,12 +640,14 @@ namespace RayTracing
 			OpenGL::BufferConfig config;
 			bool numChanged;
 			bool upToDate;
+			bool GPUUpToDate;
 			Circles(Info const& _info)
 				:
 				buffer(&data),
 				config(&buffer, OpenGL::ShaderStorageBuffer, _info.index),
 				numChanged(true),
-				upToDate(false)
+				upToDate(false),
+				GPUUpToDate(false)
 			{
 			}
 			void dataInit()
@@ -653,10 +655,12 @@ namespace RayTracing
 				if (numChanged)
 				{
 					config.dataInit();
+					GPUUpToDate = false;
 				}
 				else if (!upToDate)
 				{
 					config.refreshData();
+					GPUUpToDate = false;
 				}
 				upToDate = true;
 			}
