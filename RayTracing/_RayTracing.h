@@ -90,6 +90,7 @@ namespace RayTracing
 			Perspective persp;
 			Scroll scroll;
 			Key key;
+			Math::vec3<double> initialPosition;
 			double depth;
 		};
 		struct Perspective
@@ -328,7 +329,7 @@ namespace RayTracing
 			mouse(),
 			updated(false),
 			bufferData(),
-			dr(0.0),
+			dr(_data.initialPosition),
 			trans(Math::mat3<double>::id()),
 			depth(_data.depth)
 		{
@@ -610,9 +611,10 @@ namespace RayTracing
 			{
 				struct Circle
 				{
-					vec4 sphere;	//p, R^2
 					vec4 plane;		//n(unnormalized)
-					vec4 e;			//e(unnormalized)
+					vec4 sphere;	//p, R^2
+					vec4 e1;			//e(unnormalized)
+					vec4 e2;
 					Color color;
 				};
 				Vector<Circle>circles;
@@ -640,12 +642,14 @@ namespace RayTracing
 			OpenGL::BufferConfig config;
 			bool numChanged;
 			bool upToDate;
+			bool GPUUpToDate;
 			Circles(Info const& _info)
 				:
 				buffer(&data),
 				config(&buffer, OpenGL::ShaderStorageBuffer, _info.index),
 				numChanged(true),
-				upToDate(false)
+				upToDate(false),
+				GPUUpToDate(false)
 			{
 			}
 			void dataInit()
@@ -653,10 +657,12 @@ namespace RayTracing
 				if (numChanged)
 				{
 					config.dataInit();
+					GPUUpToDate = false;
 				}
 				else if (!upToDate)
 				{
 					config.refreshData();
+					GPUUpToDate = false;
 				}
 				upToDate = true;
 			}
