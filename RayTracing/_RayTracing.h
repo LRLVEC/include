@@ -397,14 +397,6 @@ namespace RayTracing
 			float n;
 		};
 
-		struct Circle
-		{
-			vec4 plane;
-			vec4 sphere;
-			Color color;
-		};
-
-
 		struct Planes
 		{
 			struct PlaneData :OpenGL::Buffer::Data
@@ -612,6 +604,63 @@ namespace RayTracing
 				upToDate = true;
 			}
 		};
+		struct Circles
+		{
+			struct CircleData :OpenGL::Buffer::Data
+			{
+				struct Circle
+				{
+					vec4 sphere;	//p, R^2
+					vec4 plane;		//n(unnormalized)
+					vec4 e;			//e(unnormalized)
+					Color color;
+				};
+				Vector<Circle>circles;
+				CircleData()
+					:
+					Data(DynamicDraw)
+				{
+
+				}
+				virtual void* pointer()override
+				{
+					return circles.data;
+				}
+				virtual unsigned int size()override
+				{
+					return sizeof(Circle)* circles.length;
+				}
+			};
+			struct Info
+			{
+				unsigned int index;
+			};
+			CircleData data;
+			OpenGL::Buffer buffer;
+			OpenGL::BufferConfig config;
+			bool numChanged;
+			bool upToDate;
+			Circles(Info const& _info)
+				:
+				buffer(&data),
+				config(&buffer, OpenGL::ShaderStorageBuffer, _info.index),
+				numChanged(true),
+				upToDate(false)
+			{
+			}
+			void dataInit()
+			{
+				if (numChanged)
+				{
+					config.dataInit();
+				}
+				else if (!upToDate)
+				{
+					config.refreshData();
+				}
+				upToDate = true;
+			}
+		};
 		struct GeometryNum
 		{
 			struct Data :OpenGL::Buffer::Data
@@ -677,6 +726,7 @@ namespace RayTracing
 			Planes::Info planesInfo;
 			Triangles::Info trianglesInfo;
 			Spheres::Info spheresInfo;
+			Circles::Info circlesInfo;
 			GeometryNum::Info geometryNumInfo;
 		};
 
@@ -684,6 +734,7 @@ namespace RayTracing
 		Planes planes;
 		Triangles triangles;
 		Spheres spheres;
+		Circles circles;
 		GeometryNum geometryNum;
 
 
@@ -692,6 +743,7 @@ namespace RayTracing
 			planes(_info.planesInfo),
 			triangles(_info.trianglesInfo),
 			spheres(_info.spheresInfo),
+			circles(_info.circlesInfo),
 			geometryNum(_info.geometryNumInfo)
 		{
 		}
@@ -701,6 +753,7 @@ namespace RayTracing
 			planes.dataInit();
 			triangles.dataInit();
 			spheres.dataInit();
+			circles.dataInit();
 			if (planes.numChanged)
 			{
 				geometryNum.data.num.planeNum = planes.data.planes.length;
@@ -716,7 +769,13 @@ namespace RayTracing
 			if (spheres.numChanged)
 			{
 				geometryNum.data.num.sphereNum = spheres.data.spheres.length;
-				planes.numChanged = false;
+				spheres.numChanged = false;
+				numChanged = true;
+			}
+			if (circles.numChanged)
+			{
+				geometryNum.data.num.circleNum = circles.data.circles.length;
+				circles.numChanged = false;
 				numChanged = true;
 			}
 			if (numChanged)
