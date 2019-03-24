@@ -561,6 +561,8 @@ namespace RayTracing
 				struct Sphere
 				{
 					vec4 sphere;
+					vec4 a;
+					vec4 b;
 					Color color;
 				};
 				Vector<Sphere>spheres;
