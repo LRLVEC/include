@@ -722,5 +722,4 @@ namespace RayTracing
 			}
 		}
 	};
->>>>>>> 0ba8e9f12a9f2ba42d9657b40122eafab85bf802
 }
