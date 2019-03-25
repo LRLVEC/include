@@ -612,7 +612,8 @@ namespace RayTracing
 				struct Circle
 				{
 					vec4 plane;		//n(unnormalized)
-					vec4 sphere;	//p, R^2
+					vec3 sphere;	//p, R^2
+					float r2;
 					vec4 e1;			//e(unnormalized)
 					vec4 e2;
 					Color color;
@@ -622,7 +623,6 @@ namespace RayTracing
 					:
 					Data(DynamicDraw)
 				{
-
 				}
 				virtual void* pointer()override
 				{
@@ -667,9 +667,72 @@ namespace RayTracing
 				upToDate = true;
 			}
 		};
+		struct Cylinders
+		{
+			struct CylinderData :OpenGL::Buffer::Data
+			{
+				struct Cylinder
+				{
+					vec3 c;
+					float r2;
+					vec3 n;
+					float l;
+					vec4 e1;
+					vec4 e2;
+					Color color;
+				};
+				Vector<Cylinder> cylinders;
+				CylinderData()
+					:
+					Data(DynamicDraw)
+				{
+				}
+				virtual void* pointer()override
+				{
+					return cylinders.data;
+				}
+				virtual unsigned int size()override
+				{
+					return sizeof(Cylinder)* cylinders.length;
+				}
+			};
+			struct Info
+			{
+				unsigned int index;
+			};
+			CylinderData data;
+			OpenGL::Buffer buffer;
+			OpenGL::BufferConfig config;
+			bool numChanged;
+			bool upToDate;
+			bool GPUUpToDate;
+			Cylinders(Info const& _info)
+				:
+				buffer(&data),
+				config(&buffer, OpenGL::ShaderStorageBuffer, _info.index),
+				numChanged(true),
+				upToDate(false),
+				GPUUpToDate(false)
+			{
+			}
+			void dataInit()
+			{
+				if (numChanged)
+				{
+					config.dataInit();
+					GPUUpToDate = false;
+				}
+				else if (!upToDate)
+				{
+					config.refreshData();
+					GPUUpToDate = false;
+				}
+				upToDate = true;
+			}
+		};
 		struct GeometryNum
 		{
-			struct Data :OpenGL::Buffer::Data
+			struct NumData :OpenGL::Buffer::Data
 			{
 				struct Num
 				{
@@ -677,25 +740,28 @@ namespace RayTracing
 					unsigned int triangleNum;
 					unsigned int sphereNum;
 					unsigned int circleNum;
+					unsigned int cylinderNum;
+					unsigned int blank[3];
 					Num()
 						:
 						planeNum(0),
 						triangleNum(0),
 						sphereNum(0),
-						circleNum(0)
+						circleNum(0),
+						cylinderNum(0)
 					{
 					}
 				};
 				Num num;
-				Data()
+				NumData()
 					:
-					OpenGL::Buffer::Data(StaticDraw),
+					Data(StaticDraw),
 					num()
 				{
 				}
-				Data(Num const& _num)
+				NumData(Num const& _num)
 					:
-					OpenGL::Buffer::Data(StaticDraw),
+					Data(StaticDraw),
 					num(_num)
 				{
 				}
@@ -712,7 +778,7 @@ namespace RayTracing
 			{
 				unsigned int index;
 			};
-			Data data;
+			NumData data;
 			OpenGL::Buffer buffer;
 			OpenGL::BufferConfig config;
 			GeometryNum(Info const& _info)
@@ -733,6 +799,7 @@ namespace RayTracing
 			Triangles::Info trianglesInfo;
 			Spheres::Info spheresInfo;
 			Circles::Info circlesInfo;
+			Cylinders::Info cylindersInfo;
 			GeometryNum::Info geometryNumInfo;
 		};
 
@@ -741,8 +808,8 @@ namespace RayTracing
 		Triangles triangles;
 		Spheres spheres;
 		Circles circles;
+		Cylinders cylinders;
 		GeometryNum geometryNum;
-
 
 		Model(Info const& _info)
 			:
@@ -750,6 +817,7 @@ namespace RayTracing
 			triangles(_info.trianglesInfo),
 			spheres(_info.spheresInfo),
 			circles(_info.circlesInfo),
+			cylinders(_info.cylindersInfo),
 			geometryNum(_info.geometryNumInfo)
 		{
 		}
@@ -760,6 +828,7 @@ namespace RayTracing
 			triangles.dataInit();
 			spheres.dataInit();
 			circles.dataInit();
+			cylinders.dataInit();
 			if (planes.numChanged)
 			{
 				geometryNum.data.num.planeNum = planes.data.planes.length;
@@ -784,10 +853,47 @@ namespace RayTracing
 				circles.numChanged = false;
 				numChanged = true;
 			}
+			if (cylinders.numChanged)
+			{
+				geometryNum.data.num.cylinderNum = cylinders.data.cylinders.length;
+				cylinders.numChanged = false;
+				numChanged = true;
+			}
+
 			if (numChanged)
 			{
 				geometryNum.dataInit();
 			}
+		}
+		void addCylinder(Cylinders::CylinderData::Cylinder const& _cylinder)
+		{
+			Circles::CircleData::Circle circle0;
+			Circles::CircleData::Circle circle1;
+			cylinders.data.cylinders.pushBack(_cylinder);
+			circles.data.circles.pushBack
+			(
+				{
+					-_cylinder.n,
+					_cylinder.c,
+					_cylinder.r2,
+					_cylinder.e1,
+					_cylinder.e2,
+					_cylinder.color
+				}
+			);
+			circles.data.circles.pushBack
+			(
+				{
+					_cylinder.n,
+					_cylinder.c + _cylinder.n * _cylinder.l,
+					_cylinder.r2,
+					_cylinder.e1,
+					_cylinder.e2,
+					_cylinder.color
+				}
+			);
+			circles.numChanged = true;
+			cylinders.numChanged = true;
 		}
 	};
 }
