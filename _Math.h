@@ -52,6 +52,7 @@ namespace Math
 		template<class R, unsigned int _dim1>vec<T, _dim>& operator*=(vec<R, _dim1>const&);
 		template<class R, unsigned int _dim1>vec<T, _dim>& operator/=(vec<R, _dim1>const&);
 
+		vec<T, _dim> operator-()const;
 		template<class R>auto operator+(R const&)const;
 		template<class R>auto operator-(R const&)const;
 		template<class R>auto operator*(R const&)const;
@@ -313,6 +314,12 @@ namespace Math
 		static constexpr unsigned int const MinDim = Min<unsigned int, _dim, _dim1>::value;
 		for (int c1 = 0; c1 < MinDim; c1++)data[c1] /= (T)a.data[c1];
 		return *this;
+	}
+	template<class T, unsigned int _dim>inline vec<T, _dim>vec<T, _dim>::operator-()const
+	{
+		vec<T, _dim> temp;
+		for (int c0(0); c0 < _dim; ++c0)temp.data[c0] = -data[c0];
+		return temp;
 	}
 	template<class T, unsigned int _dim>template<class R>						inline auto vec<T, _dim>::operator+(R const& a)const
 	{
