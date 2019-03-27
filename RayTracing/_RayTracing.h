@@ -616,7 +616,8 @@ namespace RayTracing
 					vec3 sphere;	//p, R^2
 					float r2;
 					vec4 e1;			//e(unnormalized)
-					vec4 e2;
+					vec3 e2;
+					unsigned int tex;
 					Color color;
 				};
 				Vector<Circle>circles;
@@ -948,6 +949,7 @@ namespace RayTracing
 					_cylinder.r2,
 					_cylinder.e1,
 					_cylinder.e2,
+					0,
 					_cylinder.color
 				}
 			);
@@ -959,6 +961,7 @@ namespace RayTracing
 					_cylinder.r2,
 					_cylinder.e1,
 					_cylinder.e2,
+					0,
 					_cylinder.color
 				}
 			);
