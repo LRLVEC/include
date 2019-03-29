@@ -392,10 +392,15 @@ namespace RayTracing
 
 		struct Color
 		{
-			vec4 r;
-			vec4 t;
-			vec4 d;
+			vec3 r;
+			int texR;
+			vec3 t;
+			int texT;
+			vec3 d;
+			int texD;
 			vec3 g;
+			int texG;
+			vec3 blank;
 			float n;
 		};
 
@@ -556,8 +561,8 @@ namespace RayTracing
 				struct Sphere
 				{
 					vec4 sphere;
-					vec4 a;
-					vec4 b;
+					vec4 e1;
+					vec4 e2;
 					Color color;
 				};
 				Vector<Sphere>spheres;
@@ -616,8 +621,6 @@ namespace RayTracing
 					vec3 sphere;	//p, R^2
 					float r2;
 					vec4 e1;			//e(unnormalized)
-					vec3 e2;
-					unsigned int tex;
 					Color color;
 				};
 				Vector<Circle>circles;
@@ -680,7 +683,6 @@ namespace RayTracing
 					vec3 n;
 					float l;
 					vec4 e1;
-					vec4 e2;
 					Color color;
 				};
 				Vector<Cylinder> cylinders;
@@ -743,7 +745,6 @@ namespace RayTracing
 					vec3 n;
 					float l2;
 					vec4 e1;
-					vec4 e2;
 					Color color;
 				};
 				Vector<Cone>cones;
@@ -1022,8 +1023,6 @@ namespace RayTracing
 					_cylinder.c,
 					_cylinder.r2,
 					_cylinder.e1,
-					_cylinder.e2,
-					0,
 					_cylinder.color
 				}
 			);
@@ -1034,8 +1033,6 @@ namespace RayTracing
 					_cylinder.c + _cylinder.n * _cylinder.l,
 					_cylinder.r2,
 					_cylinder.e1,
-					_cylinder.e2,
-					0,
 					_cylinder.color
 				}
 			);
@@ -1051,8 +1048,6 @@ namespace RayTracing
 					_cone.c + _cone.n * sqrtf(_cone.l2 * _cone.c2),
 					_cone.l2 * (1 - _cone.c2),
 					_cone.e1,
-					_cone.e2,
-					0,
 					_cone.color
 				}
 			);

@@ -1,6 +1,7 @@
 #pragma once
 #include <GL/_OpenGL.h>
 #include <_File.h>
+#include <_BMP.h>
 
 namespace OpenGL
 {
@@ -146,11 +147,21 @@ namespace OpenGL
 	enum TextureInputFormat
 	{
 		TextureInputR = GL_RED,
+		TextureInputG = GL_GREEN,
+		TextureInputB = GL_BLUE,
 		TextureInputRG = GL_RG,
 		TextureInputRGB = GL_RGB,
 		TextureInputBGR = GL_BGR,
 		TextureInputRGBA = GL_RGBA,
 		TextureInputBGRA = GL_BGRA,
+		TextureInputRInt = GL_RED,
+		TextureInputGInt = GL_GREEN,
+		TextureInputBInt = GL_BLUE,
+		TextureInputRGInt = GL_RG,
+		TextureInputRGBInt = GL_RGB,
+		TextureInputBGRInt = GL_BGR,
+		TextureInputRGBAInt = GL_RGBA,
+		TextureInputBGRAInt = GL_BGRA,
 		TextureInputDepth = GL_DEPTH_COMPONENT,
 		TextureInputStencil = GL_STENCIL_INDEX
 	};
@@ -184,23 +195,30 @@ namespace OpenGL
 		};
 		Data* data;
 		GLuint texture;
+		unsigned int binding;
 		Texture()
 			:
 			data(nullptr),
-			texture()
+			texture(),
+			binding(0)
 		{
 			create();
 		}
-		Texture(Data* _data)
+		Texture(Data* _data, unsigned int _binding)
 			:
 			data(_data),
-			texture()
+			texture(),
+			binding(_binding)
 		{
 			create();
 		}
 		void create()
 		{
 			glGenTextures(1, &texture);
+		}
+		void bindUnit()
+		{
+			glBindTextureUnit(binding, texture);
 		}
 	};
 	struct TextureConfigBase
@@ -234,7 +252,7 @@ namespace OpenGL
 		{
 			glBindTexture(type, 0);
 		}
-		void parameteri(TextureParameter::Name _pname,TextureParameter::Parameter _para)
+		void parameteri(TextureParameter::Name _pname, TextureParameter::Parameter _para)
 		{
 			glTextureParameteri(texture->texture, _pname, _para);
 		}
@@ -255,13 +273,13 @@ namespace OpenGL
 		{
 			glTextureStorage1D(texture->texture, layers, format, width);
 		}
-		void dataInit(unsigned int _level, TextureInputType _inputType)
+		void dataInit(unsigned int _level, TextureInputFormat _inputFormat, TextureInputType _inputType)
 		{
-			glTextureSubImage1D(texture->texture, _level, 0, width, format, _inputType, texture->data->pointer());
+			glTextureSubImage1D(texture->texture, _level, 0, width, _inputFormat, _inputType, texture->data->pointer());
 		}
-		void dataRefresh(unsigned int _level, TextureInputType _inputType, unsigned int _xOffset, unsigned int _width)
+		void dataRefresh(unsigned int _level, TextureInputFormat _inputFormat, TextureInputType _inputType, unsigned int _xOffset, unsigned int _width)
 		{
-			glTextureSubImage1D(texture->texture, _level, _xOffset, _width, format, _inputType, texture->data->pointer());
+			glTextureSubImage1D(texture->texture, _level, _xOffset, _width, _inputFormat, _inputType, texture->data->pointer());
 		}
 	};
 	template<>struct TextureConfig<TextureStorage2D> :TextureConfigBase
@@ -280,13 +298,13 @@ namespace OpenGL
 		{
 			glTextureStorage2D(texture->texture, layers, format, width, height);
 		}
-		void dataInit(unsigned int _level, TextureInputType _inputType)
+		void dataInit(unsigned int _level, TextureInputFormat _inputFormat, TextureInputType _inputType)
 		{
-			glTextureSubImage2D(texture->texture, _level, 0, 0, width, height, format, _inputType, texture->data->pointer());
+			glTextureSubImage2D(texture->texture, _level, 0, 0, width, height, _inputFormat, _inputType, texture->data->pointer());
 		}
-		void dataRefresh(unsigned int _level, TextureInputType _inputType, unsigned int _xOffset, unsigned int _yOffset, unsigned int _width, unsigned int _height)
+		void dataRefresh(unsigned int _level, TextureInputFormat _inputFormat, TextureInputType _inputType, unsigned int _xOffset, unsigned int _yOffset, unsigned int _width, unsigned int _height)
 		{
-			glTextureSubImage2D(texture->texture, _level, _xOffset, _yOffset, _width, _height, format, _inputType, texture->data->pointer());
+			glTextureSubImage2D(texture->texture, _level, _xOffset, _yOffset, _width, _height, _inputFormat, _inputType, texture->data->pointer());
 		}
 	};
 	template<>struct TextureConfig<TextureStorage3D> :TextureConfigBase
@@ -301,18 +319,33 @@ namespace OpenGL
 			height(_height),
 			depth(_depth)
 		{
+			allocData();
 		}
 		void allocData()
 		{
 			glTextureStorage3D(texture->texture, layers, format, width, height, depth);
 		}
-		void dataInit(unsigned int _level, TextureInputType _inputType)
+		void dataInit(unsigned int _level, TextureInputFormat _inputFormat, TextureInputType _inputType)
 		{
-			glTextureSubImage3D(texture->texture, _level, 0, 0, 0, width, height, depth, format, _inputType, texture->data->pointer());
+			glTextureSubImage3D(texture->texture, _level, 0, 0, 0, width, height, depth, _inputFormat, _inputType, texture->data->pointer());
 		}
-		void dataRefresh(unsigned int _level, TextureInputType _inputType, unsigned int _xOffset, unsigned int _yOffset, unsigned int _zOffset, unsigned int _width, unsigned int _height, unsigned int _depth)
+		void dataRefresh(unsigned int _level, TextureInputFormat _inputFormat, TextureInputType _inputType, unsigned int _xOffset, unsigned int _yOffset, unsigned int _zOffset, unsigned int _width, unsigned int _height, unsigned int _depth)
 		{
-			glTextureSubImage3D(texture->texture, _level, _xOffset, _yOffset, _zOffset, _width, _height, _depth, format, _inputType, texture->data->pointer());
+			glTextureSubImage3D(texture->texture, _level, _xOffset, _yOffset, _zOffset, _width, _height, _depth, _inputFormat, _inputType, texture->data->pointer());
 		}
+	};
+	struct BMPData :Texture::Data
+	{
+		BMP bmp;
+		BMPData(String<char>const& _path)
+			:
+			bmp(_path)
+		{
+		}
+		virtual void* pointer()
+		{
+			return bmp.data;
+		}
+
 	};
 }

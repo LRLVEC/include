@@ -6,7 +6,7 @@
 //#include <direct.h>
 
 struct STL;
-
+struct BMP;
 //Support path format: [C:/] [./abc/] [../abc/]
 struct File
 {
@@ -62,6 +62,8 @@ struct File
 	String<char>readText(String<char>const&)const;
 	STL readSTL()const;
 	STL readSTL(String<char>const&)const;
+	BMP readBMP()const;
+	BMP readBMP(String<char>const&)const;
 	void* readBinary(String<char>const&);
 	//Print info
 	void print()const;
