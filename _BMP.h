@@ -50,14 +50,21 @@ struct BMP
 	BMP(String<char>const& _path)
 	{
 		FILE* temp(::fopen(_path.data, "rb+"));
-		::fseek(temp, 0, SEEK_SET);//把temp有关的文件位置指针放到文件的开头
-		::fread(&header, 1, 54, temp);//把BMP文件的文件头读取
-		if (header.width % 4)//补齐
+		::fseek(temp, 0, SEEK_SET);
+		::fread(&header, 1, 54, temp);
+		::fseek(temp, header.dataOffset, SEEK_SET);
+		if (header.width % 4)
+		{
 			data = (BMP::Pixel*)::malloc(3u * header.width * header.height + 4);
+			for (int c0(0); c0 < header.height; ++c0)
+				::fread((data + header.width * c0), 4, 1 + header.width * 3 / 4, temp);
+		}
 		else
+		{
 			data = (BMP::Pixel*)::malloc(3u * header.width * header.height);
-		for (int c0(0); c0 < header.height; ++c0)
-			::fread((data + header.width * c0), 4, header.width * 3/4, temp);
+			for (int c0(0); c0 < header.height; ++c0)
+				::fread((data + header.width * c0), 4, header.width * 3 / 4, temp);
+		}
 		::fclose(temp);
 	}
 	~BMP()
@@ -83,12 +90,19 @@ inline BMP File::readBMP()const
 	FILE* temp(::fopen((property.path + property.file.name).data, "rb+"));
 	::fseek(temp, 0, SEEK_SET);
 	::fread(&r.header, 1, 54, temp);
+	::fseek(temp, r.header.dataOffset, SEEK_SET);
 	if (r.header.width % 4)
+	{
 		r.data = (BMP::Pixel*)::malloc(3u * r.header.width * r.header.height + 4);
+		for (int c0(0); c0 < r.header.height; ++c0)
+			::fread((r.data + r.header.width * c0), 4, 1 + r.header.width * 3 / 4, temp);
+	}
 	else
-		r.data = (BMP::Pixel*)::malloc(3u * r.header.width * r.header.height);
-	for (int c0(0); c0 < r.header.height; ++c0)
-		::fread((r.data + r.header.width), 4, r.header.width, temp);
+	{
+		r.data = (BMP::Pixel*)::malloc(3u * r.header.width * r.header.height + 4);
+		for (int c0(0); c0 < r.header.height; ++c0)
+			::fread((r.data + r.header.width * c0), 4, r.header.width * 3 / 4, temp);
+	}
 	::fclose(temp);
 	return r;
 }
@@ -99,12 +113,19 @@ inline BMP File::readBMP(String<char> const& _name)const
 	FILE* temp(::fopen((property.path + _name).data, "rb+"));
 	::fseek(temp, 0, SEEK_SET);
 	::fread(&r.header, 1, 54, temp);
+	::fseek(temp, r.header.dataOffset, SEEK_SET);
 	if (r.header.width % 4)
+	{
 		r.data = (BMP::Pixel*)::malloc(3u * r.header.width * r.header.height + 4);
+		for (int c0(0); c0 < r.header.height; ++c0)
+			::fread((r.data + r.header.width * c0), 4, 1 + r.header.width * 3 / 4, temp);
+	}
 	else
-		r.data = (BMP::Pixel*)::malloc(3u * r.header.width * r.header.height);
-	for (int c0(0); c0 < r.header.height; ++c0)
-		::fread((r.data + r.header.width), 4, r.header.width, temp);
+	{
+		r.data = (BMP::Pixel*)::malloc(3u * r.header.width * r.header.height + 4);
+		for (int c0(0); c0 < r.header.height; ++c0)
+			::fread((r.data + r.header.width * c0), 4, r.header.width * 3 / 4, temp);
+	}
 	::fclose(temp);
 	return r;
 }
