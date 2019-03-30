@@ -4,22 +4,22 @@
 //Only support 24bit bmp!
 struct BMP
 {
-#pragma pack(1)
+#pragma pack(1)//自定义字节对齐方式，连续存储
 	struct Header
 	{
 		char identifier[2];
 		unsigned int fileSize;
 		unsigned int reserved;
 		unsigned int dataOffset;
-		unsigned int headerSize;
+		unsigned int headerSize;//本结构占据的字节数
 		unsigned int width;
 		unsigned int height;
 		unsigned short planeNum;
 		unsigned short bitsPerPixel;
 		unsigned int compressionMethod;
-		unsigned int dataSize;
-		unsigned int verticalPixelsPerMeter;
-		unsigned int horizontalPixelsPerMeter;
+		unsigned int dataSize;//位图的大小
+		unsigned int verticalPixelsPerMeter;//水平分辨率
+		unsigned int horizontalPixelsPerMeter;//垂直分辨率
 		unsigned int colorNum;
 		unsigned int importantColorNum;
 		void printInfo()const
@@ -36,7 +36,7 @@ struct BMP
 		unsigned char g;
 		unsigned char r;
 	};
-#pragma pack()
+#pragma pack()//取消自定义字节的对齐方式
 
 	Header header;
 	Pixel* data;
@@ -50,9 +50,9 @@ struct BMP
 	BMP(String<char>const& _path)
 	{
 		FILE* temp(::fopen(_path.data, "rb+"));
-		::fseek(temp, 0, SEEK_SET);
-		::fread(&header, 1, 54, temp);
-		if (header.width % 4)
+		::fseek(temp, 0, SEEK_SET);//把temp有关的文件位置指针放到文件的开头
+		::fread(&header, 1, 54, temp);//把BMP文件的文件头读取
+		if (header.width % 4)//补齐
 			data = (BMP::Pixel*)::malloc(3u * header.width * header.height + 4);
 		else
 			data = (BMP::Pixel*)::malloc(3u * header.width * header.height);
