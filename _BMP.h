@@ -52,6 +52,7 @@ struct BMP
 		FILE* temp(::fopen(_path.data, "rb+"));
 		::fseek(temp, 0, SEEK_SET);
 		::fread(&header, 1, 54, temp);
+		::fseek(temp, header.dataOffset, SEEK_SET);
 		if (header.width % 4)
 			data = (BMP::Pixel*)::malloc(3u * header.width * header.height + 4);
 		else
@@ -83,6 +84,7 @@ inline BMP File::readBMP()const
 	FILE* temp(::fopen((property.path + property.file.name).data, "rb+"));
 	::fseek(temp, 0, SEEK_SET);
 	::fread(&r.header, 1, 54, temp);
+	::fseek(temp, r.header.dataOffset, SEEK_SET);
 	if (r.header.width % 4)
 		r.data = (BMP::Pixel*)::malloc(3u * r.header.width * r.header.height + 4);
 	else
@@ -99,6 +101,7 @@ inline BMP File::readBMP(String<char> const& _name)const
 	FILE* temp(::fopen((property.path + _name).data, "rb+"));
 	::fseek(temp, 0, SEEK_SET);
 	::fread(&r.header, 1, 54, temp);
+	::fseek(temp, r.header.dataOffset, SEEK_SET);
 	if (r.header.width % 4)
 		r.data = (BMP::Pixel*)::malloc(3u * r.header.width * r.header.height + 4);
 	else
