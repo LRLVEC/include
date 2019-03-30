@@ -391,9 +391,15 @@ namespace RayTracing
 
 		struct Color
 		{
-			vec4 r;
-			vec4 t;
+			vec3 r;
+			int texR;
+			vec3 t;
+			int texT;
+			vec3 d;
+			int texD;
 			vec3 g;
+			int texG;
+			vec3 blank;
 			float n;
 		};
 
@@ -554,8 +560,8 @@ namespace RayTracing
 				struct Sphere
 				{
 					vec4 sphere;
-					vec4 a;
-					vec4 b;
+					vec4 e1;
+					vec4 e2;
 					Color color;
 				};
 				Vector<Sphere>spheres;
@@ -614,7 +620,6 @@ namespace RayTracing
 					vec3 sphere;	//p, R^2
 					float r2;
 					vec4 e1;			//e(unnormalized)
-					vec4 e2;
 					Color color;
 				};
 				Vector<Circle>circles;
@@ -677,7 +682,6 @@ namespace RayTracing
 					vec3 n;
 					float l;
 					vec4 e1;
-					vec4 e2;
 					Color color;
 				};
 				Vector<Cylinder> cylinders;
@@ -729,6 +733,126 @@ namespace RayTracing
 				upToDate = true;
 			}
 		};
+		struct Cones
+		{
+			struct ConeData :OpenGL::Buffer::Data
+			{
+				struct Cone
+				{
+					vec3 c;
+					float c2;
+					vec3 n;
+					float l2;
+					vec4 e1;
+					Color color;
+				};
+				Vector<Cone>cones;
+				ConeData()
+					:
+					Data(DynamicDraw)
+				{
+				}
+				virtual void* pointer()override
+				{
+					return cones.data;
+				}
+				virtual unsigned int size()override
+				{
+					return sizeof(Cone)* cones.length;
+				}
+			};
+			struct Info
+			{
+				unsigned int index;
+			};
+			ConeData data;
+			OpenGL::Buffer buffer;
+			OpenGL::BufferConfig config;
+			bool numChanged;
+			bool upToDate;
+			bool GPUUpToDate;
+			Cones(Info const& _info)
+				:
+				buffer(&data),
+				config(&buffer, OpenGL::ShaderStorageBuffer, _info.index),
+				numChanged(true),
+				upToDate(false),
+				GPUUpToDate(false)
+			{
+			}
+			void dataInit()
+			{
+				if (numChanged)
+				{
+					config.dataInit();
+					GPUUpToDate = false;
+				}
+				else if (!upToDate)
+				{
+					config.refreshData();
+					GPUUpToDate = false;
+				}
+				upToDate = true;
+			}
+		};
+		struct PointLights
+		{
+			struct PointLightData :OpenGL::Buffer::Data
+			{
+				struct PointLight
+				{
+					vec4 color;
+					vec4 p;
+				};
+				Vector<PointLight>pointLights;
+				PointLightData()
+					:
+					Data(StaticDraw)
+				{
+				}
+				virtual void* pointer()override
+				{
+					return pointLights.data;
+				}
+				virtual unsigned int size()override
+				{
+					return sizeof(PointLight)* pointLights.length;
+				}
+			};
+			struct Info
+			{
+				unsigned int index;
+			};
+			PointLightData data;
+			OpenGL::Buffer buffer;
+			OpenGL::BufferConfig config;
+			bool numChanged;
+			bool upToDate;
+			bool GPUUpToDate;
+			PointLights(Info const& _info)
+				:
+				buffer(&data),
+				config(&buffer, OpenGL::ShaderStorageBuffer, _info.index),
+				numChanged(true),
+				upToDate(false),
+				GPUUpToDate(false)
+			{
+			}
+			void dataInit()
+			{
+				if (numChanged)
+				{
+					config.dataInit();
+					GPUUpToDate = false;
+				}
+				else if (!upToDate)
+				{
+					config.refreshData();
+					GPUUpToDate = false;
+				}
+				upToDate = true;
+			}
+		};
 		struct GeometryNum
 		{
 			struct NumData :OpenGL::Buffer::Data
@@ -740,14 +864,17 @@ namespace RayTracing
 					unsigned int sphereNum;
 					unsigned int circleNum;
 					unsigned int cylinderNum;
-					unsigned int blank[3];
+					unsigned int coneNum;
+					unsigned int pointLightNum;
+					unsigned int blank[1];
 					Num()
 						:
 						planeNum(0),
 						triangleNum(0),
 						sphereNum(0),
 						circleNum(0),
-						cylinderNum(0)
+						cylinderNum(0),
+						pointLightNum(0)
 					{
 					}
 				};
@@ -799,6 +926,8 @@ namespace RayTracing
 			Spheres::Info spheresInfo;
 			Circles::Info circlesInfo;
 			Cylinders::Info cylindersInfo;
+			Cones::Info conesInfo;
+			PointLights::Info pointLightsInfo;
 			GeometryNum::Info geometryNumInfo;
 		};
 
@@ -808,6 +937,8 @@ namespace RayTracing
 		Spheres spheres;
 		Circles circles;
 		Cylinders cylinders;
+		Cones cones;
+		PointLights pointLights;
 		GeometryNum geometryNum;
 
 		Model(Info const& _info)
@@ -817,6 +948,8 @@ namespace RayTracing
 			spheres(_info.spheresInfo),
 			circles(_info.circlesInfo),
 			cylinders(_info.cylindersInfo),
+			cones(_info.conesInfo),
+			pointLights(_info.pointLightsInfo),
 			geometryNum(_info.geometryNumInfo)
 		{
 		}
@@ -828,6 +961,8 @@ namespace RayTracing
 			spheres.dataInit();
 			circles.dataInit();
 			cylinders.dataInit();
+			cones.dataInit();
+			pointLights.dataInit();
 			if (planes.numChanged)
 			{
 				geometryNum.data.num.planeNum = planes.data.planes.length;
@@ -858,7 +993,18 @@ namespace RayTracing
 				cylinders.numChanged = false;
 				numChanged = true;
 			}
-
+			if (cones.numChanged)
+			{
+				geometryNum.data.num.coneNum = cones.data.cones.length;
+				cones.numChanged = false;
+				numChanged = true;
+			}
+			if (pointLights.numChanged)
+			{
+				geometryNum.data.num.pointLightNum = pointLights.data.pointLights.length;
+				pointLights.numChanged = false;
+				numChanged = true;
+			}
 			if (numChanged)
 			{
 				geometryNum.dataInit();
@@ -876,7 +1022,6 @@ namespace RayTracing
 					_cylinder.c,
 					_cylinder.r2,
 					_cylinder.e1,
-					_cylinder.e2,
 					_cylinder.color
 				}
 			);
@@ -887,12 +1032,27 @@ namespace RayTracing
 					_cylinder.c + _cylinder.n * _cylinder.l,
 					_cylinder.r2,
 					_cylinder.e1,
-					_cylinder.e2,
 					_cylinder.color
 				}
 			);
 			circles.numChanged = true;
 			cylinders.numChanged = true;
+		}
+		void addCone(Cones::ConeData::Cone const& _cone)
+		{
+			circles.data.circles.pushBack
+			(
+				{
+					_cone.n,
+					_cone.c + _cone.n * sqrtf(_cone.l2 * _cone.c2),
+					_cone.l2 * (1 - _cone.c2),
+					_cone.e1,
+					_cone.color
+				}
+			);
+			cones.data.cones.pushBack(_cone);
+			circles.numChanged = true;
+			cones.numChanged = true;
 		}
 	};
 }
