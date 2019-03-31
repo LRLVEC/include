@@ -40,36 +40,42 @@ struct BMP
 
 	Header header;
 	Pixel* data;
+	unsigned char* textureData;
 
 	BMP()
 		:
 		header(),
-		data(nullptr)
+		data(nullptr),
+		textureData(nullptr)
 	{
 	}
 	BMP(String<char>const& _path)
+		:
+		data(nullptr)
 	{
 		FILE* temp(::fopen(_path.data, "rb+"));
 		::fseek(temp, 0, SEEK_SET);
 		::fread(&header, 1, 54, temp);
 		::fseek(temp, header.dataOffset, SEEK_SET);
+		unsigned int lineWidth;
 		if (header.width % 4)
-		{
-			data = (BMP::Pixel*)::malloc(3u * header.width * header.height + 4);
-			for (int c0(0); c0 < header.height; ++c0)
-				::fread((data + header.width * c0), 4, 1 + header.width * 3 / 4, temp);
-		}
+			lineWidth = 4 * (1 + header.width * 3 / 4);
 		else
+			lineWidth = header.width * 3;
+
+		//data = (BMP::Pixel*)::malloc(3u * header.width * header.height + 4);
+		textureData = (unsigned char*)::malloc(lineWidth * header.height);
+		for (int c0(0); c0 < header.height; ++c0)
 		{
-			data = (BMP::Pixel*)::malloc(3u * header.width * header.height);
-			for (int c0(0); c0 < header.height; ++c0)
-				::fread((data + header.width * c0), 4, header.width * 3 / 4, temp);
+			::fread((textureData + lineWidth * c0), 1, lineWidth, temp);
+			//memcpy()
 		}
 		::fclose(temp);
 	}
 	~BMP()
 	{
 		::free(data);
+		::free(textureData);
 	}
 
 	bool checkType()const

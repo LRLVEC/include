@@ -4,6 +4,7 @@
 #include <_File.h>
 #include <GL/_OpenGL.h>
 
+
 namespace RayTracing
 {
 	struct View :OpenGL::Buffer::Data
@@ -853,6 +854,23 @@ namespace RayTracing
 				upToDate = true;
 			}
 		};
+		struct Header
+		{
+			unsigned int planesNum;
+			unsigned int planesOffset;
+			unsigned int trianglesNum;
+			unsigned int trianglesOffset;
+			unsigned int spheresNum;
+			unsigned int spheresOffset;
+			unsigned int circlesNum;
+			unsigned int circlesOffset;
+			unsigned int cylindersNum;
+			unsigned int cylindersOffset;
+			unsigned int conesNum;
+			unsigned int conesOffset;
+			unsigned int pointLightsNum;
+			unsigned int pointLightsOffset;
+		};
 		struct GeometryNum
 		{
 			struct NumData :OpenGL::Buffer::Data
@@ -940,7 +958,8 @@ namespace RayTracing
 		Cones cones;
 		PointLights pointLights;
 		GeometryNum geometryNum;
-
+		Header header;
+		Model() {};
 		Model(Info const& _info)
 			:
 			planes(_info.planesInfo),
@@ -1054,5 +1073,86 @@ namespace RayTracing
 			circles.numChanged = true;
 			cones.numChanged = true;
 		}
+		void readModel(String<char>const& _path)
+		{
+			FILE* temp(::fopen(_path.data, "rb+"));
+			::fseek(temp, 0, SEEK_SET);
+			::fread(&header, 1, sizeof(Model::Header), temp);
+			if (header.planesNum)
+			{
+				::fseek(temp, header.planesOffset, SEEK_SET);
+				planes.data.planes.malloc(header.planesNum);
+				::fread(planes.data.planes.data, header.planesNum, sizeof(Model::Planes::PlaneData::Plane), temp);
+			}
+			if (header.trianglesNum)
+			{
+				::fseek(temp, header.trianglesOffset, SEEK_SET);
+				triangles.trianglesOrigin.trianglesOrigin.malloc(header.trianglesNum);
+				for (int i = 0; i < header.trianglesNum; ++i)
+				{
+					::fread((triangles.trianglesOrigin.trianglesOrigin.data), header.trianglesNum, sizeof(Model::Triangles::TriangleOriginData::Data), temp);
+				}
+			}
+			if (header.spheresNum)
+			{
+				::fseek(temp, header.spheresOffset, SEEK_SET);
+				spheres.data.spheres.malloc(header.spheresNum);
+				for (int i = 0; i < header.spheresNum; ++i)
+				{
+					::fread((spheres.data.spheres.data), header.spheresNum, sizeof(Model::Spheres::SphereData::Data), temp);
+				}
+			}
+			if (header.circlesNum)
+			{
+				::fseek(temp, header.circlesOffset, SEEK_SET);
+				circles.data.circles.malloc(header.circlesNum);
+				for (int i = 0; i < header.circlesNum; ++i)
+				{
+					::fread((circles.data.circles.data), header.circlesNum, sizeof(Model::Circles::CircleData::Data), temp);
+				}
+			}
+			if (header.cylindersNum)
+			{
+				::fseek(temp, header.cylindersOffset, SEEK_SET);
+				cylinders.data.cylinders.malloc(header.cylindersNum);
+				for (int i = 0; i < header.cylindersNum; ++i)
+				{
+					::fread((cylinders.data.cylinders.data), header.cylindersNum, sizeof(Model::Cylinders::CylinderData::Data), temp);
+				}
+			}
+			if (header.spheresNum)
+			{
+				::fseek(temp, header.spheresOffset, SEEK_SET);
+				spheres.data.spheres.malloc(header.spheresNum);
+				for (int i = 0; i < header.spheresNum; ++i)
+				{
+					::fread((spheres.data.spheres.data), header.spheresNum, sizeof(Model::Spheres::SphereData::Data), temp);
+				}
+			}
+			if (header.conesNum)
+			{
+				::fseek(temp, header.conesOffset, SEEK_SET);
+				cones.data.cones.malloc(header.conesNum);
+				for (int i = 0; i < header.conesNum; ++i)
+				{
+					::fread((cones.data.cones.data), header.conesNum, sizeof(Model::Cones::ConeData::Data), temp);
+				}
+			}
+			if (header.pointLightsNum)
+			{
+				::fseek(temp, header.pointLightsOffset, SEEK_SET);
+				pointLights.data.pointLights.malloc(header.pointLightsNum);
+				for (int i = 0; i < header.pointLightsNum; ++i)
+				{
+					::fread((pointLights.data.pointLights.data), header.pointLightsNum, sizeof(Model::PointLights::PointLightData::Data), temp);
+				}
+			}
+		}
 	};
+
+}
+inline RayTracing::Model File::readModel()const
+{
+	if (!this)
+		return RayTracing::Model();
 }
