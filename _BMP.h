@@ -4,22 +4,22 @@
 //Only support 24bit bmp!
 struct BMP
 {
-#pragma pack(1)
+#pragma pack(1)//自定义字节对齐方式，连续存储
 	struct Header
 	{
 		char identifier[2];
 		unsigned int fileSize;
 		unsigned int reserved;
 		unsigned int dataOffset;
-		unsigned int headerSize;
+		unsigned int headerSize;//本结构占据的字节数
 		unsigned int width;
 		unsigned int height;
 		unsigned short planeNum;
 		unsigned short bitsPerPixel;
 		unsigned int compressionMethod;
-		unsigned int dataSize;
-		unsigned int verticalPixelsPerMeter;
-		unsigned int horizontalPixelsPerMeter;
+		unsigned int dataSize;//位图的大小
+		unsigned int verticalPixelsPerMeter;//水平分辨率
+		unsigned int horizontalPixelsPerMeter;//垂直分辨率
 		unsigned int colorNum;
 		unsigned int importantColorNum;
 		void printInfo()const
@@ -36,34 +36,46 @@ struct BMP
 		unsigned char g;
 		unsigned char r;
 	};
-#pragma pack()
+#pragma pack()//取消自定义字节的对齐方式
 
 	Header header;
 	Pixel* data;
+	unsigned char* textureData;
 
 	BMP()
 		:
 		header(),
-		data(nullptr)
+		data(nullptr),
+		textureData(nullptr)
 	{
 	}
 	BMP(String<char>const& _path)
+		:
+		data(nullptr)
 	{
 		FILE* temp(::fopen(_path.data, "rb+"));
 		::fseek(temp, 0, SEEK_SET);
 		::fread(&header, 1, 54, temp);
 		::fseek(temp, header.dataOffset, SEEK_SET);
+		unsigned int lineWidth;
 		if (header.width % 4)
-			data = (BMP::Pixel*)::malloc(3u * header.width * header.height + 4);
+			lineWidth = 4 * (1 + header.width * 3 / 4);
 		else
-			data = (BMP::Pixel*)::malloc(3u * header.width * header.height);
+			lineWidth = header.width * 3;
+
+		//data = (BMP::Pixel*)::malloc(3u * header.width * header.height + 4);
+		textureData = (unsigned char*)::malloc(lineWidth * header.height);
 		for (int c0(0); c0 < header.height; ++c0)
-			::fread((data + header.width * c0), 4, header.width * 3/4, temp);
+		{
+			::fread((textureData + lineWidth * c0), 1, lineWidth, temp);
+			//memcpy()
+		}
 		::fclose(temp);
 	}
 	~BMP()
 	{
 		::free(data);
+		::free(textureData);
 	}
 
 	bool checkType()const
@@ -86,11 +98,17 @@ inline BMP File::readBMP()const
 	::fread(&r.header, 1, 54, temp);
 	::fseek(temp, r.header.dataOffset, SEEK_SET);
 	if (r.header.width % 4)
+	{
 		r.data = (BMP::Pixel*)::malloc(3u * r.header.width * r.header.height + 4);
+		for (int c0(0); c0 < r.header.height; ++c0)
+			::fread((r.data + r.header.width * c0), 4, 1 + r.header.width * 3 / 4, temp);
+	}
 	else
-		r.data = (BMP::Pixel*)::malloc(3u * r.header.width * r.header.height);
-	for (int c0(0); c0 < r.header.height; ++c0)
-		::fread((r.data + r.header.width), 4, r.header.width, temp);
+	{
+		r.data = (BMP::Pixel*)::malloc(3u * r.header.width * r.header.height + 4);
+		for (int c0(0); c0 < r.header.height; ++c0)
+			::fread((r.data + r.header.width * c0), 4, r.header.width * 3 / 4, temp);
+	}
 	::fclose(temp);
 	return r;
 }
@@ -103,11 +121,17 @@ inline BMP File::readBMP(String<char> const& _name)const
 	::fread(&r.header, 1, 54, temp);
 	::fseek(temp, r.header.dataOffset, SEEK_SET);
 	if (r.header.width % 4)
+	{
 		r.data = (BMP::Pixel*)::malloc(3u * r.header.width * r.header.height + 4);
+		for (int c0(0); c0 < r.header.height; ++c0)
+			::fread((r.data + r.header.width * c0), 4, 1 + r.header.width * 3 / 4, temp);
+	}
 	else
-		r.data = (BMP::Pixel*)::malloc(3u * r.header.width * r.header.height);
-	for (int c0(0); c0 < r.header.height; ++c0)
-		::fread((r.data + r.header.width), 4, r.header.width, temp);
+	{
+		r.data = (BMP::Pixel*)::malloc(3u * r.header.width * r.header.height + 4);
+		for (int c0(0); c0 < r.header.height; ++c0)
+			::fread((r.data + r.header.width * c0), 4, r.header.width * 3 / 4, temp);
+	}
 	::fclose(temp);
 	return r;
 }

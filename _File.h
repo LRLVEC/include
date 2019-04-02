@@ -7,6 +7,10 @@
 
 struct STL;
 struct BMP;
+namespace RayTracing
+{
+	struct Model;
+}
 //Support path format: [C:/] [./abc/] [../abc/]
 struct File
 {
@@ -64,6 +68,7 @@ struct File
 	STL readSTL(String<char>const&)const;
 	BMP readBMP()const;
 	BMP readBMP(String<char>const&)const;
+	RayTracing::Model readModel()const;
 	void* readBinary(String<char>const&);
 	//Print info
 	void print()const;
