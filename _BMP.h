@@ -56,7 +56,7 @@ struct BMP
 		if (header.width % 4)
 			data = (BMP::Pixel*)::malloc(3u * header.width * header.height + 4);
 		else
-			data = (BMP::Pixel*)::malloc(3u * header.width * header.height);
+			data = (BMP::Pixel*)::malloc(3u * header.width * header.height);;
 		for (int c0(0); c0 < header.height; ++c0)
 			::fread((data + header.width * c0), 4, header.width * 3/4, temp);
 		::fclose(temp);
