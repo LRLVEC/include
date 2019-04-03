@@ -388,7 +388,7 @@ namespace OpenGL
 	};
 	/*struct Texture
 	{
-		TextureType type;
+		TextureType TextureCubeMap;
 		GLuint buffer;
 		unsigned int layers;
 		void storage()

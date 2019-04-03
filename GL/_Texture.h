@@ -334,6 +334,61 @@ namespace OpenGL
 			glTextureSubImage3D(texture->texture, _level, _xOffset, _yOffset, _zOffset, _width, _height, _depth, _inputFormat, _inputType, texture->data->pointer());
 		}
 	};
+	struct TextureCube
+	{
+		struct Data
+		{
+			virtual void* pointer(unsigned int) = 0;
+		};
+		Data* data;
+		GLuint texture;
+		unsigned int binding;
+		TextureFormat format;
+		unsigned int layers;
+		unsigned int width;
+		unsigned int height;
+		TextureCube(Data* _data, unsigned int _binding, TextureFormat _format, unsigned int _layers, unsigned int _width, unsigned int _height)
+			:
+			data(_data),
+			texture(),
+			binding(_binding),
+			format(_format),
+			layers(_layers),
+			width(_width),
+			height(_height)
+		{
+			create();
+		}
+		void create()
+		{
+			glGenTextures(1, &texture);
+		}
+		void bindUnit()
+		{
+			glBindTextureUnit(binding, texture);
+		}
+		void bind()
+		{
+			glBindTexture(TextureCubeMap, texture);
+		}
+		void unBind()
+		{
+			glBindTexture(TextureCubeMap, 0);
+		}
+		void parameteri(TextureParameter::Name _pname, TextureParameter::Parameter _para)
+		{
+			glTextureParameteri(texture, _pname, _para);
+		}
+		void allocData()
+		{
+			glTextureStorage2D(texture, layers, format, width, height);
+		}
+		void dataInit(unsigned int _level, TextureInputFormat _inputFormat, TextureInputType _inputType)
+		{
+			for (int c0(0); c0 < 6; ++c0)
+				glTextureSubImage3D(texture, _level, 0, 0, c0, width, height, 1, _inputFormat, _inputType, data->pointer(c0));
+		}
+	};
 	struct BMPData :Texture::Data
 	{
 		BMP bmp;
@@ -346,6 +401,14 @@ namespace OpenGL
 		{
 			return bmp.textureData;
 		}
-
+	};
+	struct BMPCubeData :TextureCube::Data
+	{
+		BMP bmp[6];
+		BMPCubeData(String<char>const& _path)
+			:
+			bmp{}
+		{
+		}
 	};
 }
