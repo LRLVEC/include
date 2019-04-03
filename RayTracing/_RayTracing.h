@@ -388,6 +388,7 @@ namespace RayTracing
 		//			must be placed in shader storage buffer...
 		using vec4 = Math::vec4<float>;
 		using vec3 = Math::vec3<float>;
+		using vec2 = Math::vec2<float>;
 		using mat34 = Math::mat<float, 3, 4>;
 
 		struct Color
@@ -467,6 +468,9 @@ namespace RayTracing
 				struct TriangleOrigin
 				{
 					mat34 vertices;
+					vec2 uv1;
+					vec2 uv2;
+					vec4 uv3;
 					Color color;
 				};
 				Vector<TriangleOrigin>trianglesOrigin;
@@ -492,6 +496,9 @@ namespace RayTracing
 					vec4 p1;
 					vec4 k1;
 					vec4 k2;
+					vec2 uv1;
+					vec2 uv2;
+					vec4 uv3;
 					Color color;
 				};
 				unsigned int num;
