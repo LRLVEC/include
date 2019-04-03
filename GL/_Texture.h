@@ -344,7 +344,7 @@ namespace OpenGL
 		}
 		virtual void* pointer()
 		{
-			return bmp.data;
+			return bmp.textureData;
 		}
 
 	};
