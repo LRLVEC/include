@@ -410,5 +410,9 @@ namespace OpenGL
 			bmp{}
 		{
 		}
+		virtual void* pointer(unsigned int n)override
+		{
+			return bmp[n].textureData;
+		}
 	};
 }
