@@ -401,7 +401,7 @@ namespace RayTracing
 			int texD;
 			vec3 g;
 			int texG;
-			vec3 blank;
+			vec3 decayFactor;
 			float n;
 		};
 
@@ -862,7 +862,7 @@ namespace RayTracing
 			}
 		};
 
-	
+
 		struct GeometryNum
 		{
 			struct NumData :OpenGL::Buffer::Data
@@ -912,7 +912,7 @@ namespace RayTracing
 			};
 			struct Info
 			{
-				 int index;
+				int index;
 			};
 			NumData data;
 			OpenGL::Buffer buffer;
@@ -928,11 +928,11 @@ namespace RayTracing
 				config.dataInit();
 			}
 		};
-	struct Header
-	{
-		GeometryNum::NumData::Num num;
-		GeometryNum::NumData::Num offset;	
-	};
+		struct Header
+		{
+			GeometryNum::NumData::Num num;
+			GeometryNum::NumData::Num offset;
+		};
 		struct Info
 		{
 			Planes::Info planesInfo;
@@ -954,11 +954,11 @@ namespace RayTracing
 		Cones cones;
 		PointLights pointLights;
 		GeometryNum geometryNum;
-		
+
 		Model()
 			:
 			planes({ OpenGL::None,-1 }),
-			triangles({-1,-1}),
+			triangles({ -1,-1 }),
 			spheres({ -1 }),
 			circles({ -1 }),
 			cylinders({ -1 }),
@@ -1127,7 +1127,7 @@ namespace RayTracing
 			{
 				::fseek(temp, header.offset.pointLightNum, SEEK_SET);
 				pointLights.data.pointLights.malloc(header.num.pointLightNum);
-				::fread((pointLights.data.pointLights.data), header.num.pointLightNum, sizeof(Model::PointLights::PointLightData::Data), temp);			
+				::fread((pointLights.data.pointLights.data), header.num.pointLightNum, sizeof(Model::PointLights::PointLightData::Data), temp);
 			}
 			::fclose(temp);
 		}
