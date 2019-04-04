@@ -358,6 +358,8 @@ namespace OpenGL
 			height(_height)
 		{
 			create();
+			bind();
+			allocData();
 		}
 		void create()
 		{
@@ -407,8 +409,12 @@ namespace OpenGL
 		BMP bmp[6];
 		BMPCubeData(String<char>const& _path)
 			:
-			bmp{}
+			bmp{_path+"front.bmp",_path + "back.bmp",_path + "up.bmp",_path + "down.bmp",_path + "left.bmp",_path + "right.bmp" }
 		{
+		}
+		virtual void* pointer(unsigned int n)override
+		{
+			return bmp[n].textureData;
 		}
 		virtual void* pointer(unsigned int n)override
 		{
