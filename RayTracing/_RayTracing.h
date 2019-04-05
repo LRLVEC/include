@@ -308,6 +308,7 @@ namespace RayTracing
 		Math::vec3<double>dr;
 		Math::mat3<double>trans;
 		double depth;
+		bool moved;
 		bool updated;
 
 		Transform()
@@ -315,6 +316,7 @@ namespace RayTracing
 			persp(),
 			scroll(),
 			mouse(),
+			moved(true),
 			updated(false),
 			bufferData(),
 			dr(0.0),
@@ -328,6 +330,7 @@ namespace RayTracing
 			scroll(_data.scroll),
 			key(_data.key),
 			mouse(),
+			moved(true),
 			updated(false),
 			bufferData(),
 			dr(_data.initialPosition),
@@ -360,6 +363,7 @@ namespace RayTracing
 			if (dxyz != 0.0)
 			{
 				dr += (trans, dxyz);
+				moved = true;
 				operated = true;
 			}
 			if (axis != 0.0)
@@ -379,6 +383,22 @@ namespace RayTracing
 				calcAns();
 				updated = true;
 			}
+		}
+	};
+	struct DecayOriginData :OpenGL::Buffer::Data
+	{
+		DecayOriginData()
+			:
+			Data(DynamicDraw)
+		{
+		}
+		virtual void* pointer()override
+		{
+			return nullptr;
+		}
+		virtual unsigned int size()override
+		{
+			return 16;
 		}
 	};
 	struct Model
@@ -597,12 +617,14 @@ namespace RayTracing
 			OpenGL::BufferConfig config;
 			bool numChanged;
 			bool upToDate;
+			bool GPUUpToDate;
 			Spheres(Info const& _info)
 				:
 				buffer(&data),
 				config(&buffer, OpenGL::ShaderStorageBuffer, _info.index),
 				numChanged(true),
-				upToDate(false)
+				upToDate(false),
+				GPUUpToDate(false)
 			{
 			}
 			void dataInit()
@@ -614,6 +636,7 @@ namespace RayTracing
 				else if (!upToDate)
 				{
 					config.refreshData();
+					GPUUpToDate = false;
 				}
 				upToDate = true;
 			}
@@ -954,6 +977,7 @@ namespace RayTracing
 		Cones cones;
 		PointLights pointLights;
 		GeometryNum geometryNum;
+		bool moved;
 
 		Model()
 			:
@@ -964,7 +988,8 @@ namespace RayTracing
 			cylinders({ -1 }),
 			cones({ -1 }),
 			pointLights({ -1 }),
-			geometryNum({ -1 })
+			geometryNum({ -1 }),
+			moved(true)
 		{
 		}
 		Model(Info const& _info)
@@ -1035,6 +1060,22 @@ namespace RayTracing
 			{
 				geometryNum.dataInit();
 			}
+			moved |=
+				numChanged |
+				(!triangles.GPUUpToDate) |
+				(!spheres.GPUUpToDate) |
+				(!circles.GPUUpToDate) |
+				(!cylinders.GPUUpToDate) |
+				(!cones.GPUUpToDate);
+		}
+		void upToDate()
+		{
+			triangles.GPUUpToDate = true;
+			spheres.GPUUpToDate = true;
+			circles.GPUUpToDate = true;
+			cylinders.GPUUpToDate = true;
+			cones.GPUUpToDate = true;
+			moved = false;
 		}
 		void addCylinder(Cylinders::CylinderData::Cylinder const& _cylinder)
 		{
