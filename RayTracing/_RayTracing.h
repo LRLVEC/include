@@ -387,6 +387,7 @@ namespace RayTracing
 	};
 	struct DecayOriginData :OpenGL::Buffer::Data
 	{
+
 		DecayOriginData()
 			:
 			Data(DynamicDraw)
@@ -398,7 +399,7 @@ namespace RayTracing
 		}
 		virtual unsigned int size()override
 		{
-			return 16;
+			return 16 * (8 + 1);
 		}
 	};
 	struct Model
@@ -1001,7 +1002,8 @@ namespace RayTracing
 			cylinders(_info.cylindersInfo),
 			cones(_info.conesInfo),
 			pointLights(_info.pointLightsInfo),
-			geometryNum(_info.geometryNumInfo)
+			geometryNum(_info.geometryNumInfo),
+			moved(true)
 		{
 		}
 		void dataInit()
