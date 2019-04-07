@@ -32,6 +32,12 @@ namespace RayTracing
 	struct FrameScale :OpenGL::Buffer::Data
 	{
 		Math::vec2<unsigned int>scale;
+		FrameScale()
+			:
+			Data(StaticDraw),
+			scale{ 1024,1024 }
+		{
+		}
 		FrameScale(Math::vec2<unsigned int>const& _scale)
 			:
 			Data(StaticDraw),
@@ -341,7 +347,7 @@ namespace RayTracing
 		void init(OpenGL::FrameScale const& _size)
 		{
 			persp.init(_size);
-			bufferData.trans.z0 = -float(_size.h) / (2.0 * tan(Math::Pi * persp.fovy / 180.0));
+			bufferData.trans.z0 = -float(_size.h) / tan(Math::Pi * persp.fovy / 360.0);
 			calcAns();
 			updated = true;
 		}
@@ -374,7 +380,7 @@ namespace RayTracing
 			}
 			if (persp.updated)
 			{
-				bufferData.trans.z0 = -(persp.y / (2.0 * tan(Math::Pi * persp.fovy / 180.0)));
+				bufferData.trans.z0 = -(persp.y / tan(Math::Pi * persp.fovy / 360.0));
 				persp.updated = false;
 				operated = true;
 			}
