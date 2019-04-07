@@ -4,7 +4,6 @@
 #include <_File.h>
 #include <GL/_OpenGL.h>
 
-
 namespace RayTracing
 {
 	struct View :OpenGL::Buffer::Data
@@ -432,6 +431,122 @@ namespace RayTracing
 			float n;
 		};
 
+		struct Bound
+		{
+			struct Box
+			{
+				Math::mat<float, 2, 3>box;
+				vec3 getCenter()const
+				{
+					return (box.rowVec[0] + box.rowVec[1]) / 2;
+				}
+				Box move(vec3 const& a)const
+				{
+					return
+					{
+						{
+							box.rowVec[0] + a,
+							box.rowVec[1] + a
+						}
+					};
+				}
+				Box operator+(vec3 const& a)const
+				{
+					return
+					{
+						{
+							{
+								box.array[0][0] <= a.data[0] ? box.array[0][0] : a.data[0],
+								box.array[0][1] <= a.data[1] ? box.array[0][1] : a.data[1],
+								box.array[0][2] <= a.data[2] ? box.array[0][2] : a.data[2],
+							},
+							{
+								box.array[1][0] >= a.data[0] ? box.array[1][0] : a.data[0],
+								box.array[1][1] >= a.data[1] ? box.array[1][1] : a.data[1],
+								box.array[1][2] >= a.data[2] ? box.array[1][2] : a.data[2],
+							}
+						}
+					};
+				}
+				Box operator+(Box const& a)const
+				{
+					return
+					{
+						{
+							{
+								box.array[0][0] <= a.box.array[0][0] ? box.array[0][0] : a.box.array[0][0],
+								box.array[0][1] <= a.box.array[0][1] ? box.array[0][1] : a.box.array[0][1],
+								box.array[0][2] <= a.box.array[0][2] ? box.array[0][2] : a.box.array[0][2],
+							},
+							{
+								box.array[1][0] >= a.box.array[1][0] ? box.array[1][0] : a.box.array[1][0],
+								box.array[1][1] >= a.box.array[1][1] ? box.array[1][1] : a.box.array[1][1],
+								box.array[1][2] >= a.box.array[1][2] ? box.array[1][2] : a.box.array[1][2]
+							}
+						}
+					};
+				}
+				Box& operator+=(vec3 const& a)
+				{
+					box.array[0][0] = box.array[0][0] <= a.data[0] ? box.array[0][0] : a.data[0];
+					box.array[0][1] = box.array[0][1] <= a.data[1] ? box.array[0][1] : a.data[1];
+					box.array[0][2] = box.array[0][2] <= a.data[2] ? box.array[0][2] : a.data[2];
+					box.array[1][0] = box.array[1][0] >= a.data[0] ? box.array[1][0] : a.data[0];
+					box.array[1][1] = box.array[1][1] >= a.data[1] ? box.array[1][1] : a.data[1];
+					box.array[1][2] = box.array[1][2] >= a.data[2] ? box.array[1][2] : a.data[2];
+					return *this;
+				}
+				Box& operator+=(Box const& a)
+				{
+					box.array[0][0] = box.array[0][0] <= a.box.array[0][0] ? box.array[0][0] : a.box.array[0][0];
+					box.array[0][1] = box.array[0][1] <= a.box.array[0][1] ? box.array[0][1] : a.box.array[0][1];
+					box.array[0][2] = box.array[0][2] <= a.box.array[0][2] ? box.array[0][2] : a.box.array[0][2];
+					box.array[1][0] = box.array[1][0] >= a.box.array[1][0] ? box.array[1][0] : a.box.array[1][0];
+					box.array[1][1] = box.array[1][1] >= a.box.array[1][1] ? box.array[1][1] : a.box.array[1][1];
+					box.array[1][2] = box.array[1][2] >= a.box.array[1][2] ? box.array[1][2] : a.box.array[1][2];
+					return *this;
+				}
+			};
+
+			Box box;
+			vec3 center;
+			float area;
+
+			Bound move(vec3 const& a)const
+			{
+				return
+				{
+					box.move(a),
+					center + a ,
+					area
+				};
+			}
+			Bound operator+(vec3 const& a)const
+			{
+				Box t(box + a);
+				return{ t,t.getCenter(),area };
+			}
+			Bound operator+(Bound const& a)const
+			{
+				Box t(box + a.box);
+				return { t,t.getCenter(),area + a.area };
+			}
+			Bound& operator+=(vec3 const& a)
+			{
+				box += a;
+				center = box.getCenter();
+				return *this;
+			}
+			Bound& operator+=(Bound const& a)
+			{
+				box += a.box;
+				center = box.getCenter();
+				area += a.area;
+				return *this;
+			}
+		};
+
+
 		struct Planes
 		{
 			struct PlaneData :OpenGL::Buffer::Data
@@ -499,6 +614,32 @@ namespace RayTracing
 					vec2 uv2;
 					vec4 uv3;
 					Color color;
+
+					Bound bound()const
+					{
+						return
+						{
+							{
+								{
+									{
+										vertices.column(0).min(),
+										vertices.column(1).min(),
+										vertices.column(2).min()
+									},
+									{
+										vertices.column(0).max(),
+										vertices.column(1).max(),
+										vertices.column(2).max()
+									},
+								}
+							},
+							(vertices.rowVec[0] + vertices.rowVec[1] + vertices.rowVec[2]) / 3,
+							(
+								vec3(vertices.rowVec[1] - vertices.rowVec[0]) |
+								vec3(vertices.rowVec[1] - vertices.rowVec[0])
+							).length() / 2
+						};
+					}
 				};
 				Vector<TriangleOrigin>trianglesOrigin;
 				TriangleOriginData()
@@ -598,6 +739,22 @@ namespace RayTracing
 					vec4 e1;
 					vec4 e2;
 					Color color;
+
+					Bound bound()const
+					{
+						float r = 1.05 * sqrt(sphere.data[3]);
+						return
+						{
+							{
+								{
+									vec3(sphere) - vec3(r),
+									vec3(sphere) + vec3(r)
+								}
+							},
+							sphere,
+							float(4 * Math::Pi * sphere.data[3])
+						};
+					}
 				};
 				Vector<Sphere>spheres;
 				SphereData()
@@ -659,6 +816,32 @@ namespace RayTracing
 					float r2;
 					vec4 e1;			//e(unnormalized)
 					Color color;
+					void init()
+					{
+						plane.normaliaze(3);
+						e1.normaliaze(3);
+					}
+					Bound bound()const
+					{
+						vec3 dr
+						{
+							sqrtf(1 - pow((vec3(plane), vec3({ 1,0,0 })), 2)) ,
+							sqrtf(1 - pow((vec3(plane), vec3({ 0,1,0 })), 2)) ,
+							sqrtf(1 - pow((vec3(plane), vec3({ 0,0,1 })), 2))
+						};
+						dr *= 1.05 * sqrt(r2);
+						return
+						{
+							{
+								{
+									sphere - dr,
+									sphere + dr
+								}
+							},
+							sphere,
+							float(Math::Pi * r2)
+						};
+					}
 				};
 				Vector<Circle>circles;
 				CircleData()
@@ -721,6 +904,28 @@ namespace RayTracing
 					float l;
 					vec4 e1;
 					Color color;
+					void init()
+					{
+						n.normaliaze(3);
+						e1.normaliaze(3);
+					}
+					Bound bound()const
+					{
+						vec3 dr
+						{
+							sqrtf(1 - pow((n, vec3({ 1,0,0 })), 2)) ,
+							sqrtf(1 - pow((n, vec3({ 0,1,0 })), 2)) ,
+							sqrtf(1 - pow((n, vec3({ 0,0,1 })), 2))
+						};
+						dr *= 1.05 * sqrt(r2);
+						Bound::Box a{ {c - dr, c + dr} };
+						return
+						{
+							a += a.move(l * n),
+							c + (l / 2) * n,
+							float(2 * Math::Pi * l * sqrt(r2))
+						};
+					}
 				};
 				Vector<Cylinder> cylinders;
 				CylinderData()
@@ -783,6 +988,28 @@ namespace RayTracing
 					float l2;
 					vec4 e1;
 					Color color;
+					void init()
+					{
+						n.normaliaze();
+						e1.normaliaze(3);
+					}
+					Bound bound()const
+					{
+						vec3 dr
+						{
+							sqrtf(1 - pow((n, vec3({ 1,0,0 })), 2)) ,
+							sqrtf(1 - pow((n, vec3({ 0,1,0 })), 2)) ,
+							sqrtf(1 - pow((n, vec3({ 0,0,1 })), 2))
+						};
+						dr *= 1.05 * sqrt(l2 * (1 - c2));
+						Bound::Box a{ {c + n * sqrt(1.023 * l2 * c2) - dr, c + n * sqrt(1.023 * l2 * c2) + dr} };
+						return
+						{
+							a.operator+(c - n * 0.05),
+							0.75 * sqrt(l2 * c2) * n + c,
+							float(Math::Pi * l2 * sqrt(1 - c2))
+						};
+					}
 				};
 				Vector<Cone>cones;
 				ConeData()
@@ -974,7 +1201,158 @@ namespace RayTracing
 			PointLights::Info pointLightsInfo;
 			GeometryNum::Info geometryNumInfo;
 		};
+		struct BVH
+		{
+			struct NodeGPU
+			{
+				vec3 max;
+				int geometry;
+				vec3 min;
+				int num;
+				int childs[2];
+				int blank[2];
+			};
+			struct Node
+			{
+				Node* childs[2];
+				Bound boundAll;
+				int geometry;
+				int num;
 
+				Node()
+					:
+					geometry(-1),
+					num(-1)
+				{
+					childs[0] = childs[1] = nullptr;
+				}
+				Node(Bound _bound, unsigned int _geometry, unsigned int _num)
+					:
+					boundAll(_bound),
+					geometry(_geometry),
+					num(_num)
+				{
+					childs[0] = childs[1] = nullptr;
+				}
+				Node(Node* nodes, Vector<unsigned int>const& indices)
+					:
+					geometry(-1),
+					num(-1)
+				{
+					boundAll = nodes[indices.data[0]].boundAll;
+					vec3 c(nodes[indices.data[0]].boundAll.area * nodes[indices.data[0]].boundAll.center);
+					for (int c0(1); c0 < indices.length; ++c0)
+					{
+						boundAll += nodes[indices.data[c0]].boundAll;
+						c += nodes[indices.data[c0]].boundAll.area * nodes[indices.data[c0]].boundAll.center;
+					}
+					c /= indices.length;
+					vec3 variance = 0;
+					for (int c0(0); c0 < indices.length; ++c0)
+						variance +=
+						(nodes[indices.data[c0]].boundAll.area * nodes[indices.data[c0]].boundAll.center - c) *
+						(nodes[indices.data[c0]].boundAll.area * nodes[indices.data[c0]].boundAll.center - c);
+					unsigned int axis;
+					axis =
+						variance[1] > variance[0] ?
+						variance[1] > variance[2] ? 1 : 2 :
+						variance[0] > variance[2] ? 0 : 2;
+					Vector<unsigned int>indicesLeft;
+					Vector<unsigned int>indicesRight;
+					for (int c0(0); c0 < indices.length; ++c0)
+						if (nodes[c0].boundAll.center[axis] < c[axis])
+							indicesLeft.pushBack(indices.data[c0]);
+						else
+							indicesRight.pushBack(indices.data[c0]);
+					childs[0] = (Node*)::malloc(sizeof(Node));
+					childs[1] = (Node*)::malloc(sizeof(Node));
+					if (indicesLeft.length > 1)
+						new(childs[0])Node(nodes, indicesLeft);
+					else
+						childs[0] = nodes + indicesLeft[0];
+					if (indicesRight.length > 1)
+						new(childs[1])Node(nodes, indicesRight);
+					else
+						childs[1] = nodes + indicesRight[0];
+				}
+				void getLinearBVH(Vector<NodeGPU> & nodeGPU, unsigned int fatherNodeGPU)const
+				{
+
+
+				}
+			};
+
+			Vector<Node>nodes;
+			Bound boundAll;
+			Node father;
+			Vector<NodeGPU> linearBVH;
+
+			BVH(Model const& model)
+			{
+				vec3 variance(0);
+				getBounds(model);
+				boundAll = nodes[0].boundAll;
+				if (nodes.length > 1)
+				{
+					vec3 c = nodes[0].boundAll.area * nodes[0].boundAll.center;
+					for (int c0(1); c0 < nodes.length; ++c0)
+					{
+						boundAll += nodes[c0].boundAll;
+						c += nodes[c0].boundAll.area * nodes[c0].boundAll.center;
+					}
+					c /= boundAll.area;
+					for (int c0(0); c0 < nodes.length; ++c0)
+						variance +=
+						(nodes[c0].boundAll.area * nodes[c0].boundAll.center - c) *
+						(nodes[c0].boundAll.area * nodes[c0].boundAll.center - c);
+					unsigned int axis;
+					axis =
+						variance[1] > variance[0] ?
+						variance[1] > variance[2] ? 1 : 2 :
+						variance[0] > variance[2] ? 0 : 2;
+					Vector<unsigned int>indicesLeft;
+					Vector<unsigned int>indicesRight;
+					for (int c0(0); c0 < nodes.length; ++c0)
+						if (nodes[c0].boundAll.center[axis] < c[axis])
+							indicesLeft.pushBack(c0);
+						else
+							indicesRight.pushBack(c0);
+					father.childs[0] = (Node*)::malloc(sizeof(Node));
+					father.childs[1] = (Node*)::malloc(sizeof(Node));
+					if (indicesLeft.length > 1)
+						new(father.childs[0])Node(nodes.data, indicesLeft);
+					else
+						father.childs[0] = nodes.data + indicesLeft[0];
+					if (indicesRight.length > 1)
+						new(father.childs[1])Node(nodes.data, indicesRight);
+					else
+						father.childs[1] = nodes.data + indicesRight[0];
+				}
+			}
+			void getBounds(Model const& model)
+			{
+				Vector<Triangles::TriangleOriginData::TriangleOrigin>const& triangles(model.triangles.trianglesOrigin.trianglesOrigin);
+				Vector<Spheres::SphereData::Sphere>const& spheres(model.spheres.data.spheres);
+				Vector<Circles::CircleData::Circle>const& circles(model.circles.data.circles);
+				Vector<Cylinders::CylinderData::Cylinder>const& cylinders(model.cylinders.data.cylinders);
+				Vector<Cones::ConeData::Cone>const& cones(model.cones.data.cones);
+				for (unsigned int c0(0); c0 < triangles.length; ++c0)
+					nodes.pushBack({ triangles.data[c0].bound(),2,c0 });
+				for (unsigned int c0(0); c0 < spheres.length; ++c0)
+					nodes.pushBack({ spheres.data[c0].bound(), 3, c0 });
+				for (unsigned int c0(0); c0 < circles.length; ++c0)
+					nodes.pushBack({ circles.data[c0].bound(), 4, c0 });
+				for (unsigned int c0(0); c0 < cylinders.length; ++c0)
+					nodes.pushBack({ cylinders.data[c0].bound(), 5, c0 });
+				for (unsigned int c0(0); c0 < cones.length; ++c0)
+					nodes.pushBack({ cones.data[c0].bound(), 6, c0 });
+			}
+			void getLinearBVH()const
+			{
+
+
+			}
+		};
 
 		Planes planes;
 		Triangles triangles;
@@ -1231,6 +1609,7 @@ namespace RayTracing
 			}
 			::fclose(temp);
 		}
+
 	};
 
 }

@@ -6,10 +6,10 @@
 
 namespace Math
 {
-	#define CheckNumType(T)	static_assert(NumType<T>::value, "Wrong NumType!")
-	#define CheckDim		static_assert(_dim, "Dimension cannot be 0!")
-	#define CheckRowDim		static_assert(_rowDim, "Dimension cannot be 0!")
-	#define CheckColDim		static_assert(_colDim, "Dimension cannot be 0!")
+#define CheckNumType(T)	static_assert(NumType<T>::value, "Wrong NumType!")
+#define CheckDim		static_assert(_dim, "Dimension cannot be 0!")
+#define CheckRowDim		static_assert(_rowDim, "Dimension cannot be 0!")
+#define CheckColDim		static_assert(_colDim, "Dimension cannot be 0!")
 	static constexpr double Pi = 3.14159265358979323846264338327950288L;
 	static constexpr double E = 2.71828182845904523536028747135266250L;
 
@@ -62,7 +62,7 @@ namespace Math
 		template<class R, unsigned int _dim1>auto operator*(vec<R, _dim1>const&)const;
 		template<class R, unsigned int _dim1>auto operator/(vec<R, _dim1>const&)const;
 		//dot
-		template<class R, unsigned int _dim1>auto operator,(vec<R, _dim1>const&);
+		template<class R, unsigned int _dim1>auto operator,(vec<R, _dim1>const&)const;
 		//cross
 		template<class R, unsigned int _dim1>auto operator|(vec<R, _dim1>const&);
 		mat3<T> crossMat();
@@ -76,13 +76,20 @@ namespace Math
 		template<class R, class Y, unsigned int _rowDim1, unsigned int _colDim1>auto& operator()(mat<R, _rowDim1, _colDim1>*, Y);
 		template<class R, class Y, unsigned int _rowDim1, unsigned int _colDim1>auto operator()(mat<R, _rowDim1, _colDim1>const&, Y);
 		//square
-		T square();
-		T square(int);
+		T square()const;
+		T square(int)const;
 		//length
-		T length();
-		T length(int);
+		T length()const;
+		T length(int)const;
+		//max
+		T max()const;
+		T max(int)const;
+		//min
+		T min()const;
+		T min(int)const;
 		//normaliaze
 		vec<T, _dim>& normaliaze();
+		vec<T, _dim>& normaliaze(int);
 		//print
 		void print()const;
 		void printInfo(char const*)const;
@@ -110,7 +117,7 @@ namespace Math
 		template<class R, unsigned int _rowDim1, unsigned int _colDim1>mat(mat<R, _rowDim1, _colDim1>const&);
 		~mat() = default;
 		row& operator[](int);
-		col column(int);
+		col column(int)const;
 		template<class R, unsigned int _dim>mat<T, _rowDim, _colDim>& setCol(vec<R, _dim>&, unsigned int);
 		mat<T, _rowDim, _colDim>& operator=(mat<T, _rowDim, _colDim>const&) = default;
 		bool operator==(mat<T, _rowDim, _colDim>const&)const;
@@ -455,7 +462,7 @@ namespace Math
 		return temp;
 	}
 	//dot
-	template<class T, unsigned int _dim>template<class R, unsigned int _dim1>	inline auto vec<T, _dim>::operator,(vec<R, _dim1>const& a)
+	template<class T, unsigned int _dim>template<class R, unsigned int _dim1>	inline auto vec<T, _dim>::operator,(vec<R, _dim1>const& a)const
 	{
 		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
 		static constexpr unsigned int const MinDim = Min<unsigned int, _dim, _dim1>::value;
@@ -547,13 +554,13 @@ namespace Math
 		return  (r, a);
 	}
 	//square
-	template<class T, unsigned int _dim>inline T vec<T, _dim>::square()
+	template<class T, unsigned int _dim>inline T vec<T, _dim>::square()const
 	{
 		T t{ 0 };
 		for (auto& d : data)t += d * d;
 		return t;
 	}
-	template<class T, unsigned int _dim>inline T vec<T, _dim>::square(int a)
+	template<class T, unsigned int _dim>inline T vec<T, _dim>::square(int a)const
 	{
 		T t{ 0 };
 		a = a < _dim ? a : _dim;
@@ -561,13 +568,41 @@ namespace Math
 		return t;
 	}
 	//length
-	template<class T, unsigned int _dim>inline T vec<T, _dim>::length()
+	template<class T, unsigned int _dim>inline T vec<T, _dim>::length()const
 	{
 		return T(sqrt(square()));
 	}
-	template<class T, unsigned int _dim>inline T vec<T, _dim>::length(int a)
+	template<class T, unsigned int _dim>inline T vec<T, _dim>::length(int a)const
 	{
 		return T(square(a));
+	}
+	//max
+	template<class T, unsigned int _dim>inline T vec<T, _dim>::max()const
+	{
+		T t{ data[0] };
+		for (auto& d : data)if (t > d)t = d;
+		return t;
+	}
+	template<class T, unsigned int _dim>inline T vec<T, _dim>::max(int a)const
+	{
+		T t{ 0 };
+		a = a < _dim ? a : _dim;
+		for (int c0{ 0 }; c0 < a; ++c0)if (t > data[c0])t = data[c0];
+		return t;
+	}
+	//min
+	template<class T, unsigned int _dim>inline T vec<T, _dim>::min()const
+	{
+		T t{ data[0] };
+		for (auto& d : data)if (t < d)t = d;
+		return t;
+	}
+	template<class T, unsigned int _dim>inline T vec<T, _dim>::min(int a)const
+	{
+		T t{ 0 };
+		a = a < _dim ? a : _dim;
+		for (int c0{ 0 }; c0 < a; ++c0)if (t < data[c0])t = data[c0];
+		return t;
 	}
 	//normaliaze
 	template<class T, unsigned int _dim>inline vec<T, _dim>& vec<T, _dim>::normaliaze()
@@ -579,6 +614,17 @@ namespace Math
 			for (T const& d : data)temp += d * d;
 		temp = sqrt(temp);
 		for (T& d : data)d /= temp;
+		return *this;
+	}
+	template<class T, unsigned int _dim>inline vec<T, _dim> & vec<T, _dim>::normaliaze(int a)
+	{
+		double temp(0);
+		if constexpr (NumType<T>::serial < 11)
+			for (int c0{ 0 }; c0 < a; ++c0)temp += (unsigned long long)data[c0] * (unsigned long long)data[c0];
+		else
+			for (int c0{ 0 }; c0 < a; ++c0)temp += data[c0] * data[c0];
+		temp = sqrt(temp);
+		for (int c0{ 0 }; c0 < a; ++c0)data[c0] /= temp;
 		return *this;
 	}
 	//print
@@ -664,7 +710,7 @@ namespace Math
 	{
 		return rowVec[a];
 	}
-	template<class T, unsigned int _rowDim, unsigned int _colDim>	inline vec<T, _rowDim> mat<T, _rowDim, _colDim>::column(int a)
+	template<class T, unsigned int _rowDim, unsigned int _colDim>	inline vec<T, _rowDim> mat<T, _rowDim, _colDim>::column(int a)const
 	{
 		vec<T, _rowDim>temp;
 		int c0{ 0 };
@@ -1038,7 +1084,7 @@ namespace Math
 		static constexpr unsigned int const MinDim = Min<unsigned int, _rowDim, _colDim>::value;
 		static_assert(MinDim >= 1, "Cannot get the algebraic complement!");
 		static_assert(MinDim <= 4, "Support only mat under 5 order!");
-		#define _move( q , p ) ( ( q < p ) ? q : q + 1 )
+#define _move( q , p ) ( ( q < p ) ? q : q + 1 )
 		if constexpr (MinDim == 2)
 		{
 			return pow(-1, i + j) * array[_move(i, 0)][_move(j, 0)];
@@ -1060,7 +1106,7 @@ namespace Math
 					array[_move(2, i)][_move(0, j)] * (array[_move(0, i)][_move(1, j)] * array[_move(1, i)][_move(2, j)] - array[_move(0, i)][_move(2, j)] * array[_move(1, i)][_move(1, j)])
 					);
 		}
-		#undef _move( q, p )
+#undef _move( q, p )
 	}
 	//inverse
 	template<class T, unsigned int _rowDim, unsigned int _colDim>inline auto mat<T, _rowDim, _colDim>::operator~()
