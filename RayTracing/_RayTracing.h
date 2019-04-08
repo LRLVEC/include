@@ -1203,17 +1203,22 @@ namespace RayTracing
 		};
 		struct BVH
 		{
-			struct NodeGPU
-			{
-				vec3 max;
-				int geometry;
-				vec3 min;
-				int num;
-				int childs[2];
-				int blank[2];
-			};
 			struct Node
 			{
+				struct NodeGPU
+				{
+					vec3 min;
+					int geometry;
+					vec3 max;
+					int num;
+					NodeGPU(Node const& node)
+						:
+						min(node.boundAll.box.box.rowVec[0]),
+						max(node.boundAll.box.box.rowVec[1])
+					{
+						i
+					}
+				};
 				Node* childs[2];
 				Bound boundAll;
 				int geometry;
@@ -1277,7 +1282,7 @@ namespace RayTracing
 				}
 				void getLinearBVH(Vector<NodeGPU> & nodeGPU, unsigned int fatherNodeGPU)const
 				{
-
+					nodeGPU.pushBack()
 
 				}
 			};
@@ -1285,7 +1290,7 @@ namespace RayTracing
 			Vector<Node>nodes;
 			Bound boundAll;
 			Node father;
-			Vector<NodeGPU> linearBVH;
+			Vector<Node::NodeGPU> linearBVH;
 
 			BVH(Model const& model)
 			{
@@ -1322,7 +1327,10 @@ namespace RayTracing
 					if (indicesLeft.length > 1)
 						new(father.childs[0])Node(nodes.data, indicesLeft);
 					else
+					{
 						father.childs[0] = nodes.data + indicesLeft[0];
+						father.
+					}
 					if (indicesRight.length > 1)
 						new(father.childs[1])Node(nodes.data, indicesRight);
 					else
@@ -1337,15 +1345,15 @@ namespace RayTracing
 				Vector<Cylinders::CylinderData::Cylinder>const& cylinders(model.cylinders.data.cylinders);
 				Vector<Cones::ConeData::Cone>const& cones(model.cones.data.cones);
 				for (unsigned int c0(0); c0 < triangles.length; ++c0)
-					nodes.pushBack({ triangles.data[c0].bound(),2,c0 });
+					nodes.pushBack({ triangles.data[c0].bound(),-2,c0 });
 				for (unsigned int c0(0); c0 < spheres.length; ++c0)
-					nodes.pushBack({ spheres.data[c0].bound(), 3, c0 });
+					nodes.pushBack({ spheres.data[c0].bound(), -3, c0 });
 				for (unsigned int c0(0); c0 < circles.length; ++c0)
-					nodes.pushBack({ circles.data[c0].bound(), 4, c0 });
+					nodes.pushBack({ circles.data[c0].bound(), -4, c0 });
 				for (unsigned int c0(0); c0 < cylinders.length; ++c0)
-					nodes.pushBack({ cylinders.data[c0].bound(), 5, c0 });
+					nodes.pushBack({ cylinders.data[c0].bound(), -5, c0 });
 				for (unsigned int c0(0); c0 < cones.length; ++c0)
-					nodes.pushBack({ cones.data[c0].bound(), 6, c0 });
+					nodes.pushBack({ cones.data[c0].bound(), -6, c0 });
 			}
 			void getLinearBVH()const
 			{
