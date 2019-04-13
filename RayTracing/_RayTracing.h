@@ -1216,7 +1216,7 @@ namespace RayTracing
 						min(node.boundAll.box.box.rowVec[0]),
 						max(node.boundAll.box.box.rowVec[1])
 					{
-						i
+						
 					}
 				};
 				Node* childs[2];
@@ -1231,7 +1231,7 @@ namespace RayTracing
 				{
 					childs[0] = childs[1] = nullptr;
 				}
-				Node(Bound _bound, unsigned int _geometry, unsigned int _num)
+				Node(Bound _bound,  int _geometry, unsigned int _num)
 					:
 					boundAll(_bound),
 					geometry(_geometry),
@@ -1282,7 +1282,7 @@ namespace RayTracing
 				}
 				void getLinearBVH(Vector<NodeGPU> & nodeGPU, unsigned int fatherNodeGPU)const
 				{
-					nodeGPU.pushBack()
+					//nodeGPU.pushBack()
 
 				}
 			};
@@ -1328,8 +1328,8 @@ namespace RayTracing
 						new(father.childs[0])Node(nodes.data, indicesLeft);
 					else
 					{
-						father.childs[0] = nodes.data + indicesLeft[0];
-						father.
+						//father.childs[0] = nodes.data + indicesLeft[0];
+						//father.
 					}
 					if (indicesRight.length > 1)
 						new(father.childs[1])Node(nodes.data, indicesRight);
@@ -1357,7 +1357,6 @@ namespace RayTracing
 			}
 			void getLinearBVH()const
 			{
-
 
 			}
 		};
