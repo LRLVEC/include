@@ -1002,15 +1002,16 @@ namespace RayTracing
 					{
 						vec3 dr
 						{
-							sqrtf(1 - pow((n, vec3({ 1,0,0 })), 2)) ,
-							sqrtf(1 - pow((n, vec3({ 0,1,0 })), 2)) ,
-							sqrtf(1 - pow((n, vec3({ 0,0,1 })), 2))
+							sqrtf(1 - pow(n.data[0],2)) ,
+							sqrtf(1 - pow(n.data[1],2)) ,
+							sqrtf(1 - pow(n.data[2],2))
 						};
 						dr *= 1.05 * sqrt(l2 * (1 - c2));
-						Bound::Box a{ {c + n * sqrt(1.023 * l2 * c2) - dr, c + n * sqrt(1.023 * l2 * c2) + dr} };
+						vec3 cc(c + n * sqrt(l2 * c2));
+						Bound::Box a{ {cc - dr, cc + dr} };
 						return
 						{
-							a.operator+(c - n * 0.05),
+							a.operator+(c),
 							0.75 * sqrt(l2 * c2) * n + c,
 							float(Math::Pi * l2 * sqrt(1 - c2))
 						};
@@ -1123,8 +1124,6 @@ namespace RayTracing
 				upToDate = true;
 			}
 		};
-
-
 		struct GeometryNum
 		{
 			struct NumData :OpenGL::Buffer::Data
@@ -1195,17 +1194,6 @@ namespace RayTracing
 			GeometryNum::NumData::Num num;
 			GeometryNum::NumData::Num offset;
 		};
-		struct Info
-		{
-			Planes::Info planesInfo;
-			Triangles::Info trianglesInfo;
-			Spheres::Info spheresInfo;
-			Circles::Info circlesInfo;
-			Cylinders::Info cylindersInfo;
-			Cones::Info conesInfo;
-			PointLights::Info pointLightsInfo;
-			GeometryNum::Info geometryNumInfo;
-		};
 		struct BVH
 		{
 			struct Node
@@ -1263,7 +1251,7 @@ namespace RayTracing
 					geometry(0),
 					geometryNum(0)
 				{
-					childs[0] = childs[1] = nullptr;;
+					childs[0] = childs[1] = nullptr;
 					boundAll = nodes[indices.data[0]].boundAll;
 					vec3 c(nodes[indices.data[0]].boundAll.area * nodes[indices.data[0]].boundAll.center);
 					for (int c0(1); c0 < indices.length; ++c0)
@@ -1271,12 +1259,13 @@ namespace RayTracing
 						boundAll += nodes[indices.data[c0]].boundAll;
 						c += nodes[indices.data[c0]].boundAll.area * nodes[indices.data[c0]].boundAll.center;
 					}
-					c /= indices.length;
+					c /= boundAll.area;
 					vec3 variance(0);
 					for (int c0(0); c0 < indices.length; ++c0)
-						variance +=
-						(nodes[indices.data[c0]].boundAll.area * nodes[indices.data[c0]].boundAll.center - c) *
-						(nodes[indices.data[c0]].boundAll.area * nodes[indices.data[c0]].boundAll.center - c);
+					{
+						vec3 temp(nodes[indices.data[c0]].boundAll.center - c);
+						variance += nodes[indices.data[c0]].boundAll.area * (temp * temp);
+					}
 					axis =
 						variance[1] > variance[0] ?
 						variance[1] > variance[2] ? 1 : 2 :
@@ -1285,13 +1274,13 @@ namespace RayTracing
 					Vector<unsigned int>indicesRight;
 					for (int c0(0); c0 < indices.length; ++c0)
 					{
-						if (nodes[c0].boundAll.box == boundAll.box)
+						if (nodes[indices.data[c0]].boundAll.box == boundAll.box)
 						{
-							geometry = nodes[c0].geometry;
-							geometryNum = nodes[c0].geometryNum;
+							geometry = nodes[indices.data[c0]].geometry;
+							geometryNum = nodes[indices.data[c0]].geometryNum;
 							continue;
 						}
-						if (nodes[c0].boundAll.center[axis] < c[axis])
+						if (nodes[indices.data[c0]].boundAll.center[axis] < c[axis])
 							indicesLeft.pushBack(indices.data[c0]);
 						else
 							indicesRight.pushBack(indices.data[c0]);
@@ -1300,6 +1289,13 @@ namespace RayTracing
 					{
 						childs[0] = (Node*)::malloc(sizeof(Node));
 						new(childs[0])Node(nodes, indicesLeft);
+						if (indicesRight.length > 1)
+						{
+							childs[1] = (Node*)::malloc(sizeof(Node));
+							new(childs[1])Node(nodes, indicesRight);
+						}
+						else
+							childs[1] = nodes + indicesRight[0];
 					}
 					else
 					{
@@ -1311,7 +1307,7 @@ namespace RayTracing
 								childs[1] = (Node*)::malloc(sizeof(Node));
 								new(childs[1])Node(nodes, indicesRight);
 							}
-							else
+							else if (indicesRight.length)
 								childs[1] = nodes + indicesRight[0];
 						}
 						else
@@ -1326,38 +1322,70 @@ namespace RayTracing
 						}
 					}
 				}
-				static void getLinearBVH(Vector<NodeGPU>& nodeGPU, Node const& node, unsigned int fatherNodeGPU)
+				~Node()
 				{
-					unsigned int fatherIndex(nodeGPU.length);
-					nodeGPU[fatherNodeGPU].leftChild = 1;
-					if (node.childs[0]->childs[0])
+					if (childs[0] && childs[0]->childs[0])
+						free(childs[0]);
+					if (childs[1] && childs[1]->childs[0])
+						free(childs[1]);
+				}
+				static void getLinearBVH(Vector<NodeGPU>& nodeGPU, Node const& father, unsigned int fatherIndex)
+				{
+					nodeGPU[fatherIndex].leftChild = 1;
+					nodeGPU.pushBack({ *father.childs[0] ,fatherIndex });
+					if (father.childs[0]->childs[0])
+						getLinearBVH(nodeGPU, *father.childs[0], nodeGPU.length - 1);
+					if (father.childs[1])
 					{
-						nodeGPU.pushBack({ *node.childs[0] ,fatherNodeGPU });
-						getLinearBVH(nodeGPU, *node.childs[0], fatherIndex);
+						nodeGPU.pushBack({ *father.childs[1] ,fatherIndex });
+						nodeGPU[fatherIndex].rightChild = nodeGPU.length - 1;
+						if (father.childs[1]->childs[0])
+							getLinearBVH(nodeGPU, *father.childs[1], nodeGPU.length - 1);
 					}
-					else
-						nodeGPU.pushBack({ *node.childs[0] ,fatherNodeGPU });
-					if (node.childs[1])
-						if (node.childs[1]->childs[0])
-							getLinearBVH(nodeGPU, *node.childs[1], fatherIndex);
-						else
-							nodeGPU.pushBack({ *node.childs[0] ,fatherNodeGPU });
-					nodeGPU[fatherNodeGPU].rightChild = nodeGPU.length - 1;
 				}
 			};
+			struct BVHData :OpenGL::Buffer::Data
+			{
+				Vector<Node::NodeGPU> linearBVH;
+				BVHData()
+					:
+					Data(DynamicDraw)
+				{
+				}
+				virtual void* pointer()override
+				{
+					return linearBVH.data;
+				}
+				virtual unsigned int size()override
+				{
+					return sizeof(Node::NodeGPU)* linearBVH.length;
+				}
+			};
+			struct Info
+			{
+				int index;
+			};
 
+			Model* model;
 			Vector<Node>nodes;
 			Node father;
-			Vector<Node::NodeGPU> linearBVH;
-
-			BVH() = default;
-			void getBounds(Model const& model)
+			BVHData data;
+			OpenGL::Buffer buffer;
+			OpenGL::BufferConfig config;
+			BVH(Info const& _info, Model* _model)
+				:
+				model(_model),
+				buffer(&data),
+				config(&buffer, OpenGL::ShaderStorageBuffer, _info.index)
 			{
-				Vector<Triangles::TriangleOriginData::TriangleOrigin>const& triangles(model.triangles.trianglesOrigin.trianglesOrigin);
-				Vector<Spheres::SphereData::Sphere>const& spheres(model.spheres.data.spheres);
-				Vector<Circles::CircleData::Circle>const& circles(model.circles.data.circles);
-				Vector<Cylinders::CylinderData::Cylinder>const& cylinders(model.cylinders.data.cylinders);
-				Vector<Cones::ConeData::Cone>const& cones(model.cones.data.cones);
+			}
+			void getBounds()
+			{
+				Vector<Triangles::TriangleOriginData::TriangleOrigin>const& triangles(model->triangles.trianglesOrigin.trianglesOrigin);
+				Vector<Spheres::SphereData::Sphere>const& spheres(model->spheres.data.spheres);
+				Vector<Circles::CircleData::Circle>const& circles(model->circles.data.circles);
+				Vector<Cylinders::CylinderData::Cylinder>const& cylinders(model->cylinders.data.cylinders);
+				Vector<Cones::ConeData::Cone>const& cones(model->cones.data.cones);
 				for (unsigned int c0(0); c0 < triangles.length; ++c0)
 					nodes.pushBack({ triangles.data[c0].bound(),2,c0 });
 				for (unsigned int c0(0); c0 < spheres.length; ++c0)
@@ -1369,10 +1397,17 @@ namespace RayTracing
 				for (unsigned int c0(0); c0 < cones.length; ++c0)
 					nodes.pushBack({ cones.data[c0].bound(), 6, c0 });
 			}
-			void getBVH(Model const& model)
+			//Still some special cases not considered...
+			//(for example, all centers are the same, and there is no bounding relationship...)
+			//(just create a list to solve this...)
+			void getBVH()
 			{
 				vec3 variance(0);
-				getBounds(model);
+				nodes.~Vector();
+				data.linearBVH.~Vector();
+				nodes.length = nodes.lengthAll = 0;
+				data.linearBVH.length = data.linearBVH.lengthAll = 0;
+				getBounds();
 				father.boundAll = nodes[0].boundAll;
 				if (nodes.length > 1)
 				{
@@ -1384,9 +1419,10 @@ namespace RayTracing
 					}
 					c /= father.boundAll.area;
 					for (int c0(0); c0 < nodes.length; ++c0)
-						variance +=
-						(nodes[c0].boundAll.area * nodes[c0].boundAll.center - c) *
-						(nodes[c0].boundAll.area * nodes[c0].boundAll.center - c);
+					{
+						vec3 temp(nodes[c0].boundAll.center - c);
+						variance += nodes[c0].boundAll.area * (temp * temp);
+					}
 					unsigned int axis;
 					axis =
 						variance[1] > variance[0] ?
@@ -1412,31 +1448,36 @@ namespace RayTracing
 					{
 						father.childs[0] = (Node*)::malloc(sizeof(Node));
 						new(father.childs[0])Node(nodes.data, indicesLeft);
+						if (indicesRight.length > 1)
+						{
+							father.childs[1] = (Node*)::malloc(sizeof(Node));
+							new(father.childs[1])Node(nodes.data, indicesRight);
+						}
+						else if (indicesRight.length)
+							father.childs[1] = nodes.data + indicesRight[0];
+					}
+					else if (indicesLeft.length)
+					{
+						father.childs[0] = nodes.data + indicesLeft[0];
+						if (indicesRight.length > 1)
+						{
+							father.childs[1] = (Node*)::malloc(sizeof(Node));
+							new(father.childs[1])Node(nodes.data, indicesRight);
+						}
+						else if (indicesRight.length)
+							father.childs[1] = nodes.data + indicesRight[0];
 					}
 					else
 					{
-						if (indicesLeft.length)
+						if (indicesRight.length > 1)
 						{
-							father.childs[0] = nodes.data + indicesLeft[0];
-							if (indicesRight.length > 1)
-							{
-								father.childs[1] = (Node*)::malloc(sizeof(Node));
-								new(father.childs[1])Node(nodes.data, indicesRight);
-							}
-							else
-								father.childs[1] = nodes.data + indicesRight[0];
+							father.childs[0] = (Node*)::malloc(sizeof(Node));
+							new(father.childs[0])Node(nodes.data, indicesRight);
 						}
 						else
-						{
-							if (indicesRight.length > 1)
-							{
-								father.childs[0] = (Node*)::malloc(sizeof(Node));
-								new(father.childs[0])Node(nodes.data, indicesRight);
-							}
-							else
-								father.childs[0] = nodes.data + indicesRight[0];
-						}
+							father.childs[0] = nodes.data + indicesRight[0];
 					}
+
 				}
 				else
 				{
@@ -1444,16 +1485,28 @@ namespace RayTracing
 					father.geometryNum = nodes[0].geometryNum;
 					father.boundAll = nodes[0].boundAll;
 				}
-			}
-			void getLinearBVH()
-			{
 				if (!nodes.length)return;
-				linearBVH.pushBack({ father,0 });
+				data.linearBVH.pushBack({ father,0 });
 				if (father.childs[0])
-				{
-					Node::getLinearBVH(linearBVH, father, 0);
-				}
+					Node::getLinearBVH(data.linearBVH, father, 0);
 			}
+			void dataInit()
+			{
+				getBVH();
+				config.dataInit();
+			}
+		};
+		struct Info
+		{
+			Planes::Info planesInfo;
+			Triangles::Info trianglesInfo;
+			Spheres::Info spheresInfo;
+			Circles::Info circlesInfo;
+			Cylinders::Info cylindersInfo;
+			Cones::Info conesInfo;
+			PointLights::Info pointLightsInfo;
+			GeometryNum::Info geometryNumInfo;
+			BVH::Info bvhInfo;
 		};
 
 		Planes planes;
@@ -1477,6 +1530,7 @@ namespace RayTracing
 			cones({ -1 }),
 			pointLights({ -1 }),
 			geometryNum({ -1 }),
+			bvh({ -1 }, this),
 			moved(true)
 		{
 		}
@@ -1490,6 +1544,7 @@ namespace RayTracing
 			cones(_info.conesInfo),
 			pointLights(_info.pointLightsInfo),
 			geometryNum(_info.geometryNumInfo),
+			bvh(_info.bvhInfo, this),
 			moved(true)
 		{
 		}
@@ -1556,6 +1611,8 @@ namespace RayTracing
 				(!circles.GPUUpToDate) |
 				(!cylinders.GPUUpToDate) |
 				(!cones.GPUUpToDate);
+			if (moved)
+				bvh.dataInit();
 		}
 		void upToDate()
 		{
