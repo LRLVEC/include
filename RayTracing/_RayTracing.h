@@ -3,7 +3,7 @@
 #include <_Math.h>
 #include <_File.h>
 #include <GL/_OpenGL.h>
-
+struct STL;
 namespace RayTracing
 {
 	struct View :OpenGL::Buffer::Data
@@ -195,10 +195,10 @@ namespace RayTracing
 			{
 				switch (_key)
 				{
-				case 0:left = _operation; break;
-				case 1:right = _operation; break;
-				case 2:up = _operation; break;
-				case 3:down = _operation; break;
+					case 0:left = _operation; break;
+					case 1:right = _operation; break;
+					case 2:up = _operation; break;
+					case 3:down = _operation; break;
 				}
 			}
 			Math::vec2<double> operate()
@@ -265,9 +265,9 @@ namespace RayTracing
 			{
 				switch (_button)
 				{
-				case 0:	left = _operation; break;
-				case 1:	middle = _operation; break;
-				case 2:	right = _operation; break;
+					case 0:	left = _operation; break;
+					case 1:	middle = _operation; break;
+					case 2:	right = _operation; break;
 				}
 
 			}
@@ -622,26 +622,28 @@ namespace RayTracing
 
 					Bound bound()const
 					{
-						return
+						Bound::Box a
 						{
 							{
 								{
-									{
-										vertices.column(0).min(),
-										vertices.column(1).min(),
-										vertices.column(2).min()
-									},
-									{
-										vertices.column(0).max(),
-										vertices.column(1).max(),
-										vertices.column(2).max()
-									},
-								}
-							},
-							(vertices.rowVec[0] + vertices.rowVec[1] + vertices.rowVec[2]) / 3,
+									vertices.column(0).min(),
+									vertices.column(1).min(),
+									vertices.column(2).min()
+								},
+								{
+									vertices.column(0).max(),
+									vertices.column(1).max(),
+									vertices.column(2).max()
+								},
+							}
+						};
+						return
+						{
+							a,
+							a.getCenter(),
 							(
 								vec3(vertices.rowVec[1] - vertices.rowVec[0]) |
-								vec3(vertices.rowVec[1] - vertices.rowVec[0])
+								vec3(vertices.rowVec[2] - vertices.rowVec[0])
 							).length() / 2
 						};
 					}
@@ -1274,7 +1276,7 @@ namespace RayTracing
 					Vector<unsigned int>indicesRight;
 					for (int c0(0); c0 < indices.length; ++c0)
 					{
-						if (nodes[indices.data[c0]].boundAll.box == boundAll.box)
+						if (nodes[indices.data[c0]].boundAll.box == boundAll.box && !geometry)
 						{
 							geometry = nodes[indices.data[c0]].geometry;
 							geometryNum = nodes[indices.data[c0]].geometryNum;
@@ -1433,7 +1435,7 @@ namespace RayTracing
 					Vector<unsigned int>indicesRight;
 					for (int c0(0); c0 < nodes.length; ++c0)
 					{
-						if (nodes[c0].boundAll.box == father.boundAll.box)
+						if (nodes[c0].boundAll.box == father.boundAll.box && !father.geometry)
 						{
 							father.geometry = nodes[c0].geometry;
 							father.geometryNum = nodes[c0].geometryNum;
@@ -1623,6 +1625,7 @@ namespace RayTracing
 			cones.GPUUpToDate = true;
 			moved = false;
 		}
+		void addSTL(STL const&, Color const&,unsigned int);
 		void addCylinder(Cylinders::CylinderData::Cylinder const& _cylinder)
 		{
 			Circles::CircleData::Circle circle0;

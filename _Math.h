@@ -284,7 +284,7 @@ namespace Math
 				return true;
 		return false;
 	}
-	template<class T, unsigned int _dim>template<class R, unsigned int _dim1>	inline vec<T, _dim> & vec<T, _dim>::operator =(vec<R, _dim1>const& a)
+	template<class T, unsigned int _dim>template<class R, unsigned int _dim1>	inline vec<T, _dim>& vec<T, _dim>::operator =(vec<R, _dim1>const& a)
 	{
 		static constexpr unsigned int const MinDim = Min<unsigned int, _dim, _dim1>::value;
 		static constexpr unsigned int const DifferDim = Differ<unsigned int, _dim, _dim1>::value;
@@ -522,7 +522,7 @@ namespace Math
 		vec3<double>r{ a };
 		n.normaliaze();
 		double c{ cos(b) };
-		return ((1.0 - c) * (n, r)) * n + c * r + sin(b) * (n | r);
+		return ((1.0 - c) * (n, r))* n + c * r + sin(b) * (n | r);
 	}
 	template<class T, unsigned int _dim>template<class Y>inline mat3<double> vec<T, _dim>::rotMat(Y a)
 	{
@@ -532,10 +532,10 @@ namespace Math
 		vec3<double>n{ *this };
 		n.normaliaze();
 		double c{ cos(a) };
-		return (1 - c) * (n ^ n) + mat3<double>::id(c) + sin(a) * n.crossMat();
+		return (1 - c)* (n ^ n) + mat3<double>::id(c) + sin(a) * n.crossMat();
 	}
 	//note: rotate the mat(other coordinate to this) in this coordinate.
-	template<class T, unsigned int _dim>template<class R, class Y, unsigned int _rowDim1, unsigned int _colDim1>auto & vec<T, _dim>::operator()(mat<R, _rowDim1, _colDim1> * a, Y b)
+	template<class T, unsigned int _dim>template<class R, class Y, unsigned int _rowDim1, unsigned int _colDim1>auto& vec<T, _dim>::operator()(mat<R, _rowDim1, _colDim1>* a, Y b)
 	{
 		CheckNumType(Y);
 		static_assert(_dim >= 3, "Axis vec dimsion must be more than 2!");
@@ -580,28 +580,28 @@ namespace Math
 	template<class T, unsigned int _dim>inline T vec<T, _dim>::max()const
 	{
 		T t{ data[0] };
-		for (auto& d : data)if (t > d)t = d;
+		for (auto& d : data)if (d > t)t = d;
 		return t;
 	}
 	template<class T, unsigned int _dim>inline T vec<T, _dim>::max(int a)const
 	{
 		T t{ 0 };
 		a = a < _dim ? a : _dim;
-		for (int c0{ 0 }; c0 < a; ++c0)if (t > data[c0])t = data[c0];
+		for (int c0{ 0 }; c0 < a; ++c0)if (data[c0] > t)t = data[c0];
 		return t;
 	}
 	//min
 	template<class T, unsigned int _dim>inline T vec<T, _dim>::min()const
 	{
 		T t{ data[0] };
-		for (auto& d : data)if (t < d)t = d;
+		for (auto& d : data)if (d < t)t = d;
 		return t;
 	}
 	template<class T, unsigned int _dim>inline T vec<T, _dim>::min(int a)const
 	{
 		T t{ 0 };
 		a = a < _dim ? a : _dim;
-		for (int c0{ 0 }; c0 < a; ++c0)if (t < data[c0])t = data[c0];
+		for (int c0{ 0 }; c0 < a; ++c0)if (data[c0] < t)t = data[c0];
 		return t;
 	}
 	//normaliaze
@@ -616,7 +616,7 @@ namespace Math
 		for (T& d : data)d /= temp;
 		return *this;
 	}
-	template<class T, unsigned int _dim>inline vec<T, _dim> & vec<T, _dim>::normaliaze(int a)
+	template<class T, unsigned int _dim>inline vec<T, _dim>& vec<T, _dim>::normaliaze(int a)
 	{
 		double temp(0);
 		if constexpr (NumType<T>::serial < 11)
@@ -722,7 +722,7 @@ namespace Math
 		return !memcmp(array, a.array, sizeof(array));
 	}
 	template<class T, unsigned int _rowDim, unsigned int _colDim>
-	template<class R, unsigned int _dim>							inline mat<T, _rowDim, _colDim>& mat<T, _rowDim, _colDim>::setCol(vec<R, _dim> & a, unsigned int b)
+	template<class R, unsigned int _dim>							inline mat<T, _rowDim, _colDim>& mat<T, _rowDim, _colDim>::setCol(vec<R, _dim>& a, unsigned int b)
 	{
 		static constexpr unsigned int const MinDim = Min<unsigned int, _rowDim, _dim>::value;
 		for (int c0{ 0 }; c0 < MinDim; c0++)array[c0][b] = a.data[c0];
@@ -736,35 +736,35 @@ namespace Math
 			for (T& d1 : d0)d1 = (T)a;
 		return *this;
 	}
-	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R>inline mat<T, _rowDim, _colDim> & mat<T, _rowDim, _colDim>::operator+=(R const& a)
+	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R>inline mat<T, _rowDim, _colDim>& mat<T, _rowDim, _colDim>::operator+=(R const& a)
 	{
 		CheckNumType(R);
 		for (auto& d0 : array)
 			for (T& d1 : d0)d1 += (T)a;
 		return *this;
 	}
-	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R>inline mat<T, _rowDim, _colDim> & mat<T, _rowDim, _colDim>::operator-=(R const& a)
+	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R>inline mat<T, _rowDim, _colDim>& mat<T, _rowDim, _colDim>::operator-=(R const& a)
 	{
 		CheckNumType(R);
 		for (auto& d0 : array)
 			for (T& d1 : d0)d1 -= (T)a;
 		return *this;
 	}
-	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R>inline mat<T, _rowDim, _colDim> & mat<T, _rowDim, _colDim>::operator*=(R const& a)
+	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R>inline mat<T, _rowDim, _colDim>& mat<T, _rowDim, _colDim>::operator*=(R const& a)
 	{
 		CheckNumType(R);
 		for (auto& d0 : array)
 			for (T& d1 : d0)d1 *= (T)a;
 		return *this;
 	}
-	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R>inline mat<T, _rowDim, _colDim> & mat<T, _rowDim, _colDim>::operator/=(R const& a)
+	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R>inline mat<T, _rowDim, _colDim>& mat<T, _rowDim, _colDim>::operator/=(R const& a)
 	{
 		CheckNumType(R);
 		for (auto& d0 : array)
 			for (T& d1 : d0)d1 /= (T)a;
 		return *this;
 	}
-	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R, unsigned int _rowDim1, unsigned int _colDim1>inline mat<T, _rowDim, _colDim> & mat<T, _rowDim, _colDim>::operator= (mat<R, _rowDim1, _colDim1>const& a)
+	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R, unsigned int _rowDim1, unsigned int _colDim1>inline mat<T, _rowDim, _colDim>& mat<T, _rowDim, _colDim>::operator= (mat<R, _rowDim1, _colDim1>const& a)
 	{
 		static constexpr unsigned int const MinRow = Min<unsigned int, _rowDim, _rowDim1>::value;
 		if constexpr (IsSameType<T, R>::value)
@@ -780,7 +780,7 @@ namespace Math
 				rowVec[c1] = a.rowVec[c1];
 		return *this;
 	}
-	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R, unsigned int _rowDim1, unsigned int _colDim1>inline mat<T, _rowDim, _colDim> & mat<T, _rowDim, _colDim>::operator+=(mat<R, _rowDim1, _colDim1>const& a)
+	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R, unsigned int _rowDim1, unsigned int _colDim1>inline mat<T, _rowDim, _colDim>& mat<T, _rowDim, _colDim>::operator+=(mat<R, _rowDim1, _colDim1>const& a)
 	{
 		static constexpr unsigned int const MinRow = Min<unsigned int, _rowDim, _rowDim1>::value;
 		if constexpr (IsSameType<T, R>::value)
@@ -796,7 +796,7 @@ namespace Math
 				rowVec[c1] += a.rowVec[c1];
 		return *this;
 	}
-	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R, unsigned int _rowDim1, unsigned int _colDim1>inline mat<T, _rowDim, _colDim> & mat<T, _rowDim, _colDim>::operator-=(mat<R, _rowDim1, _colDim1>const& a)
+	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R, unsigned int _rowDim1, unsigned int _colDim1>inline mat<T, _rowDim, _colDim>& mat<T, _rowDim, _colDim>::operator-=(mat<R, _rowDim1, _colDim1>const& a)
 	{
 		static constexpr unsigned int const MinRow = Min<unsigned int, _rowDim, _rowDim1>::value;
 		if constexpr (IsSameType<T, R>::value)
@@ -813,7 +813,7 @@ namespace Math
 				rowVec[c1] -= a.rowVec[c1];
 		return *this;
 	}
-	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R, unsigned int _rowDim1, unsigned int _colDim1>inline mat<T, _rowDim, _colDim> & mat<T, _rowDim, _colDim>::operator*=(mat<R, _rowDim1, _colDim1>const& a)
+	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R, unsigned int _rowDim1, unsigned int _colDim1>inline mat<T, _rowDim, _colDim>& mat<T, _rowDim, _colDim>::operator*=(mat<R, _rowDim1, _colDim1>const& a)
 	{
 		static constexpr unsigned int const MinRow = Min<unsigned int, _rowDim, _rowDim1>::value;
 		if constexpr (IsSameType<T, R>::value)
@@ -829,7 +829,7 @@ namespace Math
 				rowVec[c1] *= a.rowVec[c1];
 		return *this;
 	}
-	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R, unsigned int _rowDim1, unsigned int _colDim1>inline mat<T, _rowDim, _colDim> & mat<T, _rowDim, _colDim>::operator/=(mat<R, _rowDim1, _colDim1>const& a)
+	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R, unsigned int _rowDim1, unsigned int _colDim1>inline mat<T, _rowDim, _colDim>& mat<T, _rowDim, _colDim>::operator/=(mat<R, _rowDim1, _colDim1>const& a)
 	{
 		static constexpr unsigned int const MinRow = Min<unsigned int, _rowDim, _rowDim1>::value;
 		if constexpr (IsSameType<T, R>::value)
@@ -1087,12 +1087,12 @@ namespace Math
 #define _move( q , p ) ( ( q < p ) ? q : q + 1 )
 		if constexpr (MinDim == 2)
 		{
-			return pow(-1, i + j) * array[_move(i, 0)][_move(j, 0)];
+			return pow(-1, i + j)* array[_move(i, 0)][_move(j, 0)];
 		}
 		else if constexpr (MinDim == 3)
 		{
 			return
-				pow(-1, i + j) * (
+				pow(-1, i + j)* (
 					array[_move(0, i)][_move(0, j)] * array[_move(1, i)][_move(1, j)] -
 					array[_move(1, i)][_move(0, j)] * array[_move(0, i)][_move(1, j)]
 					);
@@ -1100,7 +1100,7 @@ namespace Math
 		else
 		{
 			return
-				pow(-1.0, i + j) * (
+				pow(-1.0, i + j)* (
 					array[_move(0, i)][_move(0, j)] * (array[_move(1, i)][_move(1, j)] * array[_move(2, i)][_move(2, j)] - array[_move(2, i)][_move(1, j)] * array[_move(1, i)][_move(2, j)]) +
 					array[_move(1, i)][_move(0, j)] * (array[_move(2, i)][_move(1, j)] * array[_move(0, i)][_move(2, j)] - array[_move(0, i)][_move(1, j)] * array[_move(2, i)][_move(2, j)]) +
 					array[_move(2, i)][_move(0, j)] * (array[_move(0, i)][_move(1, j)] * array[_move(1, i)][_move(2, j)] - array[_move(0, i)][_move(2, j)] * array[_move(1, i)][_move(1, j)])

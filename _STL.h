@@ -5,10 +5,11 @@
 #include <_File.h>
 #include <_Math.h>
 #include <GL/_OpenGL.h>
+#include <RayTracing/_RayTracing.h>
 
 struct STL
 {
-	#pragma pack(2)
+#pragma pack(2)
 	struct Triangle
 	{
 		Math::vec3<float>normal;
@@ -18,7 +19,7 @@ struct STL
 		double getMinEdgeLength()const;
 		void print()const;
 	};
-	#pragma pack()
+#pragma pack()
 
 	String<char>name;
 	Vector<Triangle>triangles;
@@ -86,6 +87,47 @@ namespace OpenGL
 	{
 	}
 }
+
+namespace RayTracing
+{
+	inline void Model::addSTL(STL const& _stl, Color const& _color, unsigned int num)
+	{
+		num = num < _stl.triangles.length ? num : _stl.triangles.length;
+		for (int c0(0); c0 < num; ++c0)
+		{
+			vec3 d0(_stl.triangles.data[c0].vertices.rowVec[1] - _stl.triangles.data[c0].vertices.rowVec[0]);
+			vec3 d1(_stl.triangles.data[c0].vertices.rowVec[2] - _stl.triangles.data[c0].vertices.rowVec[0]);
+			vec3 n(d0 | d1);
+			if ((n, _stl.triangles.data[c0].normal) > 0)
+			{
+				triangles.trianglesOrigin.trianglesOrigin.pushBack
+				({
+					_stl.triangles.data[c0].vertices,
+					{ 0,0 },
+					{ 1,0 },
+					{ 0,1 },
+					_color
+					});
+			}
+			else
+			{
+				triangles.trianglesOrigin.trianglesOrigin.pushBack
+				({
+					{
+						_stl.triangles.data[c0].vertices.rowVec[0],
+						_stl.triangles.data[c0].vertices.rowVec[2],
+						_stl.triangles.data[c0].vertices.rowVec[1],
+					},
+					{ 0,0 },
+					{ 1,0 },
+					{ 0,1 },
+					_color
+					});
+			}
+		}
+	}
+}
+
 
 inline bool STL::Triangle::operator==(Triangle const& a)
 {
