@@ -1296,7 +1296,7 @@ namespace RayTracing
 							childs[1] = (Node*)::malloc(sizeof(Node));
 							new(childs[1])Node(nodes, indicesRight);
 						}
-						else
+						else if(indicesRight.length)
 							childs[1] = nodes + indicesRight[0];
 					}
 					else
