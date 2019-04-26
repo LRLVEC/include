@@ -1774,7 +1774,6 @@ namespace RayTracing
 		}
 
 	};
-
 }
 inline RayTracing::Model File::readModel()const
 {
