@@ -141,6 +141,7 @@ template<class T>inline Vector<T> & Vector<T>::operator+=(Vector<T>const& a)
 	{
 		for (int c1 = 0; c1 < a.length; c1++)
 			new(data + c1 + length)T(a.data[c1]);
+		length += a.length;
 		return *this;
 	}
 	lengthAll = 1 << (1 + (int)log2(length + a.length));

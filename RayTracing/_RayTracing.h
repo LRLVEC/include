@@ -1494,8 +1494,12 @@ namespace RayTracing
 			}
 			void dataInit()
 			{
+				Timer timer;
+				timer.begin();
 				getBVH();
 				config.dataInit();
+				timer.end();
+				timer.print("build time:");
 			}
 		};
 		struct Info
