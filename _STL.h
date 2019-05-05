@@ -106,8 +106,9 @@ namespace RayTracing
 					{ 0,0 },
 					{ 1,0 },
 					{ 0,1 },
+					-1,
 					_color
-					});
+				});
 			}
 			else
 			{
@@ -121,8 +122,9 @@ namespace RayTracing
 					{ 0,0 },
 					{ 1,0 },
 					{ 0,1 },
+					-1,
 					_color
-					});
+				});
 			}
 		}
 	}

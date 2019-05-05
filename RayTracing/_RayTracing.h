@@ -618,6 +618,7 @@ namespace RayTracing
 					vec2 uv1;
 					vec2 uv2;
 					vec4 uv3;
+					Math::vec4<int>nIndices;
 					Color color;
 
 					Bound bound()const
@@ -674,6 +675,7 @@ namespace RayTracing
 					vec2 uv1;
 					vec2 uv2;
 					vec4 uv3;
+					Math::vec4<int>nIndices;
 					Color color;
 				};
 				unsigned int num;
