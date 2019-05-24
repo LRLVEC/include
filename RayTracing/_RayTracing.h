@@ -288,6 +288,8 @@ namespace RayTracing
 				Math::mat<float, 3, 4>ans;
 				Math::vec3<float>r0;
 				float z0;
+				float times;
+				float blank[3];
 			};
 			Trans trans;
 			BufferData()
@@ -347,6 +349,7 @@ namespace RayTracing
 		{
 			persp.init(_size);
 			bufferData.trans.z0 = -float(_size.h) / tan(Math::Pi * persp.fovy / 360.0);
+			bufferData.trans.times = 1;
 			calcAns();
 			updated = true;
 		}
@@ -358,6 +361,7 @@ namespace RayTracing
 		{
 			bufferData.trans.ans = trans;
 			bufferData.trans.r0 = dr;
+			bufferData.trans.times = 1;
 		}
 		void operate()
 		{
@@ -388,6 +392,8 @@ namespace RayTracing
 				calcAns();
 				updated = true;
 			}
+			else
+				++bufferData.trans.times;
 		}
 	};
 	struct DecayOriginData :OpenGL::Buffer::Data
@@ -552,62 +558,6 @@ namespace RayTracing
 		};
 
 
-		struct Planes
-		{
-			struct PlaneData :OpenGL::Buffer::Data
-			{
-				struct Plane
-				{
-					vec4 paras;	//Ax + By + Cz + W = 0, this is (A, B, C, W).
-					Color color;
-				};
-				Vector<Plane>planes;
-				PlaneData()
-					:
-					Data(DynamicDraw)
-				{
-				}
-				virtual void* pointer()
-				{
-					return planes.data;
-				}
-				virtual unsigned int size()
-				{
-					return sizeof(Plane)* planes.length;
-				}
-			};
-			struct Info
-			{
-				OpenGL::BufferType type;
-				int index;
-			};
-
-			PlaneData data;
-			OpenGL::Buffer buffer;
-			OpenGL::BufferConfig config;
-			bool numChanged;
-			bool upToDate;
-			Planes(Info const& _info)
-				:
-				buffer(&data),
-				config(&buffer, _info.type, _info.index),
-				numChanged(false),
-				upToDate(true)
-			{
-			}
-			void dataInit()
-			{
-				if (numChanged)
-				{
-					config.dataInit();
-				}
-				else if (!upToDate)
-				{
-					config.refreshData();
-				}
-				upToDate = true;
-			}
-		};
 		struct Triangles
 		{
 			struct TriangleOriginData :OpenGL::Buffer::Data
@@ -1134,17 +1084,15 @@ namespace RayTracing
 			{
 				struct Num
 				{
-					unsigned int planeNum;
 					unsigned int triangleNum;
 					unsigned int sphereNum;
 					unsigned int circleNum;
 					unsigned int cylinderNum;
 					unsigned int coneNum;
 					unsigned int pointLightNum;
-					unsigned int blank[1];//补齐考虑一下
+					unsigned int blank[2];//补齐考虑一下
 					Num()
 						:
-						planeNum(0),
 						triangleNum(0),
 						sphereNum(0),
 						circleNum(0),
@@ -1298,7 +1246,7 @@ namespace RayTracing
 							childs[1] = (Node*)::malloc(sizeof(Node));
 							new(childs[1])Node(nodes, indicesRight);
 						}
-						else if(indicesRight.length)
+						else if (indicesRight.length)
 							childs[1] = nodes + indicesRight[0];
 					}
 					else
@@ -1506,7 +1454,6 @@ namespace RayTracing
 		};
 		struct Info
 		{
-			Planes::Info planesInfo;
 			Triangles::Info trianglesInfo;
 			Spheres::Info spheresInfo;
 			Circles::Info circlesInfo;
@@ -1517,7 +1464,6 @@ namespace RayTracing
 			BVH::Info bvhInfo;
 		};
 
-		Planes planes;
 		Triangles triangles;
 		Spheres spheres;
 		Circles circles;
@@ -1530,7 +1476,6 @@ namespace RayTracing
 
 		Model()
 			:
-			planes({ OpenGL::None,-1 }),
 			triangles({ -1,-1 }),
 			spheres({ -1 }),
 			circles({ -1 }),
@@ -1544,7 +1489,6 @@ namespace RayTracing
 		}
 		Model(Info const& _info)
 			:
-			planes(_info.planesInfo),
 			triangles(_info.trianglesInfo),
 			spheres(_info.spheresInfo),
 			circles(_info.circlesInfo),
@@ -1559,19 +1503,12 @@ namespace RayTracing
 		void dataInit()
 		{
 			bool numChanged(false);
-			planes.dataInit();
 			triangles.dataInit();
 			spheres.dataInit();
 			circles.dataInit();
 			cylinders.dataInit();
 			cones.dataInit();
 			pointLights.dataInit();
-			if (planes.numChanged)
-			{
-				geometryNum.data.num.planeNum = planes.data.planes.length;
-				planes.numChanged = false;
-				numChanged = true;
-			}
 			if (triangles.numChanged)
 			{
 				geometryNum.data.num.triangleNum = triangles.trianglesOrigin.trianglesOrigin.length;
@@ -1631,7 +1568,7 @@ namespace RayTracing
 			cones.GPUUpToDate = true;
 			moved = false;
 		}
-		void addSTL(STL const&, Color const&,unsigned int);
+		void addSTL(STL const&, Color const&, unsigned int);
 		void addCylinder(Cylinders::CylinderData::Cylinder const& _cylinder)
 		{
 			Circles::CircleData::Circle circle0;
@@ -1683,12 +1620,6 @@ namespace RayTracing
 			Model::Header header;
 			::fread(&header, 1, sizeof(Model::Header), temp);
 			geometryNum.data.num = header.num;
-			if (header.num.planeNum)
-			{
-				::fseek(temp, header.offset.planeNum, SEEK_SET);
-				planes.data.planes.malloc(header.num.planeNum);
-				::fread(planes.data.planes.data, header.num.planeNum, sizeof(Model::Planes::PlaneData::Plane), temp);
-			}
 			if (header.num.triangleNum)
 			{
 				::fseek(temp, header.offset.triangleNum, SEEK_SET);
@@ -1733,19 +1664,12 @@ namespace RayTracing
 			::fseek(temp, 0, SEEK_SET);
 			Header header;
 			header.num = geometryNum.data.num;
-			header.offset.planeNum = sizeof(Header);
-			header.offset.triangleNum = header.num.planeNum * sizeof(Model::Planes::PlaneData::Plane) + header.offset.planeNum;
 			header.offset.sphereNum = header.num.triangleNum * sizeof(Model::Triangles::TriangleOriginData::Data) + header.offset.triangleNum;
 			header.offset.circleNum = header.num.sphereNum * sizeof(Model::Spheres::SphereData::Data) + header.offset.sphereNum;
 			header.offset.cylinderNum = header.num.circleNum * sizeof(Model::Circles::CircleData::Data) + header.offset.circleNum;
 			header.offset.coneNum = header.num.cylinderNum * sizeof(Model::Cylinders::CylinderData::Data) + header.offset.cylinderNum;
 			header.offset.pointLightNum = header.num.coneNum * sizeof(Model::Cones::ConeData::Data) + header.offset.coneNum;
 			::fwrite(&header, 1, sizeof(header), temp);//把头写入；
-			if (header.num.planeNum)
-			{
-				::fseek(temp, header.offset.planeNum, SEEK_SET);
-				::fwrite(planes.data.planes.data, header.num.planeNum, sizeof(Model::Planes::PlaneData::Plane), temp);
-			}
 			if (header.num.triangleNum)
 			{
 				::fseek(temp, header.offset.triangleNum, SEEK_SET);
@@ -1791,12 +1715,6 @@ inline RayTracing::Model File::readModel()const
 	RayTracing::Model::Header header;
 	::fread(&header, 1, sizeof(RayTracing::Model::Header), temp);
 	r.geometryNum.data.num = header.num;
-	if (header.num.planeNum)
-	{
-		::fseek(temp, header.offset.planeNum, SEEK_SET);
-		r.planes.data.planes.malloc(header.num.planeNum);
-		::fread(r.planes.data.planes.data, header.num.planeNum, sizeof(RayTracing::Model::Planes::PlaneData::Plane), temp);
-	}
 	if (header.num.triangleNum)
 	{
 		::fseek(temp, header.offset.triangleNum, SEEK_SET);

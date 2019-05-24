@@ -197,6 +197,11 @@ namespace OpenGL
 			bind();
 			glBufferSubData(type, 0, buffer->data->size(), buffer->data->pointer());
 		}
+		void refreshData(unsigned int _offset, unsigned int _size)
+		{
+			bind();
+			glBufferSubData(type, _offset, _size, (char*)buffer->data->pointer() + _offset);
+		}
 	};
 	struct VertexAttrib
 	{
@@ -757,6 +762,7 @@ namespace OpenGL
 
 	inline SourceManager::SourceManager()
 		:
+
 		folder("./"),
 		sources()
 	{

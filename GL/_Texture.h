@@ -273,6 +273,15 @@ namespace OpenGL
 		{
 			glTextureStorage1D(texture->texture, layers, format, width);
 		}
+		void resize(unsigned int _width)
+		{
+			width = _width;
+			bind();
+			glDeleteBuffers(1, &texture->texture);
+			texture->create();
+			bind();
+			allocData();
+		}
 		void dataInit(unsigned int _level, TextureInputFormat _inputFormat, TextureInputType _inputType)
 		{
 			glTextureSubImage1D(texture->texture, _level, 0, width, _inputFormat, _inputType, texture->data->pointer());
@@ -298,13 +307,23 @@ namespace OpenGL
 		{
 			glTextureStorage2D(texture->texture, layers, format, width, height);
 		}
+		void resize(unsigned int _width, unsigned int _height)
+		{
+			width = _width;
+			height = _height;
+			bind();
+			glDeleteBuffers(1, &texture->texture);
+			texture->create();
+			bind();
+			allocData();
+		}
 		void dataInit(unsigned int _level, TextureInputFormat _inputFormat, TextureInputType _inputType)
 		{
-			glTextureSubImage2D(texture->texture, _level, 0, 0, width, height, _inputFormat, _inputType, texture->data->pointer());
+			glTextureSubImage2D(texture->texture, _level, 0, 0, width, height, _inputFormat, _inputType, texture->data ? texture->data->pointer() : nullptr);
 		}
 		void dataRefresh(unsigned int _level, TextureInputFormat _inputFormat, TextureInputType _inputType, unsigned int _xOffset, unsigned int _yOffset, unsigned int _width, unsigned int _height)
 		{
-			glTextureSubImage2D(texture->texture, _level, _xOffset, _yOffset, _width, _height, _inputFormat, _inputType, texture->data->pointer());
+			glTextureSubImage2D(texture->texture, _level, _xOffset, _yOffset, _width, _height, _inputFormat, _inputType, texture->data ? texture->data->pointer() : nullptr);
 		}
 	};
 	template<>struct TextureConfig<TextureStorage3D> :TextureConfigBase
@@ -324,6 +343,17 @@ namespace OpenGL
 		void allocData()
 		{
 			glTextureStorage3D(texture->texture, layers, format, width, height, depth);
+		}
+		void resize(unsigned int _width, unsigned int _height, unsigned int _depth)
+		{
+			width = _width;
+			height = _height;
+			depth = _depth;
+			bind();
+			glDeleteBuffers(1, &texture->texture);
+			texture->create();
+			bind();
+			allocData();
 		}
 		void dataInit(unsigned int _level, TextureInputFormat _inputFormat, TextureInputType _inputType)
 		{
@@ -409,7 +439,7 @@ namespace OpenGL
 		BMP bmp[6];
 		BMPCubeData(String<char>const& _path)
 			:
-			bmp{_path+"front.bmp",_path + "back.bmp",_path + "down.bmp",_path + "up.bmp",_path + "right.bmp",_path + "left.bmp" }
+			bmp{ _path + "front.bmp",_path + "back.bmp",_path + "down.bmp",_path + "up.bmp",_path + "right.bmp",_path + "left.bmp" }
 		{
 		}
 		virtual void* pointer(unsigned int n)override
