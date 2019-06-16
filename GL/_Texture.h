@@ -277,7 +277,7 @@ namespace OpenGL
 		{
 			width = _width;
 			bind();
-			glDeleteBuffers(1, &texture->texture);
+			glDeleteTextures(1, &texture->texture);
 			texture->create();
 			bind();
 			allocData();
@@ -312,7 +312,7 @@ namespace OpenGL
 			width = _width;
 			height = _height;
 			bind();
-			glDeleteBuffers(1, &texture->texture);
+			glDeleteTextures(1, &texture->texture);
 			texture->create();
 			bind();
 			allocData();
@@ -350,7 +350,7 @@ namespace OpenGL
 			height = _height;
 			depth = _depth;
 			bind();
-			glDeleteBuffers(1, &texture->texture);
+			glDeleteTextures(1, &texture->texture);
 			texture->create();
 			bind();
 			allocData();

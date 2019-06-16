@@ -37,6 +37,10 @@ namespace OpenGL
 		OpenGLInit(unsigned int, unsigned int);
 
 		void setOpenGLVersion(unsigned int, unsigned int);
+		void printRenderer()
+		{
+			::printf("Render GPU: %s\n",(char const*)glGetString(GL_RENDERER));
+		}
 	};
 	//OpenGL class
 	struct OpenGL
@@ -179,12 +183,12 @@ namespace OpenGL
 		{
 			switch (type)
 			{
-			case AtomicCounterBuffer:
-			case ShaderStorageBuffer:
-			case TransformFeedbackBuffer:
-			case UniformBuffer:
-				glBindBufferBase(type, binding, buffer->buffer);
-				break;
+				case AtomicCounterBuffer:
+				case ShaderStorageBuffer:
+				case TransformFeedbackBuffer:
+				case UniformBuffer:
+					glBindBufferBase(type, binding, buffer->buffer);
+					break;
 			}
 		}
 		void dataInit()
@@ -302,13 +306,13 @@ namespace OpenGL
 		void init()
 		{
 			glCreateVertexArrays(1, &vao);
-			attribs.traverse([](VertexAttrib * &_vertexAttrib)
+			attribs.traverse([](VertexAttrib*& _vertexAttrib)
 				{
 					_vertexAttrib->bind();
 					return true;
 				});
 			bind();
-			attribs.traverse([](VertexAttrib * &_vertexAttrib)
+			attribs.traverse([](VertexAttrib*& _vertexAttrib)
 				{
 					_vertexAttrib->init();
 					return true;
@@ -619,32 +623,32 @@ namespace OpenGL
 	}
 	inline void ShaderManager::init()
 	{
-		vertex.traverse([](Shader<VertexShader> & _shader)
+		vertex.traverse([](Shader<VertexShader>& _shader)
 			{
 				_shader.init();
 				return true;
 			});
-		tessControl.traverse([](Shader<TessControlShader> & _shader)
+		tessControl.traverse([](Shader<TessControlShader>& _shader)
 			{
 				_shader.init();
 				return true;
 			});
-		tessEvaluation.traverse([](Shader<TessEvaluationShader> & _shader)
+		tessEvaluation.traverse([](Shader<TessEvaluationShader>& _shader)
 			{
 				_shader.init();
 				return true;
 			});
-		geometry.traverse([](Shader<GeometryShader> & _shader)
+		geometry.traverse([](Shader<GeometryShader>& _shader)
 			{
 				_shader.init();
 				return true;
 			});
-		fragment.traverse([](Shader<FragmentShader> & _shader)
+		fragment.traverse([](Shader<FragmentShader>& _shader)
 			{
 				_shader.init();
 				return true;
 			});
-		compute.traverse([](Shader<ComputeShader> & _shader)
+		compute.traverse([](Shader<ComputeShader>& _shader)
 			{
 				_shader.init();
 				return true;
@@ -652,32 +656,32 @@ namespace OpenGL
 	}
 	inline void ShaderManager::omit()
 	{
-		vertex.traverse([](Shader<VertexShader> & _shader)
+		vertex.traverse([](Shader<VertexShader>& _shader)
 			{
 				_shader.omit();
 				return true;
 			});
-		tessControl.traverse([](Shader<TessControlShader> & _shader)
+		tessControl.traverse([](Shader<TessControlShader>& _shader)
 			{
 				_shader.omit();
 				return true;
 			});
-		tessEvaluation.traverse([](Shader<TessEvaluationShader> & _shader)
+		tessEvaluation.traverse([](Shader<TessEvaluationShader>& _shader)
 			{
 				_shader.omit();
 				return true;
 			});
-		geometry.traverse([](Shader<GeometryShader> & _shader)
+		geometry.traverse([](Shader<GeometryShader>& _shader)
 			{
 				_shader.omit();
 				return true;
 			});
-		fragment.traverse([](Shader<FragmentShader> & _shader)
+		fragment.traverse([](Shader<FragmentShader>& _shader)
 			{
 				_shader.omit();
 				return true;
 			});
-		compute.traverse([](Shader<ComputeShader> & _shader)
+		compute.traverse([](Shader<ComputeShader>& _shader)
 			{
 				_shader.omit();
 				return true;
@@ -687,7 +691,7 @@ namespace OpenGL
 
 
 
-	inline Program::Program(SourceManager * _sourceManage, String<char>const& _name)
+	inline Program::Program(SourceManager* _sourceManage, String<char>const& _name)
 		:
 		sourceManage(_sourceManage),
 		name(_name),
@@ -697,7 +701,7 @@ namespace OpenGL
 		vao()
 	{
 	}
-	inline Program::Program(SourceManager * _sourceManage, String<char>const& _name, Vector<VertexAttrib*>const& _attribs)
+	inline Program::Program(SourceManager* _sourceManage, String<char>const& _name, Vector<VertexAttrib*>const& _attribs)
 		:
 		sourceManage(_sourceManage),
 		name(_name),
@@ -726,12 +730,12 @@ namespace OpenGL
 		for (int c0(0); c0 < attach.length; ++c0)
 			switch (attach.data[c0].data0)
 			{
-			case 0:glAttachShader(program, shaders.vertex[attach.data[c0].data1].shader); break;
-			case 1:glAttachShader(program, shaders.tessControl[attach.data[c0].data1].shader); break;
-			case 2:glAttachShader(program, shaders.tessEvaluation[attach.data[c0].data1].shader); break;
-			case 3:glAttachShader(program, shaders.geometry[attach.data[c0].data1].shader); break;
-			case 4:glAttachShader(program, shaders.fragment[attach.data[c0].data1].shader); break;
-			case 5:glAttachShader(program, shaders.compute[attach.data[c0].data1].shader); break;
+				case 0:glAttachShader(program, shaders.vertex[attach.data[c0].data1].shader); break;
+				case 1:glAttachShader(program, shaders.tessControl[attach.data[c0].data1].shader); break;
+				case 2:glAttachShader(program, shaders.tessEvaluation[attach.data[c0].data1].shader); break;
+				case 3:glAttachShader(program, shaders.geometry[attach.data[c0].data1].shader); break;
+				case 4:glAttachShader(program, shaders.fragment[attach.data[c0].data1].shader); break;
+				case 5:glAttachShader(program, shaders.compute[attach.data[c0].data1].shader); break;
 			}
 	}
 	inline void Program::link()
@@ -812,7 +816,8 @@ namespace OpenGL
 				if (s < 2)break;
 				if (!sources.end().addSource(t0, shaders.findInThis(program + t0 + t1 + ".cpp").readText()))
 					::printf("Cannot read Program: %s\n", program.data);
-			} while (s == 2);
+			}
+			while (s == 2);
 		}
 	}
 	inline void SourceManager::deleteSource()
@@ -940,10 +945,10 @@ namespace OpenGL
 	{
 		switch (_key)
 		{
-		case 0:left = _operation; break;
-		case 1:right = _operation; break;
-		case 2:up = _operation; break;
-		case 3:down = _operation; break;
+			case 0:left = _operation; break;
+			case 1:right = _operation; break;
+			case 2:up = _operation; break;
+			case 3:down = _operation; break;
 		}
 	}
 	inline Math::vec2<double> Transform::Key::operate()
@@ -997,9 +1002,9 @@ namespace OpenGL
 	{
 		switch (_button)
 		{
-		case 0:	left = _operation; break;
-		case 1:	middle = _operation; break;
-		case 2:	right = _operation; break;
+			case 0:	left = _operation; break;
+			case 1:	middle = _operation; break;
+			case 2:	right = _operation; break;
 		}
 
 	}
