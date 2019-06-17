@@ -3,8 +3,6 @@
 #define NOMINMAX
 #include <optixu/optixu_math_namespace.h>
 #include <optixu/optixu_matrix.h>
-#define CloseRay 0
-#define AnyRay 1
 
 using namespace optix;
 static __device__ __inline__ float random(float2 st)
@@ -62,11 +60,7 @@ namespace Define
 	{
 		return seed ^ frame;
 	}*/
-	struct RayData
-	{
-		float3 color;
-		int depth;
-	};
+
 	struct Trans
 	{
 		Matrix3x4 trans;

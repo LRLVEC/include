@@ -182,7 +182,7 @@ namespace OpenGL
 		{
 			RTcontext* context;
 			RTbuffer buffer;
-			RTbuffertype type;
+			unsigned int type;
 			RTformat format;
 
 			Buffer() = delete;
@@ -194,7 +194,7 @@ namespace OpenGL
 				format(RT_FORMAT_FLOAT)
 			{
 			}
-			Buffer(RTcontext* _context, RTbuffertype _type, RTformat _format)
+			Buffer(RTcontext* _context, unsigned int _type, RTformat _format)
 				:
 				context(_context),
 				type(_type),
@@ -202,7 +202,7 @@ namespace OpenGL
 			{
 				create();
 			}
-			Buffer(RTcontext* _context, RTbuffertype _type, RTformat _format, GLuint _pbo)
+			Buffer(RTcontext* _context, unsigned int _type, RTformat _format, GLuint _pbo)
 				:
 				context(_context),
 				type(_type),
@@ -295,7 +295,30 @@ namespace OpenGL
 			}
 			void setSize(unsigned int _width, unsigned int _height, unsigned int _depth)
 			{
-				rtBufferSetSize3D(buffer, _width, _height, _height);
+				rtBufferSetSize3D(buffer, _width, _height, _depth);
+			}
+			void readBMP(BMP const& bmp)
+			{
+				setSize(bmp.header.width, bmp.header.height);
+				unsigned int* p((unsigned int*)map());
+				for (int c0(0); c0 < bmp.header.height; ++c0)
+					for (int c1(0); c1 < bmp.header.width; ++c1)
+						::memcpy(p + bmp.header.width * c0 + c1, bmp.data + bmp.header.width * c0 + c1, 3);
+				unmap();
+			}
+			void readCube(BMPCube const& cube)
+			{
+				unsigned long long width(cube.bmp[0].header.width);
+				unsigned long long height(cube.bmp[0].header.height);
+				unsigned long long wh(width * height);
+				setSize(width, height, 6);
+				unsigned int* p((unsigned int*)map());
+				for (unsigned long long c0(0); c0 < 6; ++c0)
+					for (unsigned long long c1(0); c1 < height; ++c1)
+						for (unsigned long long c2(0); c2 < width; ++c2)
+							p[wh * c0 + width * c1 + c2] =
+							cube.bmp[c0].data[width * c1 + c2].rgb();
+				unmap();
 			}
 		};
 		struct VariableBase

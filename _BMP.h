@@ -35,6 +35,14 @@ struct BMP
 		unsigned char b;
 		unsigned char g;
 		unsigned char r;
+		unsigned int bgr()
+		{
+			return b | (g << 8) | (r << 16) | (255 << 24);
+		}
+		unsigned int rgb()
+		{
+			return r | (g << 8) | (b << 16) | (255 << 24);
+		}
 	};
 #pragma pack()
 
@@ -51,20 +59,25 @@ struct BMP
 	}
 	BMP(String<char>const& _path)
 		:
-		data(nullptr)
+		data(nullptr),
+		textureData(nullptr)
 	{
 		FILE* temp(::fopen(_path.data, "rb+"));
 		::fseek(temp, 0, SEEK_SET);
 		::fread(&header, 1, 54, temp);
 		::fseek(temp, header.dataOffset, SEEK_SET);
-		unsigned int lineWidth;
 		if (header.width % 4)
-			lineWidth = 4 * (1 + header.width * 3 / 4);
+		{
+			data = (BMP::Pixel*)::malloc(3u * header.width * header.height + 4);
+			for (int c0(0); c0 < header.height; ++c0)
+				::fread((data + header.width * c0), 4, 1 + header.width * 3 / 4, temp);
+		}
 		else
-			lineWidth = header.width * 3;
-		//data = (BMP::Pixel*)::malloc(3u * header.width * header.height + 4);
-		textureData = (unsigned char*)::malloc(lineWidth * header.height);
-		::fread(textureData, header.height, lineWidth, temp);
+		{
+			data = (BMP::Pixel*)::malloc(3u * header.width * header.height + 4);
+			for (int c0(0); c0 < header.height; ++c0)
+				::fread((data + header.width * c0), 4, header.width * 3 / 4, temp);
+		}
 		::fclose(temp);
 	}
 	~BMP()
@@ -82,6 +95,12 @@ struct BMP
 		header.printInfo();
 	}
 };
+struct BMPCube
+{
+	BMP bmp[6];
+	BMPCube(String<char>const& _path) :bmp{ _path + "front.bmp",_path + "back.bmp",_path + "down.bmp",_path + "up.bmp",_path + "right.bmp",_path + "left.bmp" } {}
+};
+
 
 //File...
 inline BMP File::readBMP()const
