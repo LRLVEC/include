@@ -663,7 +663,17 @@ namespace OpenGL
 				Buffer* a(&buffers[name].buffer);
 				rtGeometryTrianglesSetVertices(triangles, vertexCount, a->buffer, offset, stride, a->format);
 			}
+			void setIndices(Buffer* a, RTsize offset, RTsize stride)
+			{
+				rtGeometryTrianglesSetTriangleIndices(triangles, a->buffer, offset, stride, a->format);
+			}
+			void setIndices(String<char>const& name, RTsize offset, RTsize stride)
+			{
+				Buffer* a(&buffers[name].buffer);
+				rtGeometryTrianglesSetTriangleIndices(triangles, a->buffer, offset, stride, a->format);
+			}
 			void addSTL(String<char>const& name, STL const&, unsigned int num);
+			void addSTL(String<char>const& vertices, String<char>const& normals, String<char>const& indices, STL const&);
 			void destory()
 			{
 				rtGeometryTrianglesDestroy(triangles);
@@ -817,13 +827,15 @@ namespace OpenGL
 			RTcontext context;
 			Vector<Program*>entryPoints;
 			unsigned int rayTypeCount;
+			unsigned int maxDepth;
 
 			Context() = delete;
-			Context(Vector<Program*>const& _entryPoints, unsigned int _rayTypeCount)
+			Context(Vector<Program*>const& _entryPoints, unsigned int _rayTypeCount, unsigned int _maxDepth)
 				:
 				context(0),
 				entryPoints(_entryPoints),
-				rayTypeCount(_rayTypeCount)
+				rayTypeCount(_rayTypeCount),
+				maxDepth(_maxDepth)
 			{
 				create();
 			}
@@ -841,6 +853,7 @@ namespace OpenGL
 				rtGlobalSetAttribute(RT_GLOBAL_ATTRIBUTE_ENABLE_RTX, sizeof(int), &a);
 				rtContextCreate(&context);
 				rtContextSetRayTypeCount(context, rayTypeCount);
+				rtContextSetMaxTraceDepth(context, maxDepth);
 			}
 			void destory()
 			{
@@ -925,6 +938,12 @@ namespace OpenGL
 				for (int c0(0); c0 < d[0]; ++c0)
 					::printf("%d ", d[c0 + 1]);
 				::printf("\n");
+			}
+			void pringStackSize()const
+			{
+				unsigned long long a(0);
+				rtContextGetStackSize(context, (RTsize*)& a);
+				::printf("Stack size: %u\n", a);
 			}
 			/*void setDevice(int device)
 			{

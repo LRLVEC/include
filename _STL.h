@@ -6,8 +6,10 @@
 #include <_Math.h>
 #include <GL/_OpenGL.h>
 #include <RayTracing/_RayTracing.h>
+#include <unordered_map>
+#ifdef __OptiX__
 #include <OptiX/_OptiX.h>
-
+#endif
 struct STL
 {
 #pragma pack(2)
@@ -31,6 +33,7 @@ struct STL
 	Vector<Math::vec3<float>>verticesRepeated;
 	Vector<Math::vec4<float>>normals;
 
+
 	STL();
 	STL(String<char>const&);
 	STL(STL const&);
@@ -41,6 +44,81 @@ struct STL
 	void removeUseless();
 	double getMinTriangleScale();
 	void printInfo()const;
+};
+struct _Vertex
+{
+	Math::vec3<float>p;
+	unsigned int id;
+	_Vertex(Math::vec3<float>const& _p) :p(_p)
+	{
+	}
+	_Vertex(Math::vec3<float>const& _p, unsigned int _id) :p(_p), id(_id)
+	{
+	}
+	bool operator==(_Vertex const& a)const
+	{
+		return p == a.p;
+	}
+};
+namespace std
+{
+	template<>struct hash<_Vertex>
+	{
+		std::size_t operator()(_Vertex const& p) const
+		{
+			return ((hash<float>()(p.p.data[0]) ^
+				(hash<float>()(p.p.data[1]) << 1)) >> 1) ^
+				(hash<float>()(p.p.data[2]) << 1);
+		}
+	};
+}
+struct STLIndex
+{
+	using Triangle = Math::vec3<unsigned int>;
+	struct Vertex
+	{
+		struct TriangleId
+		{
+			unsigned int id;
+			unsigned char p;
+		};
+		Math::vec3<float>position;
+		Vector<TriangleId>ids;
+		Math::vec3<float>normal;
+		void avergeNormal()
+		{
+			normal = (normal / ids.length).normaliaze();
+		}
+	};
+	Vector<Triangle>triangles;
+	Vector<Vertex>vertices;
+	STLIndex(STL const& stl)
+	{
+		build(stl);
+	}
+	void build(STL const& stl)
+	{
+		triangles.malloc(stl.triangles.length);
+		std::unordered_map<_Vertex, unsigned int>map;
+		for (unsigned int c0(0); c0 < stl.triangles.length * 3; ++c0)
+		{
+			Math::vec3<float> const& p(stl.triangles.data[c0 / 3].vertices.rowVec[c0 % 3]);
+			auto it(map.find(p));
+			if (it == map.end())
+			{
+				map.insert(std::make_pair(_Vertex(p, vertices.length), c0));
+				triangles[c0 / 3][c0 % 3] = vertices.length;
+				vertices.pushBack({ p, {{ c0 / 3,c0 % 3 }}, stl.triangles.data[c0 / 3].normal });
+			}
+			else
+			{
+				triangles[c0 / 3][c0 % 3] = it->first.id;
+				vertices[it->first.id].ids.pushBack({ c0 / 3,c0 % 3 });
+				vertices[it->first.id].normal += stl.triangles.data[c0 / 3].normal;
+			}
+		}
+		vertices.traverse([](Vertex& a) { a.avergeNormal(); return true; });
+	}
 };
 
 namespace OpenGL
@@ -130,37 +208,65 @@ namespace RayTracing
 		}
 	}
 }
+#ifdef __OptiX__
 namespace OpenGL
 {
 	namespace OptiX
 	{
 		//Assuming that the format is linear compact layout...
-		void GeometryTriangles::addSTL(String<char>const& name, STL const& _stl, unsigned int num)
+		void GeometryTriangles::addSTL(String<char>const& name, STL const& stl, unsigned int num)
 		{
-			num = num < _stl.triangles.length ? num : _stl.triangles.length;
+			num = num < stl.triangles.length ? num : stl.triangles.length;
 			Buffer* vertexBuffer(&buffers[name].buffer);
 			unsigned long long size(vertexBuffer->getSize1());
 			vertexBuffer->setSize(size + num * 3);
 			Math::mat3<float>* a((Math::mat3<float>*)vertexBuffer->map() + size / 3);
 			for (int c0(0); c0 < num; ++c0)
 			{
-				Math::vec3<float> d0(_stl.triangles.data[c0].vertices.rowVec[1] - _stl.triangles.data[c0].vertices.rowVec[0]);
-				Math::vec3<float> d1(_stl.triangles.data[c0].vertices.rowVec[2] - _stl.triangles.data[c0].vertices.rowVec[0]);
+				Math::vec3<float> d0(stl.triangles.data[c0].vertices.rowVec[1] - stl.triangles.data[c0].vertices.rowVec[0]);
+				Math::vec3<float> d1(stl.triangles.data[c0].vertices.rowVec[2] - stl.triangles.data[c0].vertices.rowVec[0]);
 				Math::vec3<float> n(d0 | d1);
-				if ((n, _stl.triangles.data[c0].normal) > 0)
-					a[c0] = _stl.triangles.data[c0].vertices;
+				if ((n, stl.triangles.data[c0].normal) > 0)
+					a[c0] = stl.triangles.data[c0].vertices;
 				else
 					a[c0] = Math::mat3<float>{
-						_stl.triangles.data[c0].vertices.rowVec[0],
-						_stl.triangles.data[c0].vertices.rowVec[2],
-						_stl.triangles.data[c0].vertices.rowVec[1] };
+						stl.triangles.data[c0].vertices.rowVec[0],
+						stl.triangles.data[c0].vertices.rowVec[2],
+						stl.triangles.data[c0].vertices.rowVec[1] };
 			}
 			vertexBuffer->unmap();
 			setCount(count + num);
 			setVertices(vertexBuffer, size + num * 3, 0, 12);
 		}
+		void GeometryTriangles::addSTL(String<char>const& vertices, String<char>const& normals, String<char>const& indices, STL const& stl)
+		{
+			STLIndex ahh(stl);
+			Buffer* vertexBuffer(&buffers[vertices].buffer);//float3
+			Buffer* normalBuffer(&buffers[normals].buffer);//float3
+			Buffer* indexBuffer(&buffers[indices].buffer);//uint3
+			vertexBuffer->setSize(ahh.vertices.length);
+			normalBuffer->setSize(ahh.vertices.length);
+			indexBuffer->setSize(ahh.triangles.length);
+			Math::vec3<float>* v((Math::vec3<float>*)vertexBuffer->map());
+			Math::vec3<float>* n((Math::vec3<float>*)normalBuffer->map());
+			Math::vec3<unsigned int>* i((Math::vec3<unsigned int>*)indexBuffer->map());
+			for (unsigned int c0(0); c0 < ahh.vertices.length; ++c0)
+			{
+				v[c0] = ahh.vertices[c0].position;
+				n[c0] = ahh.vertices[c0].normal;
+			}
+			for (unsigned int c0(0); c0 < ahh.triangles.length; ++c0)
+				i[c0] = ahh.triangles[c0];
+			vertexBuffer->unmap();
+			normalBuffer->unmap();
+			indexBuffer->unmap();
+			setCount(ahh.triangles.length);
+			setVertices(vertexBuffer, ahh.vertices.length, 0, 12);
+			setIndices(indexBuffer, 0, 12);
+		}
 	}
 }
+#endif
 
 inline bool STL::Triangle::operator==(Triangle const& a)
 {
