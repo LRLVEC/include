@@ -36,6 +36,7 @@ template<class T>struct Vector
 	int posFirst(T const&)const;
 	Vector<unsigned int>posAll(T const&)const;
 	//Find element
+	template<class R>T& findFirst(R const&);
 	template<class R>T& findFirst(bool(*cmp)(T const&, R const&), R const&);
 	T& findFirst(T const&);
 	Vector<T*> find(T const&);
@@ -210,6 +211,12 @@ template<class T>inline Vector<unsigned int> Vector<T>::posAll(T const& a) const
 	return r;
 }
 //Find element
+template<class T>template<class R>inline T& Vector<T>::findFirst(R const& a)
+{
+	for (int c1 = 0; c1 < length; c1++)
+		if (data[c1] == a)return data[c1];
+	return *(T*)NULL;
+}
 template<class T>template<class R>inline T & Vector<T>::findFirst(bool(*cmp)(T const&, R const&), R const& a)
 {
 	for (int c1 = 0; c1 < length; c1++)

@@ -6,6 +6,7 @@
 #include <_Math.h>
 #include <GL/_OpenGL.h>
 #include <RayTracing/_RayTracing.h>
+#include <OptiX/_OptiX.h>
 
 struct STL
 {
@@ -53,7 +54,7 @@ namespace OpenGL
 		}
 		virtual unsigned int size()override
 		{
-			return sizeof(Math::vec3<float>)* stl->verticesRepeated.length;
+			return sizeof(Math::vec3<float>) * stl->verticesRepeated.length;
 		}
 		STLVertices() = default;
 		STLVertices(STL*);
@@ -68,7 +69,7 @@ namespace OpenGL
 		}
 		virtual unsigned int size()override
 		{
-			return sizeof(Math::vec4<float>)* stl->triangles.length;
+			return sizeof(Math::vec4<float>) * stl->triangles.length;
 		}
 		STLNormals() = default;
 		STLNormals(STL*);
@@ -108,7 +109,7 @@ namespace RayTracing
 					{ 0,1 },
 					-1,
 					_color
-				});
+					});
 			}
 			else
 			{
@@ -124,12 +125,42 @@ namespace RayTracing
 					{ 0,1 },
 					-1,
 					_color
-				});
+					});
 			}
 		}
 	}
 }
-
+namespace OpenGL
+{
+	namespace OptiX
+	{
+		//Assuming that the format is linear compact layout...
+		void GeometryTriangles::addSTL(String<char>const& name, STL const& _stl, unsigned int num)
+		{
+			num = num < _stl.triangles.length ? num : _stl.triangles.length;
+			Buffer* vertexBuffer(&buffers[name].buffer);
+			unsigned long long size(vertexBuffer->getSize1());
+			vertexBuffer->setSize(size + num * 3);
+			Math::mat3<float>* a((Math::mat3<float>*)vertexBuffer->map() + size / 3);
+			for (int c0(0); c0 < num; ++c0)
+			{
+				Math::vec3<float> d0(_stl.triangles.data[c0].vertices.rowVec[1] - _stl.triangles.data[c0].vertices.rowVec[0]);
+				Math::vec3<float> d1(_stl.triangles.data[c0].vertices.rowVec[2] - _stl.triangles.data[c0].vertices.rowVec[0]);
+				Math::vec3<float> n(d0 | d1);
+				if ((n, _stl.triangles.data[c0].normal) > 0)
+					a[c0] = _stl.triangles.data[c0].vertices;
+				else
+					a[c0] = Math::mat3<float>{
+						_stl.triangles.data[c0].vertices.rowVec[0],
+						_stl.triangles.data[c0].vertices.rowVec[2],
+						_stl.triangles.data[c0].vertices.rowVec[1] };
+			}
+			vertexBuffer->unmap();
+			setCount(count + num);
+			setVertices(vertexBuffer, size + num * 3, 0, 12);
+		}
+	}
+}
 
 inline bool STL::Triangle::operator==(Triangle const& a)
 {

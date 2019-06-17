@@ -186,6 +186,14 @@ namespace OpenGL
 			RTformat format;
 
 			Buffer() = delete;
+			Buffer(bool)
+				:
+				context(0),
+				buffer(0),
+				type(RT_BUFFER_INPUT),
+				format(RT_FORMAT_FLOAT)
+			{
+			}
 			Buffer(RTcontext* _context, RTbuffertype _type, RTformat _format)
 				:
 				context(_context),
@@ -201,6 +209,14 @@ namespace OpenGL
 				format(_format)
 			{
 				create(_pbo);
+			}
+			Buffer(Buffer const& a)
+				:
+				context(a.context),
+				buffer(a.buffer),
+				type(a.type),
+				format(a.format)
+			{
 			}
 			operator RTbuffer()
 			{
@@ -246,6 +262,24 @@ namespace OpenGL
 			{
 				rtBufferUnmap(buffer);
 			}
+			unsigned long long getSize1()const
+			{
+				unsigned long long a(0);
+				rtBufferGetSize1D(buffer, &a);
+				return a;
+			}
+			Math::vec2<unsigned long long> getSize2()const
+			{
+				Math::vec2<unsigned long long> a(0);
+				rtBufferGetSize2D(buffer, &a[0], &a[1]);
+				return a;
+			}
+			Math::vec3<unsigned long long> getSize3()const
+			{
+				Math::vec3<unsigned long long> a(0);
+				rtBufferGetSize3D(buffer, &a[0], &a[1], &a[2]);
+				return a;
+			}
 			void setElementSize(unsigned int _size)
 			{
 				if (type == RT_FORMAT_USER)
@@ -279,6 +313,12 @@ namespace OpenGL
 				:
 				variable(0),
 				name(_name)
+			{
+			}
+			VariableBase(VariableBase const& a)
+				:
+				variable(a.variable),
+				name(a.name)
 			{
 			}
 			void setObject(RTobject* _object)
@@ -384,10 +424,10 @@ namespace OpenGL
 		{
 			RTgeometrytriangles* geometryTriangles;
 
-			Variable(RTgeometrytriangles* _context, String<char> const& _name)
+			Variable(RTgeometrytriangles* geoTriangles, String<char> const& _name)
 				:
 				VariableBase(_name),
-				geometryTriangles(_context)
+				geometryTriangles(geoTriangles)
 			{
 				declare();
 			}
@@ -517,20 +557,65 @@ namespace OpenGL
 		};
 		struct GeometryTriangles
 		{
+			struct TrianglesBuffers
+			{
+				struct Parameters
+				{
+					String<char> name;
+					RTbuffertype type;
+					RTformat format;
+				};
+				struct BufferVariable
+				{
+					Buffer buffer;
+					Variable<RTgeometrytriangles> variable;
+					BufferVariable(Parameters const& _para, RTcontext* _context, RTgeometrytriangles* geoTriangles)
+						:
+						buffer(_context, _para.type, _para.format),
+						variable(geoTriangles, _para.name)
+					{
+						buffer.setSize(0);
+						variable.setObject(buffer);
+					}
+					bool operator==(String<char>const& _name)
+					{
+						return variable.name == _name;
+					}
+					void destory()
+					{
+						buffer.destory();
+					}
+				};
+				Vector<BufferVariable>buffers;
+				TrianglesBuffers(RTcontext* _context, RTgeometrytriangles* geoTriangles, Vector<Parameters>const& paras)
+				{
+					for (int c0(0); c0 < paras.length; ++c0)
+						buffers.pushBack(BufferVariable(paras.data[c0], _context, geoTriangles));
+				}
+				BufferVariable& operator[](String<char>const& name)
+				{
+					return buffers.findFirst(name);
+				}
+				void destory()
+				{
+					buffers.traverse([](BufferVariable& a) { a.destory(); return true; });
+				}
+			};
 			RTcontext* context;
 			RTgeometrytriangles triangles;
-			unsigned int count;
+			unsigned long long count;
 			unsigned int materialNum;
 			RTgeometrybuildflags buildFlag;
-			GeometryTriangles(RTcontext* _context, unsigned int _count, unsigned int _materialCount, RTgeometrybuildflags _buildFlag)
+			TrianglesBuffers buffers;
+			GeometryTriangles(RTcontext* _context, unsigned int _materialCount, RTgeometrybuildflags _buildFlag,
+				Vector<TrianglesBuffers::Parameters>const& paras)
 				:
-				context(_context),
-				count(_count),
+				context((rtGeometryTrianglesCreate(*_context, &triangles), _context)),
+				count(0),
 				materialNum(_materialCount),
-				buildFlag(_buildFlag)
+				buildFlag(_buildFlag),
+				buffers(_context, &triangles, paras)
 			{
-				rtGeometryTrianglesCreate(*context, &triangles);
-				rtGeometryTrianglesSetPrimitiveCount(triangles, _count);
 				rtGeometryTrianglesSetMaterialCount(triangles, _materialCount);
 				rtGeometryTrianglesSetBuildFlags(triangles, _buildFlag);
 			}
@@ -542,13 +627,24 @@ namespace OpenGL
 			{
 				return &triangles;
 			}
-			void setVertices(Buffer* buffer, unsigned int vertexCount, RTsize offset, RTsize stride)
+			void setCount(unsigned long long _count)
 			{
-				rtGeometryTrianglesSetVertices(triangles, vertexCount, RTbuffer(*buffer), offset, stride, buffer->format);
+				rtGeometryTrianglesSetPrimitiveCount(triangles, count = _count);
 			}
+			void setVertices(Buffer* a, unsigned int vertexCount, RTsize offset, RTsize stride)
+			{
+				rtGeometryTrianglesSetVertices(triangles, vertexCount, a->buffer, offset, stride, a->format);
+			}
+			void setVertices(String<char>const& name, unsigned int vertexCount, RTsize offset, RTsize stride)
+			{
+				Buffer* a(&buffers[name].buffer);
+				rtGeometryTrianglesSetVertices(triangles, vertexCount, a->buffer, offset, stride, a->format);
+			}
+			void addSTL(String<char>const& name, STL const&, unsigned int num);
 			void destory()
 			{
 				rtGeometryTrianglesDestroy(triangles);
+				buffers.destory();
 			}
 		};
 		struct GeometryInstance
