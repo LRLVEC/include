@@ -459,6 +459,46 @@ namespace OpenGL
 				rtGeometryTrianglesDeclareVariable(*geometryTriangles, name, &variable);
 			}
 		};
+		struct Program
+		{
+			RTcontext* context;
+			RTprogram program;
+			String<char>* source;
+			String<char>name;
+
+			Program() = delete;
+			Program(bool)
+				:
+				context(nullptr),
+				program(nullptr),
+				source(nullptr)
+			{
+			}
+			Program(RTcontext* _context, PTXManager const& _pm, String<char>_name)
+				:
+				context(_context),
+				source(&_pm.getFunction(_name)),
+				name(_name)
+			{
+				create();
+			}
+			operator RTprogram()const
+			{
+				return program;
+			}
+			operator RTprogram* ()
+			{
+				return &program;
+			}
+			void create()
+			{
+				rtProgramCreateFromPTXString(*context, *source, name, &program);
+			}
+			void destory()
+			{
+				rtProgramDestroy(program);
+			}
+		};
 		struct Acceleration
 		{
 			enum Builder
@@ -626,6 +666,7 @@ namespace OpenGL
 			};
 			RTcontext* context;
 			RTgeometrytriangles triangles;
+			Program attrib;
 			unsigned long long count;
 			unsigned int materialNum;
 			RTgeometrybuildflags buildFlag;
@@ -637,10 +678,26 @@ namespace OpenGL
 				count(0),
 				materialNum(_materialCount),
 				buildFlag(_buildFlag),
-				buffers(_context, &triangles, paras)
+				buffers(_context, &triangles, paras),
+				attrib(false)
 			{
 				rtGeometryTrianglesSetMaterialCount(triangles, _materialCount);
 				rtGeometryTrianglesSetBuildFlags(triangles, _buildFlag);
+			}
+			GeometryTriangles(RTcontext* _context, PTXManager const& _pm, String<char>const& _attribProgram,
+				unsigned int _materialCount, RTgeometrybuildflags _buildFlag,
+				Vector<TrianglesBuffers::Parameters>const& paras)
+				:
+				context((rtGeometryTrianglesCreate(*_context, &triangles), _context)),
+				count(0),
+				materialNum(_materialCount),
+				buildFlag(_buildFlag),
+				buffers(_context, &triangles, paras),
+				attrib(_context, _pm, _attribProgram)
+			{
+				rtGeometryTrianglesSetMaterialCount(triangles, _materialCount);
+				rtGeometryTrianglesSetBuildFlags(triangles, _buildFlag);
+				setAttribProgram();
 			}
 			operator RTgeometrytriangles()const
 			{
@@ -671,6 +728,10 @@ namespace OpenGL
 			{
 				Buffer* a(&buffers[name].buffer);
 				rtGeometryTrianglesSetTriangleIndices(triangles, a->buffer, offset, stride, a->format);
+			}
+			void setAttribProgram()
+			{
+				rtGeometryTrianglesSetAttributeProgram(triangles, attrib);
 			}
 			void addSTL(String<char>const& name, STL const&, unsigned int num);
 			void addSTL(String<char>const& vertices, String<char>const& normals, String<char>const& indices, STL const&);
@@ -719,13 +780,16 @@ namespace OpenGL
 		{
 			RTcontext* context;
 			RTgeometrygroup geoGroup;
+			Acceleration accel;
 			unsigned int childCount;
-			GeometryGroup(RTcontext* _context)
+			GeometryGroup(RTcontext* _context, Acceleration::Builder _accelBuilder)
 				:
 				context(_context),
+				accel(_context, _accelBuilder),
 				childCount(0)
 			{
 				rtGeometryGroupCreate(*context, &geoGroup);
+				setAccel();
 			}
 			operator RTgeometrygroup()const
 			{
@@ -735,8 +799,13 @@ namespace OpenGL
 			{
 				return &geoGroup;
 			}
+			operator RTobject* ()
+			{
+				return (RTobject*)& geoGroup;
+			}
 			void destory()
 			{
+				accel.destory();
 				rtGeometryGroupDestroy(geoGroup);
 			}
 			void setInstance(Vector<GeometryInstance*>const& instances)
@@ -745,22 +814,71 @@ namespace OpenGL
 				for (int c0(0); c0 < instances.length; ++c0)
 					rtGeometryGroupSetChild(geoGroup, c0, instances.data[c0]->instance);
 			}
-			void setAccel(Acceleration const& acceleration)
+			void setAccel()
 			{
-				rtGeometryGroupSetAcceleration(geoGroup, acceleration);
+				rtGeometryGroupSetAcceleration(geoGroup, accel);
+			}
+		};
+		struct Transform
+		{
+			RTcontext* context;
+			RTtransform trans;
+			Math::mat4 <float>mat;
+			//row major!!
+			Transform(RTcontext* _context)
+				:
+				context(_context),
+				mat(Math::mat4<float>::id())
+			{
+				rtTransformCreate(*context, &trans);
+				rtTransformSetMatrix(trans, 0, mat.array[0], 0);
+			}
+			Transform(RTcontext* _context, Math::mat4<float>const& _mat)
+				:
+				context(_context),
+				mat(_mat)
+			{
+				rtTransformCreate(*context, &trans);
+				rtTransformSetMatrix(trans, 0, mat.array[0], 0);
+			}
+			operator RTtransform()const
+			{
+				return trans;
+			}
+			operator RTtransform* ()
+			{
+				return &trans;
+			}
+			operator RTobject* ()
+			{
+				return (RTobject*)& trans;
+			}
+			void setMat(Math::mat4<float>const& _mat)
+			{
+				rtTransformSetMatrix(trans, 0, (mat = _mat).array[0], 0);
+			}
+			void setChild(RTobject*object)
+			{
+				rtTransformSetChild(trans, *object);
 			}
 		};
 		struct Group
 		{
 			RTcontext* context;
 			RTgroup group;
+			Acceleration accel;
+			Variable<RTcontext> groupGPU;
 			unsigned int childCount;
-			Group(RTcontext* _context)
+			Group(RTcontext* _context, String<char>const& _name, Acceleration::Builder _accelBuilder)
 				:
 				context(_context),
+				accel(_context, _accelBuilder),
+				groupGPU(context, _name),
 				childCount(0)
 			{
 				rtGroupCreate(*context, &group);
+				setAccel();
+				setGroupGPU();
 			}
 			operator RTgroup()const
 			{
@@ -776,68 +894,84 @@ namespace OpenGL
 			}
 			void destory()
 			{
+				accel.destory();
 				rtGroupDestroy(group);
 			}
-			void setGeoGroup(Vector<GeometryGroup*>const& geoGroup)
+			void setGeoGroup(Vector<RTobject*>const& geoGroup)
 			{
 				rtGroupSetChildCount(group, childCount = geoGroup.length);
 				for (int c0(0); c0 < geoGroup.length; ++c0)
-					rtGroupSetChild(group, c0, geoGroup.data[c0]->geoGroup);
+					rtGroupSetChild(group, c0, *geoGroup.data[c0]);
 			}
-			void setAccel(Acceleration const& accel)
+			void setAccel()
 			{
 				rtGroupSetAcceleration(group, accel);
 			}
-		};
-		struct Program
-		{
-			RTcontext* context;
-			RTprogram program;
-			String<char>* source;
-			String<char>name;
-
-			Program() = delete;
-			Program(RTcontext* _context, PTXManager const& _pm, String<char>_name)
-				:
-				context(_context),
-				source(&_pm.getFunction(_name)),
-				name(_name)
+			void setGroupGPU()
 			{
-				create();
-			}
-			operator RTprogram()const
-			{
-				return program;
-			}
-			operator RTprogram* ()
-			{
-				return &program;
-			}
-			void create()
-			{
-				rtProgramCreateFromPTXString(*context, *source, name, &program);
-			}
-			void destory()
-			{
-				rtProgramDestroy(program);
+				groupGPU.setObject(*this);
 			}
 		};
 		struct Context
 		{
+			struct Miss
+			{
+				unsigned int rayType;
+				Program miss;
+				Miss(RTcontext* _context, PTXManager const& _pm, String<char>_name, unsigned int _rayType)
+					:
+					miss(_context, _pm, _name),
+					rayType(_rayType)
+				{
+				}
+				void setMissProgram()
+				{
+					rtContextSetMissProgram(*miss.context, rayType, miss);
+				}
+			};
+			struct EntryPoint
+			{
+				unsigned int entryPoint;
+				Program entry;
+				EntryPoint(RTcontext* _context, PTXManager const& _pm, String<char>_name, unsigned int _entryPoint)
+					:
+					entry(_context, _pm, _name),
+					entryPoint(_entryPoint)
+				{
+				}
+				void setEntryPoint()
+				{
+					rtContextSetRayGenerationProgram(*entry.context, entryPoint, entry);
+				}
+			};
+
 			RTcontext context;
-			Vector<Program*>entryPoints;
+			Vector<EntryPoint>entries;
+			Vector<Miss>misses;
 			unsigned int rayTypeCount;
 			unsigned int maxDepth;
 
 			Context() = delete;
-			Context(Vector<Program*>const& _entryPoints, unsigned int _rayTypeCount, unsigned int _maxDepth)
+			Context(PTXManager const& _pm, Vector<Pair<unsigned int, String<char>>>const& _entries,
+				Vector<Pair<unsigned int, String<char>>>const& _misses,
+				unsigned int _rayTypeCount, unsigned int _maxDepth)
 				:
 				context(0),
-				entryPoints(_entryPoints),
 				rayTypeCount(_rayTypeCount),
 				maxDepth(_maxDepth)
 			{
 				create();
+				rtContextSetEntryPointCount(context, _entries.length);
+				for (int c0(0); c0 < _entries.length; ++c0)
+				{
+					entries.pushBack(EntryPoint(&context, _pm, _entries.data[c0].data1, _entries.data[c0].data0));
+					entries.end().setEntryPoint();
+				}
+				for (int c0(0); c0 < _misses.length; ++c0)
+				{
+					misses.pushBack(Miss(&context, _pm, _misses.data[c0].data1, _misses.data[c0].data0));
+					misses.end().setMissProgram();
+				}
 			}
 			operator RTcontext()const
 			{
@@ -945,16 +1079,14 @@ namespace OpenGL
 				rtContextGetStackSize(context, (RTsize*)& a);
 				::printf("Stack size: %u\n", a);
 			}
+			void setStackSize(unsigned int size)
+			{
+				rtContextSetStackSize(context, size);
+			}
 			/*void setDevice(int device)
 			{
 				rtContextSetDevices(context, 1, &device);
 			}*/
-			void init()
-			{
-				rtContextSetEntryPointCount(context, entryPoints.length);
-				for (int c0(0); c0 < entryPoints.length; ++c0)
-					rtContextSetRayGenerationProgram(context, c0, *entryPoints[c0]);
-			}
 			void validate()
 			{
 				rtContextValidate(context);
@@ -972,7 +1104,7 @@ namespace OpenGL
 				rtContextLaunch3D(context, _entryPoint, x, y, z);
 			}
 		};
-		struct Transform
+		struct Trans
 		{
 			struct Data
 			{
@@ -1216,8 +1348,8 @@ namespace OpenGL
 			bool moved;
 			bool updated;
 
-			Transform() = delete;
-			Transform(Data const& _data)
+			Trans() = delete;
+			Trans(Data const& _data)
 				:
 				context(_data.context),
 				persp(_data.persp),

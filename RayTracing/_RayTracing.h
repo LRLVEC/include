@@ -1097,6 +1097,7 @@ namespace RayTracing
 						sphereNum(0),
 						circleNum(0),
 						cylinderNum(0),
+						coneNum(0),
 						pointLightNum(0)
 					{
 					}

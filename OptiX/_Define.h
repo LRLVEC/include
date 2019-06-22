@@ -12,8 +12,8 @@ static __device__ __inline__ float random(float2 st)
 }
 static __device__ __inline__ float2 random(float2 st, float f)
 {
-	float a(random(st));
 	st.x += f;
+	float a(random(st));
 	st.y -= f;
 	return make_float2(a, random(st));
 }
@@ -22,8 +22,80 @@ static __device__ __inline__ float2 random(uint2 st, uint2 xy, unsigned int fram
 	float2 a = make_float2(st) / make_float2(xy);
 	a.x += float(frame);
 	float b(random(a));
-	a.y += float(frame);
+	a.y -= float(frame);
 	return make_float2(b, random(a));
+}
+static __device__ __inline__ float3 randomNormal(float3 n, float2 seed)
+{
+	float3 u;
+	float3 v;
+	seed.x = random(seed);
+	seed.y = 2.0 * M_PIf * random(seed);
+	if (fabsf(n.x) > 0.7f)
+	{
+		float s = sqrtf(1 - n.y * n.y);
+		u = make_float3(-n.z, 0, n.x) / s;
+		v = make_float3(n.x * n.y / s, -s, n.y * n.z / s);
+	}
+	else
+	{
+		float s = sqrtf(1 - n.x * n.x);
+		u = make_float3(0, n.z, -n.y) / s;
+		v = make_float3(-s, n.x * n.y / s, n.x * n.z / s);
+	}
+	float sinTheta = sqrtf(1 - seed.x * seed.x);
+	return sinTheta * cosf(seed.y) * u + sinTheta * sin(seed.y) * v + seed.x * n;
+
+}
+static __device__ __inline__ float3 randomDirectionCosN(float3 normal, float n, float2 seed)
+{
+	float3 u;
+	float3 v;
+	seed.x = random(seed);
+	seed.y = 2.0 * M_PIf * random(seed);
+	if (fabsf(normal.x) > 0.7f)
+	{
+		float s = sqrtf(1 - normal.y * normal.y);
+		u = make_float3(-normal.z, 0, normal.x) / s;
+		v = make_float3(normal.x * normal.y / s, -s, normal.y * normal.z / s);
+	}
+	else
+	{
+		float s = sqrtf(1 - normal.x * normal.x);
+		u = make_float3(0, normal.z, -normal.y) / s;
+		v = make_float3(-s, normal.x * normal.y / s, normal.x * normal.z / s);
+	}
+	seed.x = powf(seed.x, 1.0f / (n + 1));
+	return sqrtf(1 - seed.x * seed.x) * (cosf(seed.y) * u + sin(seed.y) * v) + seed.x * normal;
+}
+//(1/3)x^3+x=a
+static __device__ __inline__ float solveX3X(float a)
+{
+	a *= 3;
+	float t(0.79370052598409973738f * (a + sqrtf(4 + a * a)));
+	return t - 1 / t;
+}
+static __device__ __inline__ float4 randomScatter(float3 direction, float t, float k, float3 seed)
+{
+
+	seed.z = logf(expm1f(t * k) * random(make_float2(seed.x, seed.y)) + 1) / k;
+	seed.x = solveX3X(2.6666666666666666667 * random(make_float2(seed.y, seed.z)) - 1.3333333333333333333);
+	seed.y = 2.0 * M_PIf * random(make_float2(seed.x, seed.z));
+	float3 u;
+	float3 v;
+	if (fabsf(direction.x) > 0.7f)
+	{
+		float s = sqrtf(1 - direction.y * direction.y);
+		u = make_float3(-direction.z, 0, direction.x) / s;
+		v = make_float3(direction.x * direction.y / s, -s, direction.y * direction.z / s);
+	}
+	else
+	{
+		float s = sqrtf(1 - direction.x * direction.x);
+		u = make_float3(0, direction.z, -direction.y) / s;
+		v = make_float3(-s, direction.x * direction.y / s, direction.x * direction.z / s);
+	}
+	return make_float4(sqrtf(1 - seed.x * seed.x) * (cosf(seed.y) * u + sin(seed.y) * v) + seed.x * direction, seed.z);
 }
 namespace Define
 {
@@ -60,6 +132,7 @@ namespace Define
 	{
 		return seed ^ frame;
 	}*/
+	__device__ float3 const scatterRatio = { 0.3208506003309145f,0.9224630443030504f ,1.756686355366035f };
 
 	struct Trans
 	{
