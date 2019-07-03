@@ -857,7 +857,7 @@ namespace OpenGL
 			{
 				rtTransformSetMatrix(trans, 0, (mat = _mat).array[0], 0);
 			}
-			void setChild(RTobject*object)
+			void setChild(RTobject* object)
 			{
 				rtTransformSetChild(trans, *object);
 			}
@@ -1403,6 +1403,328 @@ namespace OpenGL
 				if (persp.updated)
 				{
 					bufferData.trans.z0 = -(persp.y / tan(Math::Pi * persp.fovy / 360.0));
+					persp.updated = false;
+					operated = true;
+				}
+				if (operated)
+				{
+					calcAns();
+					variable.set();
+					updated = true;
+				}
+			}
+		};
+		struct TransDepth
+		{
+			struct Data
+			{
+				struct Perspective
+				{
+					double fovy;
+					double D;
+					double V;
+				};
+				struct Scroll
+				{
+					double increaseDelta;
+					double decreaseRatio;
+					double threshold;
+				};
+				struct Key
+				{
+					double ratio;
+				};
+
+				RTcontext* context;
+				Perspective persp;
+				Scroll scroll;
+				Key key;
+				Math::vec3<double> initialPosition;
+				double depth;
+			};
+			struct Perspective
+			{
+				double fovy;
+				unsigned int F;
+				double D;
+				double V;
+				bool updated;
+				Perspective() = delete;
+				Perspective(Data::Perspective const& _persp)
+					:
+					fovy(_persp.fovy),
+					D(_persp.D),
+					V(_persp.V),
+					updated(false)
+				{
+				}
+				Perspective(Perspective const&) = default;
+				void init(::OpenGL::FrameScale const& _size)
+				{
+					F = sqrt(_size.w * _size.w + _size.h * _size.h) / 2.0;
+					updated = true;
+				}
+				void increaseV(double dv)
+				{
+					V = V + dv > 0 ? V + dv : V;
+					updated = true;
+				}
+				void increaseD(double dd)
+				{
+					D = D + dd > 0 ? D + dd : D;
+					updated = true;
+				}
+			};
+			struct Scroll
+			{
+				double increaseDelta;
+				double decreaseRatio;
+				double threshold;
+				double total;
+				Scroll()
+					:
+					increaseDelta(0.05),
+					decreaseRatio(0.95),
+					threshold(0.01),
+					total(threshold)
+				{
+				}
+				Scroll(Data::Scroll const& _scroll)
+					:
+					increaseDelta(_scroll.increaseDelta),
+					decreaseRatio(_scroll.decreaseRatio),
+					threshold(_scroll.threshold),
+					total(threshold)
+				{
+				}
+				void refresh(double _d)
+				{
+					total += _d * increaseDelta;
+				}
+				double operate()
+				{
+					if (abs(total) > threshold)
+					{
+						total *= decreaseRatio;
+						return total;
+					}
+					else return 0.0;
+				}
+			};
+			struct Key
+			{
+				bool left;
+				bool right;
+				bool up;
+				bool down;
+				double ratio;
+				Key()
+					:
+					left(false),
+					right(false),
+					up(false),
+					down(false),
+					ratio(0.05)
+				{
+				}
+				Key(Data::Key const& _key)
+					:
+					left(false),
+					right(false),
+					up(false),
+					down(false),
+					ratio(_key.ratio)
+				{
+				}
+				void refresh(int _key, bool _operation)
+				{
+					switch (_key)
+					{
+						case 0:left = _operation; break;
+						case 1:right = _operation; break;
+						case 2:up = _operation; break;
+						case 3:down = _operation; break;
+					}
+				}
+				Math::vec2<double> operate()
+				{
+					Math::vec2<double>t
+					{
+						ratio * ((int)right - (int)left),
+						ratio * ((int)up - (int)down)
+					};
+					return t;
+				}
+			};
+			struct Mouse
+			{
+				struct Pointer
+				{
+					double x;
+					double y;
+					bool valid;
+					Pointer()
+						:
+						valid(false)
+					{
+					}
+				};
+				Pointer now;
+				Pointer pre;
+				bool left;
+				bool middle;
+				bool right;
+				Mouse()
+					:
+					now(),
+					pre(),
+					left(false),
+					middle(false),
+					right(false)
+				{
+				}
+				void refreshPos(double _x, double _y)
+				{
+					if (left)
+					{
+						if (now.valid)
+						{
+							pre = now;
+							now.x = _x;
+							now.y = _y;
+						}
+						else
+						{
+							now.valid = true;
+							now.x = _x;
+							now.y = _y;
+						}
+					}
+					else
+					{
+						now.valid = false;
+						pre.valid = false;
+					}
+				}
+				void refreshButton(int _button, bool _operation)
+				{
+					switch (_button)
+					{
+						case 0:	left = _operation; break;
+						case 1:	middle = _operation; break;
+						case 2:	right = _operation; break;
+					}
+
+				}
+				Math::vec2<double> operate()
+				{
+					if (now.valid && pre.valid)
+					{
+						pre.valid = false;
+						return { now.y - pre.y   ,now.x - pre.x };
+					}
+					else return { 0.0,0.0 };
+				}
+			};
+			struct BufferData : VariableBase::Data
+			{
+				struct Trans
+				{
+					Math::mat<float, 3, 4>ans;
+					Math::vec3<float>r0;
+					float V;
+					float P;
+					float D;
+				};
+				Trans trans;
+				BufferData()
+				{
+				}
+				void setLense(Perspective const& _persp)
+				{
+					trans.P = _persp.V * tan(Math::Pi * _persp.fovy / 360.0) / _persp.F;
+					trans.D = _persp.D;
+					trans.V = -_persp.V;
+				}
+				virtual void* pointer()override
+				{
+					return &trans;
+				}
+				virtual unsigned long long size()override
+				{
+					return sizeof(Trans);
+				}
+			};
+
+			RTcontext* context;
+			Perspective persp;
+			Scroll scroll;
+			Key key;
+			Mouse mouse;
+			BufferData bufferData;
+			Variable<BufferData>variable;
+			Math::vec3<double>dr;
+			Math::mat3<double>trans;
+			double depth;
+			bool moved;
+			bool updated;
+
+			TransDepth() = delete;
+			TransDepth(Data const& _data)
+				:
+				context(_data.context),
+				persp(_data.persp),
+				scroll(_data.scroll),
+				key(_data.key),
+				mouse(),
+				moved(true),
+				updated(false),
+				bufferData(),
+				variable(_data.context, "transDepth", &bufferData),
+				dr(_data.initialPosition),
+				trans(Math::mat3<double>::id()),
+				depth(_data.depth)
+			{
+			}
+			void init(::OpenGL::FrameScale const& _size)
+			{
+				persp.init(_size);
+				persp.updated = false;
+				bufferData.setLense(persp);
+				calcAns();
+				updated = true;
+				variable.set();
+			}
+			void resize(::OpenGL::FrameScale const& _size)
+			{
+				persp.init(_size);
+			}
+			void calcAns()
+			{
+				bufferData.trans.ans = trans;
+				bufferData.trans.r0 = dr;
+			}
+			void operate()
+			{
+				Math::vec3<double>dxyz(key.operate());
+				dxyz.data[2] = -scroll.operate();
+				Math::vec2<double>axis(mouse.operate());
+				bool operated(false);
+				if (dxyz != 0.0)
+				{
+					dr += (trans, dxyz);
+					moved = true;
+					operated = true;
+				}
+				if (axis != 0.0)
+				{
+					double l(axis.length() / depth);
+					trans = ((trans, Math::vec3<double>(axis)).rotMat(l), trans);
+					operated = true;
+				}
+				if (persp.updated)
+				{
+					bufferData.setLense(persp);
 					persp.updated = false;
 					operated = true;
 				}

@@ -17,13 +17,27 @@ static __device__ __inline__ float2 random(float2 st, float f)
 	st.y -= f;
 	return make_float2(a, random(st));
 }
-static __device__ __inline__ float2 random(uint2 st, uint2 xy, unsigned int frame)
+static __device__ __inline__ float2 random(uint2 st, int2 xy, unsigned int frame)
 {
 	float2 a = make_float2(st) / make_float2(xy);
 	a.x += float(frame);
 	float b(random(a));
 	a.y -= float(frame);
 	return make_float2(b, random(a));
+}
+static __device__ __inline__ float2 random1(uint2 st, int2 xy, unsigned int frame)
+{
+	float2 a = make_float2(st) / make_float2(xy);
+	a.x += sqrtf(frame);
+	float b(random(a));
+	a.y -= sqrtf(frame);
+	return make_float2(b, random(a));
+}
+static __device__ __inline__ float2 randomCircle(float2 seed)
+{
+	seed.x = sqrtf(seed.x);
+	seed.y *= 2 * M_PIf;
+	return make_float2(cosf(seed.y) * seed.x, sinf(seed.y) * seed.x);
 }
 static __device__ __inline__ float3 randomNormal(float3 n, float2 seed)
 {
@@ -139,5 +153,13 @@ namespace Define
 		Matrix3x4 trans;
 		float3 r0;
 		float z0;
+	};
+	struct TransDepth
+	{
+		Matrix3x4 trans;
+		float3 r0;
+		float V;
+		float P;
+		float D;
 	};
 }

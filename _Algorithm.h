@@ -91,24 +91,18 @@ template<class T>inline void qsort(T* const a, int p, int q)
 {
 	if (p < q - 1)
 	{
-		T& k(a[q - 1]);
-		int m(p), n(q - 2);
-		while (1)
+		T const& r(a[p]);
+		int m = p, n = p;
+		while (++n < q)
 		{
-			while (m < q - 1 && a[m] < k)++m;
-			while (n >= p && !(a[n] < k))--n;
-			if (n > m)
+			if (a[n] < r)
 			{
 				T t(a[m]);
-				a[m] = a[n];
+				a[m++] = a[n];
 				a[n] = t;
 			}
-			else break;
 		}
-		if (p < m)qsort(a, p, m);
-		T t(a[m]);
-		a[m] = k;
-		k = t;
-		qsort(a, m + 1, q);
+		if (p < m - 1) qsort(a, p, m);
+		if (m < q - 2) qsort(a, m + 1, q);
 	}
 }
