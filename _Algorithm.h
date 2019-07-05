@@ -1,5 +1,12 @@
 #pragma once
 
+template<class T>inline bool judgeUp(T* const a, int p, int q)
+{
+	for (int c0(p); c0 < q - 1; ++c0)
+		if (a[c0] > a[c0 + 1])return false;
+	return true;
+}
+
 template<class T>inline void maxHeap(T* const a, int p, int q)
 {
 	T l((p << 1) + 1);
@@ -89,20 +96,14 @@ template<class T>inline void heapSort(T* const a, int q)
 
 template<class T>inline void qsort(T* const a, int p, int q)
 {
-	if (p < q - 1)
+	if (p + 1 < q)
 	{
-		T const& r(a[p]);
-		int m = p, n = p;
-		while (++n < q)
-		{
-			if (a[n] < r)
-			{
-				T t(a[m]);
-				a[m++] = a[n];
-				a[n] = t;
-			}
-		}
-		if (p < m - 1) qsort(a, p, m);
-		if (m < q - 2) qsort(a, m + 1, q);
+		T& const k(a[p]);
+		int m(p + 1), n(p);
+		while (++n != q)
+			if (a[n] < k) { T t = a[m]; a[m++] = a[n]; a[n] = t; }
+		T t = a[m - 1]; a[m - 1] = a[p]; a[p] = t;
+		if (p + 2 < m)qsort(a, p, m - 1);
+		if (m + 1 < n)qsort(a, m, n);
 	}
 }
