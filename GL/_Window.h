@@ -115,6 +115,7 @@ namespace Window
 		Window(Data const&, CallbackFun const&);
 		bool operator==(GLFWwindow* const)const;
 		void init(OpenGL::OpenGL*);
+		void setTitle(char const*);
 	};
 	bool Window::glewInitialized(false);
 
@@ -365,7 +366,10 @@ namespace Window
 		callback.init(window);
 		openGL->init(size.size);
 	}
-
+	inline void Window::setTitle(char const* _title)
+	{
+		glfwSetWindowTitle(window, _title);
+	}
 
 	//WindowManager
 	inline WindowManager::WindowManager()
