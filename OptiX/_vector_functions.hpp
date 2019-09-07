@@ -2598,5 +2598,3 @@ __VECTOR_FUNCTIONS_DECL__ float4 make_float4(const float2& v0, const float2& v1)
 /** @} */
 
 #undef __VECTOR_FUNCTIONS_DECL__
-
-#endif /* !__VECTOR_FUNCTIONS_HPP__ */
