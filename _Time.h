@@ -20,11 +20,16 @@ struct FPS
 	timespec t1;
 	unsigned long long dt;
 	double fps;
+	char str[128];
 	bool valid;
 	FPS();
 	void refresh();
 	void printFPS(unsigned int a);
-	void printDt();
+	void printFPSToString(unsigned int a);
+	void printFrameTime(unsigned int a);
+	void printFrameTimeToString(unsigned int a);
+	void printFPSAndFrameTime(unsigned int a, unsigned int b);
+	void printFPSAndFrameTimeToString(unsigned int a, unsigned int b);
 };
 
 
@@ -87,9 +92,25 @@ inline void FPS::refresh()
 }
 inline void FPS::printFPS(unsigned int a)
 {
-	if (valid)printf("%.*lf\n", a, fps);
+	if (valid)printf("\rfps: %.*lf    ", a, fps);
 }
-inline void FPS::printDt()
+inline void FPS::printFPSToString(unsigned int a)
 {
-	if (valid)printf("%lluns\n", dt);
+	if (valid)sprintf(str, "fps: %.*lf", a, fps);
+}
+inline void FPS::printFrameTime(unsigned int a)
+{
+	if (valid)printf("\rframe time: %.*f ms  ", a, dt / 100000.0);
+}
+inline void FPS::printFrameTimeToString(unsigned int a)
+{
+	if (valid)sprintf(str,"frame time: %.*f ms", a, dt / 100000.0);
+}
+inline void FPS::printFPSAndFrameTime(unsigned int a, unsigned int b)
+{
+	if (valid)printf("\rfps:%.*lf\tframe time: %.*lf ms      ", a, fps, b, dt / 1000000.0);
+}
+inline void FPS::printFPSAndFrameTimeToString(unsigned int a, unsigned int b)
+{
+	if (valid)sprintf(str, "fps:%.*lf    frame time: %.*lf ms", a, fps, b, dt / 1000000.0);
 }

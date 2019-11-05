@@ -31,7 +31,7 @@ struct STL
 	Vector<Math::vec3<float>>vertices;
 	bool verticesRepeatedUpdate;
 	Vector<Math::vec3<float>>verticesRepeated;
-	Vector<Math::vec4<float>>normals;
+	Vector<Math::vec3<float>>normals;
 
 
 	STL();
@@ -40,10 +40,10 @@ struct STL
 
 	Vector<Math::vec3<float>>& getVertices();
 	Vector<Math::vec3<float>>& getVerticesRepeated();
-	Vector<Math::vec4<float>>& getNormals();
+	Vector<Math::vec3<float>>& getNormals();
 	void removeUseless();
 	double getMinTriangleScale();
-	void printInfo()const;
+	void printInfo(bool)const;
 };
 struct _Vertex
 {
@@ -342,7 +342,7 @@ inline Vector<Math::vec3<float>>& STL::getVerticesRepeated()
 	}
 	return verticesRepeated;
 }
-inline Vector<Math::vec4<float>>& STL::getNormals()
+inline Vector<Math::vec3<float>>& STL::getNormals()
 {
 	normals.malloc(triangles.length);
 	normals.length = triangles.length;
@@ -367,16 +367,17 @@ inline double STL::getMinTriangleScale()
 	}
 	return sqrt(t);
 }
-inline void STL::printInfo() const
+inline void STL::printInfo(bool a) const
 {
 	::printf("[");
 	name.print();
 	::printf(": num: %d]\n", triangles.length);
-	triangles.traverse([](Triangle const& a)
-		{
-			a.print();
-			return true;
-		});
+	if (a)
+		triangles.traverse([](Triangle const& a)
+			{
+				a.print();
+				return true;
+			});
 }
 
 //File...
