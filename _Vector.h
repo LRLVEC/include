@@ -4,6 +4,7 @@
 #include <cstring>
 #include <cmath>
 #include <initializer_list>
+#include <_TemplateMeta.h>
 
 template<class T>struct Vector
 {
@@ -41,11 +42,12 @@ template<class T>struct Vector
 	T& findFirst(T const&);
 	Vector<T*> find(T const&);
 
-	//add...
+	//add, inverse...
 	Vector& pushBack();
 	Vector& pushBack(const T&);
 	Vector& popBack();
 	Vector& insert(T&&, unsigned int);
+	Vector& inverse();
 	Vector& omit(unsigned int);
 	//traverse
 	bool traverse(bool(*p)(T&));
@@ -103,7 +105,7 @@ template<class T>inline Vector<T>::~Vector()
 	}
 }
 //opetrator=
-template<class T>inline Vector<T>& Vector<T>::operator= (Vector<T> && a)
+template<class T>inline Vector<T>& Vector<T>::operator= (Vector<T>&& a)
 {
 	if (this == &a)return *this;
 	lengthAll = a.lengthAll;
@@ -113,7 +115,7 @@ template<class T>inline Vector<T>& Vector<T>::operator= (Vector<T> && a)
 		new(data + c1)T(a.data[c1]);
 	return *this;
 }
-template<class T>inline Vector<T> & Vector<T>::operator= (Vector<T>const& a)
+template<class T>inline Vector<T>& Vector<T>::operator= (Vector<T>const& a)
 {
 	if (this == &a)return *this;
 	this->~Vector();
@@ -136,7 +138,7 @@ template<class T>inline Vector<T>	Vector<T>::operator+ (Vector<T>const& a)
 		new(tp->data + c1 + length)T(a.data[c1]);
 	return *tp;
 }
-template<class T>inline Vector<T> & Vector<T>::operator+=(Vector<T>const& a)
+template<class T>inline Vector<T>& Vector<T>::operator+=(Vector<T>const& a)
 {
 	if (length + a.length <= lengthAll)
 	{
@@ -146,7 +148,7 @@ template<class T>inline Vector<T> & Vector<T>::operator+=(Vector<T>const& a)
 		return *this;
 	}
 	lengthAll = 1 << (1 + (int)log2(length + a.length));
-	T * tp = (T*)std::malloc(lengthAll * sizeof(T));
+	T* tp = (T*)std::malloc(lengthAll * sizeof(T));
 	for (int c1 = 0; c1 < length; c1++)
 		new(tp + c1)T(data[c1]);
 	for (int c1 = 0; c1 < a.length; c1++)
@@ -159,14 +161,14 @@ template<class T>inline Vector<T> & Vector<T>::operator+=(Vector<T>const& a)
 	return *this;
 }
 //malloc
-template<class T>inline Vector<T> & Vector<T>::malloc(unsigned int a)
+template<class T>inline Vector<T>& Vector<T>::malloc(unsigned int a)
 {
 	if (!a)return *this;
 	if (length + a > lengthAll)
 	{
 		if (!lengthAll)lengthAll = 1;
 		while (length + a > lengthAll)lengthAll <<= 1;
-		T * tp = (T*)std::malloc(lengthAll * sizeof(T));
+		T* tp = (T*)std::malloc(lengthAll * sizeof(T));
 		for (int c1 = 0; c1 < length; c1++)
 		{
 			new(tp + c1)T(data[c1]);
@@ -217,7 +219,7 @@ template<class T>template<class R>inline T& Vector<T>::findFirst(R const& a)
 		if (data[c1] == a)return data[c1];
 	return *(T*)NULL;
 }
-template<class T>template<class R>inline T & Vector<T>::findFirst(bool(*cmp)(T const&, R const&), R const& a)
+template<class T>template<class R>inline T& Vector<T>::findFirst(bool(*cmp)(T const&, R const&), R const& a)
 {
 	for (int c1 = 0; c1 < length; c1++)
 		if (cmp(data[c1], a))return data[c1];
@@ -238,12 +240,12 @@ template<class T>inline Vector<T*> Vector<T>::find(T const& a)
 
 }
 //add...
-template<class T>inline Vector<T> & Vector<T>::pushBack()
+template<class T>inline Vector<T>& Vector<T>::pushBack()
 {
 	if (lengthAll == length)
 	{
 		lengthAll = (lengthAll ? (lengthAll << 1) : 1);
-		T * tp = (T*)std::malloc(lengthAll * sizeof(T));
+		T* tp = (T*)std::malloc(lengthAll * sizeof(T));
 		for (int c1 = 0; c1 < length; c1++)
 		{
 			new(tp + c1)T(data[c1]);
@@ -260,7 +262,7 @@ template<class T>inline Vector<T>& Vector<T>::pushBack(T const& a)
 	if (lengthAll == length)
 	{
 		lengthAll = (lengthAll ? (lengthAll << 1) : 1);
-		T * tp = (T*)std::malloc(lengthAll * sizeof(T));
+		T* tp = (T*)std::malloc(lengthAll * sizeof(T));
 		if (&a >= data && &a < data + length)
 		{
 			T temp(a);
@@ -308,13 +310,13 @@ template<class T>inline Vector<T>& Vector<T>::popBack()
 		(data + length)->~T();
 	return *this;
 }
-template<class T>inline Vector<T> & Vector<T>::insert(T && a, unsigned int b)
+template<class T>inline Vector<T>& Vector<T>::insert(T&& a, unsigned int b)
 {
 	if (b == length)return pushBack(a);
 	if (lengthAll == length)
 	{
 		lengthAll = (lengthAll ? (lengthAll << 1) : 1);
-		T * tp = (T*)std::malloc(lengthAll * sizeof(T));
+		T* tp = (T*)std::malloc(lengthAll * sizeof(T));
 		for (int c1 = 0; c1 < b; c1++)
 		{
 			new(tp + c1)T(data[c1]);
@@ -338,6 +340,23 @@ template<class T>inline Vector<T> & Vector<T>::insert(T && a, unsigned int b)
 	}
 	length++;
 	new(data + b)T(a);
+	return *this;
+}
+template<class T>inline Vector<T>& Vector<T>::inverse()
+{
+	//No exchange optimization yet
+	if (length == 0 || length == 1)return *this;
+	T* tp = (T*)std::malloc(lengthAll * sizeof(T));
+	for (int c0(0); c0 < length / 2; ++c0)
+	{
+		new(tp)T(data[c0]);
+		(data + c0)->~T();
+		new(data + c0)T(data[length - c0 - 1]);
+		(data + length - c0 - 1)->~T();
+		new(data + length - c0 - 1)T(tp);
+		tp->~T();
+	}
+	::free(tp);
 	return *this;
 }
 template<class T>inline Vector<T>& Vector<T>::omit(unsigned int b)

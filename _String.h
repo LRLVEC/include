@@ -9,8 +9,7 @@
 /*
 	To add:
 	1. Concat some strings to construct
-	2. Find...
-	3.
+	2.
 */
 
 
@@ -55,6 +54,8 @@ template<class T>struct String
 	template<class R>auto& operator+=(R const*);
 	template<class R>auto& operator+=(R*);
 	template<class R>auto& operator+=(R);
+	//exchange
+	String<T>& exchange(String<T>&);
 	//findFirst
 	template<class R>int findFirst(String<R>const&);
 	int* getNext()const;
@@ -156,7 +157,7 @@ template<class T>					inline String<T>::String(String<T>const& a)
 		memcpy(data, a.data, (length + 1) << 1);
 	}
 }
-template<class T>					inline String<T>::String(String<T> && a)
+template<class T>					inline String<T>::String(String<T>&& a)
 	:
 	data(a.data),
 	length(a.length),
@@ -207,7 +208,7 @@ template<class T>					inline String<T>::String(T const* a)
 		memcpy(data, a, (length + 1) << 1);
 	}
 }
-template<class T>					inline String<T>::String(T * &a, unsigned int _length, unsigned int _lengthAll)
+template<class T>					inline String<T>::String(T*& a, unsigned int _length, unsigned int _lengthAll)
 {
 	if (_length)
 	{
@@ -239,7 +240,7 @@ template<class T>					inline String<T>::String(T * &a, unsigned int _length, uns
 		}
 	}
 }
-template<class T>					inline String<T>::String(T * &&a, unsigned int _length, unsigned int _lengthAll)
+template<class T>					inline String<T>::String(T*&& a, unsigned int _length, unsigned int _lengthAll)
 {
 	if (_length)
 	{
@@ -327,7 +328,7 @@ template<class T>template<class R>	inline String<T>& String<T>::operator=(String
 	}
 	return *this;
 }
-template<class T>					inline String<T> & String<T>::operator=(String<T>const& a)
+template<class T>					inline String<T>& String<T>::operator=(String<T>const& a)
 {
 	if (data)::free(data);
 	if constexpr (IsSameType<T, char>::value)
@@ -684,7 +685,7 @@ template<class T>template<class R>	inline auto& String<T>::operator+=(R const* a
 		return *this;
 	}
 }
-template<class T>template<class R>	inline auto& String<T>::operator+=(R * a)
+template<class T>template<class R>	inline auto& String<T>::operator+=(R* a)
 {
 	static_assert(CharType<R>::value, "Wrong CharType!");
 	if constexpr (IsSameType<T, R>::value)
@@ -762,13 +763,13 @@ template<class T>template<class R>	inline auto& String<T>::operator+=(R a)
 	else
 	{
 		char32_t temp(a);
-		unsigned int tempLength((unsigned int)::wcstombs(nullptr, (wchar_t*)& temp, 0));
+		unsigned int tempLength((unsigned int)::wcstombs(nullptr, (wchar_t*)&temp, 0));
 		if (lengthAll <= length + tempLength)
 		{
 			lengthAll = lengthAll > 2 ? lengthAll <<= 1 : 4;
 			data = (T*)::realloc(data, lengthAll * sizeof(T));
 		}
-		::wcstombs(data + length, (wchar_t*)& temp, tempLength + 1);
+		::wcstombs(data + length, (wchar_t*)&temp, tempLength + 1);
 		data[length += tempLength] = 0;
 		return *this;
 	}
@@ -789,6 +790,20 @@ template<class T>template<class R>	inline int String<T>::findFirst(String<R>cons
 	}
 	if (temp)return int(temp - data);
 	return -1;
+}
+//exchange
+template<class T>					inline String<T>& String<T>::exchange(String<T>& a)
+{
+	T* tp(a.data);
+	a.data = data;
+	data = tp;
+	unsigned int n(a.length);
+	a.length = length;
+	length = n;
+	n = a.lengthAll;
+	a.lengthAll = lengthAll;
+	lengthAll = n;
+	return *this;
 }
 template<class T>					inline int* String<T>::getNext()const
 {
@@ -967,7 +982,7 @@ template<class T>					inline String<T>String<T>::truncate(int _head, int _length
 	unsigned int _lengthAll(1);
 	if (_head + _length > (int)length || _length < 0) _length = length - _head;
 	while ((int)_lengthAll < _length + 1)_lengthAll <<= 1;
-	T * temp((T*)::malloc(_lengthAll * sizeof(T)));
+	T* temp((T*)::malloc(_lengthAll * sizeof(T)));
 	::memcpy(temp, data + _head, _length * sizeof(T));
 	temp[_length] = 0;
 	return String<T>(temp, _length, _lengthAll);
@@ -982,4 +997,13 @@ template<class T>					inline void String<T>::printInfo()const
 {
 	if constexpr (IsSameType<T, char>::value)::printf("[\"%s\", %u ,%u]\n", data, length, lengthAll);
 	else ::wprintf(L"[\"%ls\", %u ,%u]\n", data, length, lengthAll);
+}
+
+
+//_Vector.h
+template<>inline Vector<String<char>>& Vector<String<char>>::inverse()
+{
+	for (int c0(0); c0 < length / 2; ++c0)
+		data[c0].exchange(data[length - c0 - 1]);
+	return *this;
 }
