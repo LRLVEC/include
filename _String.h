@@ -4,7 +4,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <_Vector.h>
-#include <_TemplateMeta.h>
+#include <_Algorithm.h>
 
 /*
 	To add:
@@ -65,8 +65,13 @@ template<class T>struct String
 	//find
 	template<class R>Vector<int>find(String<R>const&)const;
 	template<class R>Vector<int>find(R const*)const;
+	//omit
+	String<T>& omit(Interval<int>const&);
+	template<class R>String<T>& omit(String<R>const&);
 	//truncate
 	String<T>truncate(int, int)const;
+	String<T>truncate(Interval<int>const&)const;
+	String<T>truncate(IntervalSet<int>const&)const;
 	//print
 	void print()const;
 	void printInfo()const;
@@ -975,8 +980,25 @@ template<class T>template<class R>	inline Vector<int> String<T>::find(R const* a
 		}
 	}
 }
-//truncate: if _length < 0 then cut the left.
-template<class T>					inline String<T>String<T>::truncate(int _head, int _length)const
+//omit
+template<class T>					inline String<T>& String<T>::omit(Interval<int> const& a)
+{
+	//...
+	return String<T>();
+}
+template<class T>template<class R>	inline String<T>& String<T>::omit(String<R> const& a)
+{
+	Vector<int>temp(find(a));
+	if (temp.length)
+	{
+		IntervalSet<int>is(temp, a.length);
+		//...
+
+	}
+	return *this;
+}
+//truncate: if _length < 0 then truncate the part in the left.
+template<class T>					inline String<T> String<T>::truncate(int _head, int _length)const
 {
 	if (_head < 0 || _head >= (int)length)return String<T>();
 	unsigned int _lengthAll(1);
@@ -987,6 +1009,20 @@ template<class T>					inline String<T>String<T>::truncate(int _head, int _length
 	temp[_length] = 0;
 	return String<T>(temp, _length, _lengthAll);
 }
+template<class T>					inline String<T> String<T>::truncate(Interval<int> const& a)const
+{
+	Interval<int>itvl(0, length - 1);
+	itvl ^= a;
+	if (itvl.valid())return truncate(itvl.a, itvl.b - itvl.a + 1);
+}
+template<class T>					inline String<T> String<T>::truncate(IntervalSet<int> const& a)const
+{
+	IntervalSet<int>tp(a);
+	unsigned int n(tp.area(true));
+
+	return String<T>();
+}
+
 //print
 template<class T>					inline void String<T>::print()const
 {
@@ -1006,4 +1042,21 @@ template<>inline Vector<String<char>>& Vector<String<char>>::inverse()
 	for (int c0(0); c0 < length / 2; ++c0)
 		data[c0].exchange(data[length - c0 - 1]);
 	return *this;
+}
+template<>inline Vector<String<wchar_t>>& Vector<String<wchar_t>>::inverse()
+{
+	for (int c0(0); c0 < length / 2; ++c0)
+		data[c0].exchange(data[length - c0 - 1]);
+	return *this;
+}
+
+//_Algorithm.h
+template<class T>void Interval<T>::print()const
+{
+	String<char>tp("[");
+	tp += NumType<T>::printInfo;
+	tp += ", ";
+	tp += NumType<T>::printInfo;
+	tp += "]\n";
+	::printf(tp.data, a, b);
 }

@@ -67,87 +67,106 @@ template<class Condition>struct Not
 };
 
 //==============================================
+enum NumericalType
+{
+	IsNonNumerical,
+	IsInteger,
+	IsFloat,
+};
 template<class T>struct NumType
 {
 	static constexpr bool value = false;
+	static constexpr NumericalType numType = IsNonNumerical;
 	static constexpr unsigned char serial = 0;
 };
-
 template<>struct NumType<char>
 {
 	static constexpr bool value = true;
+	static constexpr NumericalType numType = IsInteger;
 	static constexpr unsigned char serial = 1;
 	static constexpr const char* printInfo = "%d";
 };
 template<>struct NumType<short>
 {
 	static constexpr bool value = true;
+	static constexpr NumericalType numType = IsInteger;
 	static constexpr unsigned char serial = 2;
 	static constexpr const char* printInfo = "%d";
 };
 template<>struct NumType<int>
 {
 	static constexpr bool value = true;
+	static constexpr NumericalType numType = IsInteger;
 	static constexpr unsigned char serial = 3;
 	static constexpr const char* printInfo = "%d";
 };
 template<>struct NumType<long>
 {
 	static constexpr bool value = true;
+	static constexpr NumericalType numType = IsInteger;
 	static constexpr unsigned char serial = 4;
 	static constexpr const char* printInfo = "%d";
 };
 template<>struct NumType<long long>
 {
 	static constexpr bool value = true;
+	static constexpr NumericalType numType = IsInteger;
 	static constexpr unsigned char serial = 5;
 	static constexpr const char* printInfo = "%ld";
 };
 template<>struct NumType<unsigned char>
 {
 	static constexpr bool value = true;
+	static constexpr NumericalType numType = IsInteger;
 	static constexpr unsigned char serial = 6;
 	static constexpr const char* printInfo = "%u";
 };
 template<>struct NumType<unsigned short>
 {
 	static constexpr bool value = true;
+	static constexpr NumericalType numType = IsInteger;
 	static constexpr unsigned char serial = 7;
 	static constexpr const char* printInfo = "%u";
 };
 template<>struct NumType<unsigned int>
 {
 	static constexpr bool value = true;
+	static constexpr NumericalType numType = IsInteger;
 	static constexpr unsigned char serial = 8;
 	static constexpr const char* printInfo = "%u";
 };
 template<>struct NumType<unsigned long>
 {
 	static constexpr bool value = true;
+	static constexpr NumericalType numType = IsInteger;
 	static constexpr unsigned char serial = 9;
 	static constexpr const char* printInfo = "%lu";
 };
 template<>struct NumType<unsigned long long>
 {
 	static constexpr bool value = true;
+	static constexpr NumericalType numType = IsInteger;
 	static constexpr unsigned char serial = 10;
 	static constexpr const char* printInfo = "%llu";
 };
 template<>struct NumType<float>
 {
 	static constexpr bool value = true;
+	static constexpr NumericalType numType = IsFloat;
 	static constexpr unsigned char serial = 11;
 	static constexpr const char* printInfo = "%f";
 };
 template<>struct NumType<double>
 {
 	static constexpr bool value = true;
+	static constexpr NumericalType numType = IsFloat;
 	static constexpr unsigned char serial = 12;
 	static constexpr const char* printInfo = "%lf";
 };
 template<>struct NumType<long double>
 {
 	static constexpr bool value = true;
+	static constexpr NumericalType numType = IsFloat;
 	static constexpr unsigned char serial = 13;
 	static constexpr const char* printInfo = "%lf";
 };

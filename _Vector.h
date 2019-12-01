@@ -23,6 +23,7 @@ template<class T>struct Vector
 	//opetrator=
 	Vector<T>& operator=	(Vector<T>&&);
 	Vector<T>& operator=	(const Vector<T>&);
+	Vector<T>& moveTo(Vector<T>&);
 	//opetrator+
 	Vector<T>	operator+	(const Vector<T>&);
 	Vector<T>& operator+=	(const Vector<T>&);
@@ -103,6 +104,8 @@ template<class T>inline Vector<T>::~Vector()
 		free(data);
 		data = nullptr;
 	}
+	length = 0;
+	lengthAll = 0;
 }
 //opetrator=
 template<class T>inline Vector<T>& Vector<T>::operator= (Vector<T>&& a)
@@ -125,6 +128,17 @@ template<class T>inline Vector<T>& Vector<T>::operator= (Vector<T>const& a)
 	for (int c1 = 0; c1 < length; c1++)
 		new(data + c1)T(a.data[c1]);
 	return *this;
+}
+template<class T>inline Vector<T>& Vector<T>::moveTo(Vector<T>&a)
+{
+	a.~Vector();
+	a.data = data;
+	a.length = length;
+	a.lengthAll = lengthAll;
+	this->data = nullptr;
+	this->length = 0;
+	this->lengthAll = 0;
+	return a;
 }
 //operator+
 template<class T>inline Vector<T>	Vector<T>::operator+ (Vector<T>const& a)
@@ -174,7 +188,8 @@ template<class T>inline Vector<T>& Vector<T>::malloc(unsigned int a)
 			new(tp + c1)T(data[c1]);
 			(data + c1)->~T();
 		}
-		length += a;
+		//Do not create new ones
+		//length += a;
 		free(data);
 		data = tp;
 		return *this;
