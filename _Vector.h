@@ -49,19 +49,20 @@ template<class T>struct Vector
 	Vector<T*> find(T const&);
 
 	//add, inverse...
-	Vector& concat(T* const, int);
-	Vector& pushBack();
-	Vector& pushBack(const T&);
-	Vector& popBack();
-	Vector& insert(T&&, unsigned int);
-	Vector& inverse();
-	Vector& omit(unsigned int);
-	Vector  truncate(int, int)const;
-	Vector  truncate(Interval<int>const&)const;
-	Vector  truncate(IntervalSet<int>const&)const;
-	Vector& truncateSelf(int, int);
-	Vector& truncateSelf(Interval<int>const&);
-	Vector& truncateSelf(IntervalSet<int>const&);
+	Vector<T>& concat(T* const, int);
+	Vector<T>& pushBack();
+	Vector<T>& pushBack(const T&);
+	Vector<T>& popBack();
+	Vector<T>& insert(T&&, unsigned int);
+	Vector<T>& inverse();
+	Vector<T>  omit(unsigned int)const;
+	Vector<T>& omitSelf(unsigned int);
+	Vector<T>  truncate(int, int)const;
+	Vector<T>  truncate(Interval<int>const&)const;
+	Vector<T>  truncate(IntervalSet<int>const&)const;
+	Vector<T>& truncateSelf(int, int);
+	Vector<T>& truncateSelf(Interval<int>const&);
+	Vector<T>& truncateSelf(IntervalSet<int>const&);
 	//traverse
 	bool traverse(bool(*p)(T&));
 	bool traverse(bool(*p)(T const&))const;
@@ -194,9 +195,8 @@ template<class T>inline Vector<T>& Vector<T>::malloc(unsigned int a)
 		//length += a;
 		free(data);
 		data = tp;
-		return *this;
 	}
-	else return *this;
+	return *this;
 }
 //element
 template<class T>inline T& Vector<T>::begin()
@@ -398,22 +398,37 @@ template<class T>inline Vector<T>& Vector<T>::inverse()
 	::free(tp);
 	return *this;
 }
-template<class T>inline Vector<T>& Vector<T>::omit(unsigned int b)
+template<class T>inline Vector<T>  Vector<T>::omit(unsigned int a) const
 {
-	if (b == length - 1)
-		return popBack();
+	if (a >= length)return Vector<T>(*this);
+	if (a == length - 1)return Vector<T>(popBack());
+	Vector<T>tp;
+	tp.malloc(length - 1);
+	if (a)tp.concat(data, a);
+	tp.concat(data + a, length - a - 1);
+	return tp;
+}
+template<class T>inline Vector<T>& Vector<T>::omitSelf(unsigned int a)
+{
+	//what if I just do one translation?(I beleive that no class T needs it's address
+	//and std::memove works well
+	//but if it's construct and destruct function has something like telling
+	//some class pointer that it's position has changed and do something...
+	//so just don't optimize for this
+	if (a >= length)return *this;
+	if (a == length - 1return popBack();
 	if (--length <= (lengthAll >> 2))
 	{
 		lengthAll >>= 1;
 	}
 	T* tp = (T*)std::malloc(lengthAll * sizeof(T));
-	for (int c1 = 0; c1 < b; c1++)
+	for (int c1 = 0; c1 < a; c1++)
 	{
 		new(tp + c1)T(data[c1]);
 		(data + c1)->~T();
 	}
-	(data + b)->~T();
-	for (int c1 = b + 1; c1 <= length; c1++)
+	(data + a)->~T();
+	for (int c1 = a + 1; c1 <= length; c1++)
 	{
 		new(tp + c1 - 1)T(data[c1]);
 		(data + c1)->~T();

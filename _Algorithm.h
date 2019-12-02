@@ -193,15 +193,21 @@ template<class T>struct Interval
 	IntervalSet<T>  operator^(IntervalSet<T>const&)const;
 	bool contains(Interval<T>const& s)const
 	{
-		return !((s.a < a) || (b < s.b));
+		if (valid())
+			return !((s.a < a) || (b < s.b));
+		else return false;
 	}
 	bool hasIntersectionWith(Interval<T>const& s)const
 	{
-		return (s.a < a ? a : s.a) <= (b < s.b ? b : s.b);
+		if (valid())
+			return (s.a < a ? a : s.a) <= (b < s.b ? b : s.b);
+		else return false;
 	}
 	bool isContainedIn(Interval<T>const& s)const
 	{
-		return !((a < s.a) || (s.b < b));
+		if (valid())
+			return !((a < s.a) || (s.b < b));
+		else return false;
 	}
 	bool valid()const
 	{
@@ -514,10 +520,10 @@ template<class T>inline Vector<T>  Vector<T>::truncate(IntervalSet<int> const& s
 	Vector<T>as;
 	as.malloc(_lengthAll);
 	as.length = _lengthAll;
-	int _length(0);
+	int n(0);
 	for (int c0(0); c0 < tp.length; ++c0)
 		for (int c1(tp.data[c0].a); c1 <= tp.data[c0].b; ++c1)
-			new(as.data + _length++)T(data[c1]);
+			new(as.data + n++)T(data[c1]);
 	return as;
 }
 template<class T>inline Vector<T>& Vector<T>::truncateSelf(Interval<int> const& s)

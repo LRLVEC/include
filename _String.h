@@ -9,7 +9,8 @@
 /*
 	To add:
 	1. Concat some strings to construct
-	2.
+	2. omit
+	3. if String<T>::data == nullptr, then operator+... do nothing
 */
 
 
@@ -65,15 +66,25 @@ template<class T>struct String
 	//find
 	template<class R>Vector<int>find(String<R>const&)const;
 	template<class R>Vector<int>find(R const*)const;
+	//malloc
+	String<T>& malloc(unsigned int);
 	//omit
-	String<T>& omit(Interval<int>const&);
+	String<T>  omit(int)const;
+	String<T>  omit(int, int)const;
+	String<T>  omit(Interval<int>const&)const;
+	String<T>  omit(IntervalSet<int>const&)const;
 	template<class R>String<T>& omit(String<R>const&);
-	//truncate
-	String<T>truncate(int, int)const;
-	String<T>truncate(Interval<int>const&)const;
-	String<T>truncate(IntervalSet<int>const&)const;
+	//truncate: if _length < 0: truncate the left
+	String<T>  truncate(int, int)const;
+	String<T>  truncate(Interval<int>const&)const;
+	String<T>  truncate(IntervalSet<int>const&)const;
+	String<T>& truncateSelf(int, int);
+	String<T>& truncateSelf(Interval<int>const&);
+	String<T>& truncateSelf(IntervalSet<int>const&);
 	//print
 	void print()const;
+	void print(char const*)const;
+	void print(char const*, char const*)const;
 	void printInfo()const;
 };
 
@@ -980,10 +991,24 @@ template<class T>template<class R>	inline Vector<int> String<T>::find(R const* a
 		}
 	}
 }
+//malloc
+template<class T>inline String<T>& String<T>::malloc(unsigned int a)
+{
+	if (!a)return *this;
+	if (length + a + 1 > lengthAll)
+	{
+		if (!lengthAll)lengthAll = 1;
+		while (length + a + 1 > lengthAll)lengthAll <<= 1;
+		data = (T*)::realloc(data, lengthAll * sizeof(T));
+		data[length] = 0;
+	}
+	return *this;
+}
 //omit
+
 template<class T>					inline String<T>& String<T>::omit(Interval<int> const& a)
 {
-	//...
+	
 	return String<T>();
 }
 template<class T>template<class R>	inline String<T>& String<T>::omit(String<R> const& a)
@@ -997,31 +1022,81 @@ template<class T>template<class R>	inline String<T>& String<T>::omit(String<R> c
 	}
 	return *this;
 }
-//truncate: if _length < 0 then truncate the part in the left.
-template<class T>					inline String<T> String<T>::truncate(int _head, int _length)const
+//truncate: if _length < 0 then truncate the part in the left;
+//			if _head is out side the interval [0, length - 1], then do nothing
+//				(include ~String<T> and return String<T>(*this))
+template<class T>					inline String<T>  String<T>::truncate(int _head, int _length)const
 {
 	if (_head < 0 || _head >= (int)length)return String<T>();
 	unsigned int _lengthAll(1);
-	if (_head + _length > (int)length || _length < 0) _length = length - _head;
+	if (_head + _length > (int)length || _length <= 0) _length = length - _head;
 	while ((int)_lengthAll < _length + 1)_lengthAll <<= 1;
 	T* temp((T*)::malloc(_lengthAll * sizeof(T)));
 	::memcpy(temp, data + _head, _length * sizeof(T));
 	temp[_length] = 0;
 	return String<T>(temp, _length, _lengthAll);
 }
-template<class T>					inline String<T> String<T>::truncate(Interval<int> const& a)const
+template<class T>					inline String<T>  String<T>::truncate(Interval<int> const& a)const
 {
 	Interval<int>itvl(0, length - 1);
 	itvl ^= a;
 	if (itvl.valid())return truncate(itvl.a, itvl.b - itvl.a + 1);
 	return String<T>();
 }
-template<class T>					inline String<T> String<T>::truncate(IntervalSet<int> const& a)const
+template<class T>					inline String<T>  String<T>::truncate(IntervalSet<int> const& a)const
 {
-	IntervalSet<int>tp(a);
-	unsigned int n(tp.area(true));
-	//...
-	return String<T>();
+	IntervalSet<int>tp(a ^ Interval<int>(0, length - 1));
+	int _lengthAll(tp.area(true));
+	if (!_lengthAll)return String<T>();
+	String<T>as;
+	as.malloc(_lengthAll);
+	as.length = _lengthAll;
+	int n(0);
+	for (int c0(0); c0 < tp.length; ++c0)
+	{
+		int dn(tp.data[c0].b - tp.data[c0].a + 1);
+		::memcpy(as.data + n, data + tp.data[c0].a, dn * sizeof(T));
+		n += dn;
+	}
+	as.data[as.length] = 0;
+	return as;
+}
+template<class T>					inline String<T>& String<T>::truncateSelf(int _head, int _length)
+{
+	if (_head < 0 || _head >= (int)length)return *this;
+	if (_head + _length > (int)length || _length <= 0) _length = length - _head;
+	while (lengthAll < _length + 1)lengthAll <<= 1;
+	::memmove(data, data + _head, _length * sizeof(T));
+	data[_length] = 0;
+	::realloc(data, sizeof(T) * lengthAll);
+	return *this;
+}
+template<class T>					inline String<T>& String<T>::truncateSelf(Interval<int> const& a)
+{
+	Interval<int>itvl(0, length - 1);
+	itvl ^= a;
+	if (itvl.valid())truncateSelf(itvl.a, itvl.b - itvl.a + 1);
+	return *this;
+}
+template<class T>					inline String<T>& String<T>::truncateSelf(IntervalSet<int> const& a)
+{
+	IntervalSet<int>tp(a ^ Interval<int>(0, length - 1));
+	length = tp.area(true);
+	if (!length)
+	{
+		this->~String();
+		return *this;
+	}
+	malloc(length);
+	int n(0);
+	for (int c0(0); c0 < tp.length; ++c0)
+	{
+		int dn(tp.data[c0].b - tp.data[c0].a + 1);
+		::memmove(data + n, data + tp.data[c0].a, dn * sizeof(T));
+		n += dn;
+	}
+	data[length] = 0;
+	return *this;
 }
 
 //print
@@ -1029,6 +1104,17 @@ template<class T>					inline void String<T>::print()const
 {
 	if constexpr (IsSameType<T, char>::value)::printf("%s", data);
 	else ::wprintf(L"%ls", data);
+}
+template<class T>					inline void String<T>::print(char const* a) const
+{
+	::printf("%s", a);
+	print();
+}
+template<class T>					inline void String<T>::print(char const* a, char const* b) const
+{
+	::printf("%s", a);
+	print();
+	::printf("%s", b);
 }
 template<class T>					inline void String<T>::printInfo()const
 {
