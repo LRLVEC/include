@@ -61,7 +61,7 @@ template<class T>struct Vector
 	Vector  truncate(IntervalSet<int>const&)const;
 	Vector& truncateSelf(int, int);
 	Vector& truncateSelf(Interval<int>const&);
-	Vector& truncate(IntervalSet<int>const&);
+	Vector& truncateSelf(IntervalSet<int>const&);
 	//traverse
 	bool traverse(bool(*p)(T&));
 	bool traverse(bool(*p)(T const&))const;

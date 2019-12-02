@@ -1,7 +1,7 @@
 #pragma once
 #include <_Vector.h>
 
-//TODO: add IntervalSet<T>::operator^ ...
+//TODO: 
 
 template<class T>inline bool judgeUp(T* const a, int p, int q)
 {
@@ -237,7 +237,7 @@ template<class T>struct IntervalSet :Vector<Interval<T>>
 	{
 		::printf("{");
 		for (int c0(0); c0 < B::length - 1; ++c0)
-			B::data[c0].print("",", ");
+			B::data[c0].print("", ", ");
 		if (B::length)B::data[B::length - 1].print();
 		::printf("}\n");
 	}
@@ -342,23 +342,20 @@ template<class T>struct IntervalSet :Vector<Interval<T>>
 			qsort(B::data, 0, B::length);
 		return *this;
 	}
-	//To be optimized
 	IntervalSet<T>  operator^(Interval<T>const& s)const
 	{
 		if (!s.valid() || B::length == 0)return IntervalSet<T>();
 		IntervalSet<T>tp(*this);
 		tp.simplify();
 		if (s.a > tp.end().b || s.b < tp.data[0].a)return IntervalSet<T>();
-		int p, q;//[p+1, q-1] is the interval that has intersection with s
+		int p, q;//[p+1, q-1] is the interval which has intersection with s
 		if (s.a <= tp.data[0].b)p = -1;
 		else
 		{
 			int n0(0), n1(tp.length - 1);
 			while (n1 - n0 > 1)
-			{
-				if (s.a <= tp.data[(n0 + n1) / 2].b)n1 = (n0 + n1) / 2;
-				if (tp.data[(n0 + n1 + 1) / 2].b < s.a)n0 = (n0 + n1 + 1) / 2;
-			}
+				if (tp.data[(n0 + n1) / 2].b < s.a)n0 = (n0 + n1) / 2;
+				else n1 = (n0 + n1) / 2;
 			p = n0;
 		}
 		if (tp.end().a <= s.b)q = tp.length;
@@ -366,10 +363,8 @@ template<class T>struct IntervalSet :Vector<Interval<T>>
 		{
 			int n0(0), n1(tp.length - 1);
 			while (n1 - n0 > 1)
-			{
 				if (s.b < tp.data[(n0 + n1) / 2].a)n1 = (n0 + n1) / 2;
-				if (tp.data[(n0 + n1 + 1) / 2].a <= s.b)n0 = (n0 + n1 + 1) / 2;
-			}
+				else n0 = (n0 + n1) / 2;
 			q = n1;
 		}
 		switch (q - p)
@@ -385,6 +380,33 @@ template<class T>struct IntervalSet :Vector<Interval<T>>
 			}
 		}
 	}
+	IntervalSet<T>  operator^(IntervalSet<T>const& s)const
+	{
+		IntervalSet<T>t0(*this);
+		IntervalSet<T>t1(s);
+		t0.simplify();
+		t1.simplify();
+		if (t0.length == 0 || t1.length == 0)return IntervalSet<T>();
+		IntervalSet<T>as;
+		as.malloc(t0.length + t1.length);
+		int p(0), q(0);
+		while (p < t0.length && q < t1.length)
+		{
+			bool flag(false);
+			if (t0.data[p].hasIntersectionWith(t1.data[q]))
+			{
+				as.pushBack(t0.data[p] ^ t1.data[q]);
+				flag = true;
+			}
+			if (t0.data[p] < t1.data[q]) { p++; if (flag) q++; }
+			else { q++; if (flag) p++; }
+		}
+		if (p == t0.length)
+			as.concat(t1.data + q, t1.length - q);
+		else
+			as.concat(t0.data + p, t0.length - p);
+		return as;
+	}
 	IntervalSet<T>& operator^=(Interval<T>const& s)
 	{
 		if (!s.valid() || B::length == 0)
@@ -398,16 +420,14 @@ template<class T>struct IntervalSet :Vector<Interval<T>>
 			this->B::~Vector();
 			return *this;
 		}
-		int p, q;//[p+1, q-1] is the interval that has intersection with s
+		int p, q;//[p+1, q-1] is the interval which has intersection with s
 		if (s.a <= B::data[0].b)p = -1;
 		else
 		{
 			int n0(0), n1(B::length - 1);
 			while (n1 - n0 > 1)
-			{
-				if (s.a <= B::data[(n0 + n1) / 2].b)n1 = (n0 + n1) / 2;
-				if (B::data[(n0 + n1 + 1) / 2].b < s.a)n0 = (n0 + n1 + 1) / 2;
-			}
+				if (B::data[(n0 + n1) / 2].b < s.a)n0 = (n0 + n1) / 2;
+				else n1 = (n0 + n1) / 2;
 			p = n0;
 		}
 		if (B::end().a <= s.b)q = B::length;
@@ -415,10 +435,8 @@ template<class T>struct IntervalSet :Vector<Interval<T>>
 		{
 			int n0(0), n1(B::length - 1);
 			while (n1 - n0 > 1)
-			{
 				if (s.b < B::data[(n0 + n1) / 2].a)n1 = (n0 + n1) / 2;
-				if (B::data[(n0 + n1 + 1) / 2].a <= s.b)n0 = (n0 + n1 + 1) / 2;
-			}
+				else n0 = (n0 + n1) / 2;
 			q = n1;
 		}
 		switch (q - p)
@@ -440,13 +458,37 @@ template<class T>struct IntervalSet :Vector<Interval<T>>
 		}
 		return *this;
 	}
-	//IntervalSet<T>  operator^(IntervalSet<T>const& s)const
-	//{
-	//	IntervalSet<T>tp(*this);
-	//	IntervalSet<T>tl;
-	//	tp.simplify();
-	//	//...
-	//}
+	IntervalSet<T>& operator^=(IntervalSet<T>const& s)
+	{
+		IntervalSet<T>t1(s);
+		simplify();
+		t1.simplify();
+		if (B::length == 0 || t1.length == 0)
+		{
+			this->B::~Vector();
+			return *this;
+		}
+		IntervalSet<T>as;
+		as.malloc(B::length + t1.length);
+		int p(0), q(0);
+		while (p < B::length && q < t1.length)
+		{
+			bool flag(false);
+			if (B::data[p].hasIntersectionWith(t1.data[q]))
+			{
+				as.pushBack(B::data[p] ^ t1.data[q]);
+				flag = true;
+			}
+			if (B::data[p] < t1.data[q]) { p++; if (flag) q++; }
+			else { q++; if (flag) p++; }
+		}
+		if (p == B::length)
+			as.concat(t1.data + q, t1.length - q);
+		else
+			as.concat(B::data + p, B::length - p);
+		as.moveTo(*this);
+		return *this;
+	}
 };
 
 
@@ -457,22 +499,52 @@ template<class T>IntervalSet<T> Interval<T>::operator^(IntervalSet<T>const& s)co
 }
 
 //_Vector.h
-template<class T>inline Vector<T> Vector<T>::truncate(Interval<int> const& s)const
+template<class T>inline Vector<T>  Vector<T>::truncate(Interval<int> const& s)const
 {
 	Interval<int>itvl(0, length - 1);
 	itvl ^= s;
 	if (itvl.valid())return truncate(itvl.a, itvl.b - itvl.a + 1);
 	return Vector<T>();
 }
-//template<class T>inline Vector<T> Vector<T>::truncate(IntervalSet<int> const& s)const
-//{
-//	//...
-//}
+template<class T>inline Vector<T>  Vector<T>::truncate(IntervalSet<int> const& s)const
+{
+	IntervalSet<int>tp(s ^ Interval<int>(0, length - 1));
+	int _lengthAll(tp.area(true));
+	if (!_lengthAll)return Vector<T>();
+	Vector<T>as;
+	as.malloc(_lengthAll);
+	as.length = _lengthAll;
+	int _length(0);
+	for (int c0(0); c0 < tp.length; ++c0)
+		for (int c1(tp.data[c0].a); c1 <= tp.data[c0].b; ++c1)
+			new(as.data + _length++)T(data[c1]);
+	return as;
+}
 template<class T>inline Vector<T>& Vector<T>::truncateSelf(Interval<int> const& s)
 {
 	Interval<int>itvl(0, length - 1);
 	itvl ^= s;
 	if (itvl.valid())return truncateSelf(itvl.a, itvl.b - itvl.a + 1);
 	this->~Vector();
+	return *this;
+}
+template<class T>inline Vector<T>& Vector<T>::truncateSelf(IntervalSet<int> const& s)
+{
+	IntervalSet<int>tp(s ^ Interval<int>(0, length - 1));
+	length = tp.area(true);
+	if (!length)
+	{
+		this->~Vector();
+		return *this;
+	}
+	int n(0);
+	for (int c0(0); c0 < tp.length; ++c0)
+		for (int c1(tp.data[c0].a); c1 <= tp.data[c0].b; ++c1)
+			if (n != c1)
+			{
+				(data + n)->~T();
+				new(data + n++)T(data[c1]);
+				(data + c1)->~T();
+			}
 	return *this;
 }
