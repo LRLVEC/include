@@ -1014,12 +1014,13 @@ template<class T>					inline String<T> String<T>::truncate(Interval<int> const& 
 	Interval<int>itvl(0, length - 1);
 	itvl ^= a;
 	if (itvl.valid())return truncate(itvl.a, itvl.b - itvl.a + 1);
+	return String<T>();
 }
 template<class T>					inline String<T> String<T>::truncate(IntervalSet<int> const& a)const
 {
 	IntervalSet<int>tp(a);
 	unsigned int n(tp.area(true));
-
+	//...
 	return String<T>();
 }
 
@@ -1057,6 +1058,17 @@ template<class T>void Interval<T>::print()const
 	tp += NumType<T>::printInfo;
 	tp += ", ";
 	tp += NumType<T>::printInfo;
-	tp += "]\n";
+	tp += "]";
 	::printf(tp.data, a, b);
+}
+template<class T>void Interval<T>::print(char const* p)const
+{
+	::printf("%s", p);
+	print();
+}
+template<class T>inline void Interval<T>::print(char const* p, char const* q) const
+{
+	::printf("%s", p);
+	print();
+	::printf("%s", q);
 }

@@ -6,6 +6,10 @@
 #include <initializer_list>
 #include <_TemplateMeta.h>
 
+//TODO: add some opotimization for shallow copy and deep copy,
+//		change every thing to log()...
+template<class T>struct Interval;
+template<class T>struct IntervalSet;
 template<class T>struct Vector
 {
 	using elementType = T;
@@ -18,6 +22,7 @@ template<class T>struct Vector
 	Vector(Vector<T>const&);
 	template<class R>Vector(Vector<R>const&);
 	Vector(T const&);
+	Vector(T*, int length, int lengthAll);
 	//Destruction
 	~Vector();
 	//opetrator=
@@ -44,12 +49,19 @@ template<class T>struct Vector
 	Vector<T*> find(T const&);
 
 	//add, inverse...
+	Vector& concat(T* const, int);
 	Vector& pushBack();
 	Vector& pushBack(const T&);
 	Vector& popBack();
 	Vector& insert(T&&, unsigned int);
 	Vector& inverse();
 	Vector& omit(unsigned int);
+	Vector  truncate(int, int)const;
+	Vector  truncate(Interval<int>const&)const;
+	Vector  truncate(IntervalSet<int>const&)const;
+	Vector& truncateSelf(int, int);
+	Vector& truncateSelf(Interval<int>const&);
+	Vector& truncate(IntervalSet<int>const&);
 	//traverse
 	bool traverse(bool(*p)(T&));
 	bool traverse(bool(*p)(T const&))const;
@@ -95,6 +107,14 @@ template<class T>inline Vector<T>::Vector(T const& a)
 {
 	new(data)T(a);
 }
+template<class T>inline Vector<T>::Vector(T* _data, int _length, int _lengthAll)
+	:
+	data(_data),
+	length(_length),
+	lengthAll(_lengthAll)
+{
+	//You must make sure that the parameters are legal...
+}
 //Destruction
 template<class T>inline Vector<T>::~Vector()
 {
@@ -129,7 +149,7 @@ template<class T>inline Vector<T>& Vector<T>::operator= (Vector<T>const& a)
 		new(data + c1)T(a.data[c1]);
 	return *this;
 }
-template<class T>inline Vector<T>& Vector<T>::moveTo(Vector<T>&a)
+template<class T>inline Vector<T>& Vector<T>::moveTo(Vector<T>& a)
 {
 	a.~Vector();
 	a.data = data;
@@ -154,25 +174,7 @@ template<class T>inline Vector<T>	Vector<T>::operator+ (Vector<T>const& a)
 }
 template<class T>inline Vector<T>& Vector<T>::operator+=(Vector<T>const& a)
 {
-	if (length + a.length <= lengthAll)
-	{
-		for (int c1 = 0; c1 < a.length; c1++)
-			new(data + c1 + length)T(a.data[c1]);
-		length += a.length;
-		return *this;
-	}
-	lengthAll = 1 << (1 + (int)log2(length + a.length));
-	T* tp = (T*)std::malloc(lengthAll * sizeof(T));
-	for (int c1 = 0; c1 < length; c1++)
-		new(tp + c1)T(data[c1]);
-	for (int c1 = 0; c1 < a.length; c1++)
-		new(tp + c1 + length)T(a.data[c1]);
-	for (int c1 = 0; c1 < length; c1++)
-		(data + c1)->~T();
-	free(data);
-	data = tp;
-	length += a.length;
-	return *this;
+	return concat(a.data, a.length);
 }
 //malloc
 template<class T>inline Vector<T>& Vector<T>::malloc(unsigned int a)
@@ -253,6 +255,28 @@ template<class T>inline Vector<T*> Vector<T>::find(T const& a)
 		if (data[c1] == a)r.pushBack(data + c1);
 	return r;
 
+}
+template<class T>inline Vector<T>& Vector<T>::concat(T* const _data, int _length)
+{
+	if (length + _length <= lengthAll)
+	{
+		for (int c1 = 0; c1 < _length; c1++)
+			new(data + c1 + length)T(_data[c1]);
+		length += _length;
+		return *this;
+	}
+	lengthAll = 1 << (1 + (int)log2(length + _length));
+	T* tp = (T*)std::malloc(lengthAll * sizeof(T));
+	for (int c1 = 0; c1 < length; c1++)
+		new(tp + c1)T(data[c1]);
+	for (int c1 = 0; c1 < _length; c1++)
+		new(tp + c1 + length)T(_data[c1]);
+	for (int c1 = 0; c1 < length; c1++)
+		(data + c1)->~T();
+	free(data);
+	data = tp;
+	length += _length;
+	return *this;
 }
 //add...
 template<class T>inline Vector<T>& Vector<T>::pushBack()
@@ -398,6 +422,39 @@ template<class T>inline Vector<T>& Vector<T>::omit(unsigned int b)
 	data = tp;
 	return *this;
 }
+template<class T>inline Vector<T>  Vector<T>::truncate(int _head, int _length) const
+{
+	if (_head < 0 || _head >= length)return Vector<T>();
+	int _lengthAll(1);
+	if (_head + _length > length || _length < 0) _length = length - _head;
+	while (_lengthAll < _length + 1)_lengthAll <<= 1;
+	T* temp((T*)::malloc(_lengthAll * sizeof(T)));
+	for (int c0(0); c0 < _length; ++c0)
+		new(temp + c0)T(data[_head + c0]);
+	return Vector<T>(temp, _length, _lengthAll);
+}
+template<class T>inline Vector<T>& Vector<T>::truncateSelf(int _head, int _length)
+{
+	if (_head < 0 || _head >= length)
+	{
+		this->~Vector();
+		return *this;
+	}
+	int _lengthAll(1);
+	if (_head + _length > length || _length < 0) _length = length - _head;
+	while (_lengthAll < _length + 1)_lengthAll <<= 1;
+	if (_head)
+		for (int c0(0); c0 < _length; ++c0)
+		{
+			(data + c0)->~T();
+			new(data + c0)T(data[_head + c0]);
+			(data + _head + c0)->~T();
+		}
+	for (int c0(_head + _length); c0 < length; ++c0)
+		(data + c0)->~T();
+	length = _length;
+	return *this;
+}
 //traverse
 template<class T>inline bool Vector<T>::traverse(bool(*p)(T&))
 {
@@ -411,3 +468,4 @@ template<class T>inline bool Vector<T>::traverse(bool(*p)(T const&))const
 		if (!p(data[c1]))return false;
 	return true;
 }
+

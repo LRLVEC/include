@@ -1,7 +1,7 @@
 #pragma once
 #include <_Vector.h>
 
-//TODO: add IntervalSet::operator^ ...
+//TODO: add IntervalSet<T>::operator^ ...
 
 template<class T>inline bool judgeUp(T* const a, int p, int q)
 {
@@ -132,16 +132,16 @@ template<class T>struct Interval
 	}
 	template<class R, class S>Interval(R const& _a, S const& _b)
 		:
-		a(_a > _b ? _b : _a),
-		b(_b < _a ? _a : _b)
+		a(_a),
+		b(_b)
 	{
 		static_assert(NumType<R>::value == true, "Non-numeric type not supported yet!");
 		static_assert(NumType<S>::value == true, "Non-numeric type not supported yet!");
 	}
 	template<class R, class S>Interval(R&& _a, S&& _b)
 		:
-		a(_a > _b ? _b : _a),
-		b(_b < _a ? _a : _b)
+		a(_a),
+		b(_b)
 	{
 		static_assert(NumType<R>::value == true, "Non-numeric type not supported yet!");
 		static_assert(NumType<S>::value == true, "Non-numeric type not supported yet!");
@@ -170,28 +170,27 @@ template<class T>struct Interval
 		return *this;
 	}
 	//If A^B == null, return a invalid Interval.
-	Interval<T> operator^(Interval<T>const& s)const
+	Interval<T>  operator^(Interval<T>const& s)const
 	{
-		if ((s.a < a ? a : s.a) <= (b < s.b ? b : s.b))
-		{
-			return { s.a < a ? a : s.a, b < s.b ? b : s.b };
-		}
-		return { 1,0 };
+		if ((b < s.b ? b : s.b) < (s.a < a ? a : s.a) || !s.valid())
+			return { 1,0 };
+		return { s.a < a ? a : s.a, b < s.b ? b : s.b };
 	}
 	Interval<T>& operator^=(Interval<T>const& s)
 	{
-		if ((s.a < a ? a : s.a) <= (b < s.b ? b : s.b))
-		{
-			if (a < s.a) a = s.a;
-			if (s.b < b) b = s.b;
-		}
-		else
+		if ((b < s.b ? b : s.b) < (s.a < a ? a : s.a) || !s.valid())
 		{
 			a = 1;
 			b = 0;
 		}
+		else
+		{
+			if (a < s.a) a = s.a;
+			if (s.b < b) b = s.b;
+		}
 		return *this;
 	}
+	IntervalSet<T>  operator^(IntervalSet<T>const&)const;
 	bool contains(Interval<T>const& s)const
 	{
 		return !((s.a < a) || (b < s.b));
@@ -213,27 +212,39 @@ template<class T>struct Interval
 		return b - a;
 	}
 	void print()const;
+	void print(char const*)const;
+	void print(char const*, char const*)const;
 };
 template<class T>struct IntervalSet :Vector<Interval<T>>
 {
 	//b is the section width, which must be positive
 	using B = Vector<Interval<T>>;
-	IntervalSet(IntervalSet<T>const& a) :Vector<Interval<T>>(a)
+	IntervalSet() :Vector<Interval<T>>()
 	{
 	}
-	IntervalSet(Vector<Interval<T>>const& a) :Vector<Interval<T>>(a)
-	{
-	}
-	template<class R>IntervalSet(Vector<R>const& a, T const& b) : Vector<Interval<T>>()
+	IntervalSet(Interval<T>const& a) :Vector<Interval<T>>(a) {}
+	IntervalSet(IntervalSet<T>const& a) :Vector<Interval<T>>(a) {}
+	IntervalSet(Vector<Interval<T>>const& a) :Vector<Interval<T>>(a) {}
+	template<class R>IntervalSet(Vector<R>const& a, T const& b, bool withBorder) : Vector<Interval<T>>()
 	{
 		static_assert(NumType<R>::value == true, "Non-numeric type not supported yet!");
 		B::malloc(a.length);
+		withBorder &= (NumType<T>::numType == IsInteger);
 		for (int c0(0); c0 < a.length; c0++)
-			B::pushBack(Interval<T>(T(a.data[c0]), T(a.data[c0]) + b));
+			B::pushBack(Interval<T>(T(a.data[c0]), T(a.data[c0]) + b - withBorder));
 	}
 	void print()const
 	{
-		for (int c0(0); c0 < B::length; ++c0)B::data[c0].print();
+		::printf("{");
+		for (int c0(0); c0 < B::length - 1; ++c0)
+			B::data[c0].print("",", ");
+		if (B::length)B::data[B::length - 1].print();
+		::printf("}\n");
+	}
+	void print(char const* a)const
+	{
+		::printf("%s", a);
+		print();
 	}
 	bool checkOrder()const
 	{
@@ -275,11 +286,11 @@ template<class T>struct IntervalSet :Vector<Interval<T>>
 		}
 		return true;
 	}
-	T area(bool withBoder)const
+	T area(bool withBorder)const
 	{
 		if (B::length)
 		{
-			withBoder &= (NumType<T>::numType == IsInteger);
+			withBorder &= (NumType<T>::numType == IsInteger);
 			T a(0);
 			unsigned int n;
 			if (checkSimplified())
@@ -296,7 +307,7 @@ template<class T>struct IntervalSet :Vector<Interval<T>>
 				for (int c0(0); c0 < tp.length; ++c0)
 					a += tp.data[c0].area();
 			}
-			return a + withBoder * n;
+			return a + withBorder * n;
 		}
 		return 0;
 	}
@@ -331,4 +342,137 @@ template<class T>struct IntervalSet :Vector<Interval<T>>
 			qsort(B::data, 0, B::length);
 		return *this;
 	}
+	//To be optimized
+	IntervalSet<T>  operator^(Interval<T>const& s)const
+	{
+		if (!s.valid() || B::length == 0)return IntervalSet<T>();
+		IntervalSet<T>tp(*this);
+		tp.simplify();
+		if (s.a > tp.end().b || s.b < tp.data[0].a)return IntervalSet<T>();
+		int p, q;//[p+1, q-1] is the interval that has intersection with s
+		if (s.a <= tp.data[0].b)p = -1;
+		else
+		{
+			int n0(0), n1(tp.length - 1);
+			while (n1 - n0 > 1)
+			{
+				if (s.a <= tp.data[(n0 + n1) / 2].b)n1 = (n0 + n1) / 2;
+				if (tp.data[(n0 + n1 + 1) / 2].b < s.a)n0 = (n0 + n1 + 1) / 2;
+			}
+			p = n0;
+		}
+		if (tp.end().a <= s.b)q = tp.length;
+		else
+		{
+			int n0(0), n1(tp.length - 1);
+			while (n1 - n0 > 1)
+			{
+				if (s.b < tp.data[(n0 + n1) / 2].a)n1 = (n0 + n1) / 2;
+				if (tp.data[(n0 + n1 + 1) / 2].a <= s.b)n0 = (n0 + n1 + 1) / 2;
+			}
+			q = n1;
+		}
+		switch (q - p)
+		{
+			case 1:return IntervalSet<T>();
+			case 2:return tp.data[p + 1] ^ s;
+			default:
+			{
+				tp.truncateSelf(p + 1, q - p - 1);
+				tp.begin() ^= s;
+				tp.end() ^= s;
+				return tp;
+			}
+		}
+	}
+	IntervalSet<T>& operator^=(Interval<T>const& s)
+	{
+		if (!s.valid() || B::length == 0)
+		{
+			this->B::~Vector();
+			return *this;
+		}
+		simplify();
+		if (s.a > B::end().b || s.b < B::data[0].a)
+		{
+			this->B::~Vector();
+			return *this;
+		}
+		int p, q;//[p+1, q-1] is the interval that has intersection with s
+		if (s.a <= B::data[0].b)p = -1;
+		else
+		{
+			int n0(0), n1(B::length - 1);
+			while (n1 - n0 > 1)
+			{
+				if (s.a <= B::data[(n0 + n1) / 2].b)n1 = (n0 + n1) / 2;
+				if (B::data[(n0 + n1 + 1) / 2].b < s.a)n0 = (n0 + n1 + 1) / 2;
+			}
+			p = n0;
+		}
+		if (B::end().a <= s.b)q = B::length;
+		else
+		{
+			int n0(0), n1(B::length - 1);
+			while (n1 - n0 > 1)
+			{
+				if (s.b < B::data[(n0 + n1) / 2].a)n1 = (n0 + n1) / 2;
+				if (B::data[(n0 + n1 + 1) / 2].a <= s.b)n0 = (n0 + n1 + 1) / 2;
+			}
+			q = n1;
+		}
+		switch (q - p)
+		{
+			case 1:this->B::~Vector(); break;
+			case 2:
+			{
+				Interval<T>tp(B::data[p + 1] ^ s);
+				this->B::~Vector();
+				B::pushBack(tp);
+				break;
+			}
+			default:
+			{
+				B::truncateSelf(p + 1, q - p - 1);
+				B::begin() ^= s;
+				B::end() ^= s;
+			}
+		}
+		return *this;
+	}
+	//IntervalSet<T>  operator^(IntervalSet<T>const& s)const
+	//{
+	//	IntervalSet<T>tp(*this);
+	//	IntervalSet<T>tl;
+	//	tp.simplify();
+	//	//...
+	//}
 };
+
+
+//Interval
+template<class T>IntervalSet<T> Interval<T>::operator^(IntervalSet<T>const& s)const
+{
+	return s ^ (*this);
+}
+
+//_Vector.h
+template<class T>inline Vector<T> Vector<T>::truncate(Interval<int> const& s)const
+{
+	Interval<int>itvl(0, length - 1);
+	itvl ^= s;
+	if (itvl.valid())return truncate(itvl.a, itvl.b - itvl.a + 1);
+	return Vector<T>();
+}
+//template<class T>inline Vector<T> Vector<T>::truncate(IntervalSet<int> const& s)const
+//{
+//	//...
+//}
+template<class T>inline Vector<T>& Vector<T>::truncateSelf(Interval<int> const& s)
+{
+	Interval<int>itvl(0, length - 1);
+	itvl ^= s;
+	if (itvl.valid())return truncateSelf(itvl.a, itvl.b - itvl.a + 1);
+	this->~Vector();
+	return *this;
+}
