@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdlib>
 #include <new>
+#include <_String.h>
 
 namespace Expression
 {
@@ -71,6 +72,42 @@ namespace Expression
 		{
 			if (left || right)(*oprd) = (*oprt)(left ? &(*left)() : nullptr, right ? &(*right)() : nullptr);
 			return *oprd;
+		}
+	};
+	//some assumptions: "()" 's meaning is just "()"; " " 's position doesn't change it's meaning
+	struct Expr
+	{
+		String<char> expr;
+		Vector<Expr> subExprs;
+		Expr() {}
+		Expr(String<char>const& a) :expr(a) {}
+		Vector<IntervalSet<int>> getParentheses()const
+		{
+			if (!expr.length)return Vector<IntervalSet<int>>();
+			Vector<int>a(expr.find("("));
+			Vector<int>b(expr.find(")"));
+			if (a.length != b.length || a.length == 0)return Vector<IntervalSet<int>>();
+			int major(-1);
+			int p(0), q(0);
+			Vector<IntervalSet<int>>tp;
+			bool last(true);//true: (, false: )
+			while (p < a.length || q < a.length)
+			{
+				if (a.data[p] < b.data[q] && p < a.length)
+				{
+					if (last)++major; last = true;
+				}
+				else { if (!last)--major; last = false; }
+				if (major < 0)return Vector<IntervalSet<int>>();
+				if (major >= tp.length)tp.pushBack();
+				if (last)tp.data[major].pushBack({ int(a.data[p++]), 0 });
+				else tp.data[major].end().b = b.data[q++];
+			}
+			return tp;
+		}
+		Expr& preSimplify()
+		{
+
 		}
 	};
 }

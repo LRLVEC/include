@@ -55,8 +55,14 @@ template<class T>struct Vector
 	Vector<T>& popBack();
 	Vector<T>& insert(T&&, unsigned int);
 	Vector<T>& inverse();
-	Vector<T>  omit(unsigned int)const;
-	Vector<T>& omitSelf(unsigned int);
+	Vector<T>  omit(int)const;
+	Vector<T>  omit(int, int)const;
+	Vector<T>  omit(Interval<int>const&)const;
+	Vector<T>  omit(IntervalSet<int>const&)const;
+	Vector<T>& omitSelf(int);
+	Vector<T>& omitSelf(int, int);
+	Vector<T>& omitSelf(Interval<int>const&);
+	Vector<T>& omitSelf(IntervalSet<int>const&);
 	Vector<T>  truncate(int, int)const;
 	Vector<T>  truncate(Interval<int>const&)const;
 	Vector<T>  truncate(IntervalSet<int>const&)const;
@@ -398,9 +404,9 @@ template<class T>inline Vector<T>& Vector<T>::inverse()
 	::free(tp);
 	return *this;
 }
-template<class T>inline Vector<T>  Vector<T>::omit(unsigned int a) const
+template<class T>inline Vector<T>  Vector<T>::omit(int a) const
 {
-	if (a >= length)return Vector<T>(*this);
+	if (a < 0 || a >= length)return Vector<T>(*this);
 	if (a == length - 1)return Vector<T>(popBack());
 	Vector<T>tp;
 	tp.malloc(length - 1);
@@ -408,15 +414,15 @@ template<class T>inline Vector<T>  Vector<T>::omit(unsigned int a) const
 	tp.concat(data + a, length - a - 1);
 	return tp;
 }
-template<class T>inline Vector<T>& Vector<T>::omitSelf(unsigned int a)
+template<class T>inline Vector<T>& Vector<T>::omitSelf(int a)
 {
 	//what if I just do one translation?(I beleive that no class T needs it's address
 	//and std::memove works well
 	//but if it's construct and destruct function has something like telling
 	//some class pointer that it's position has changed and do something...
 	//so just don't optimize for this
-	if (a >= length)return *this;
-	if (a == length - 1return popBack();
+	if (a < 0 || a >= length)return *this;
+	if (a == length - 1)return popBack();
 	if (--length <= (lengthAll >> 2))
 	{
 		lengthAll >>= 1;

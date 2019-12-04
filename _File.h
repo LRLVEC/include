@@ -314,10 +314,10 @@ inline String<char>File::readText()const
 	unsigned int _length((unsigned int)::ftell(temp) + 1);
 	char* r((char*)::malloc(_length + 1));
 	::fseek(temp, 0, SEEK_SET);
-	_length = (unsigned int)fread(r, 1, _length, temp);
-	r[_length] = 0;
+	unsigned int __length = (unsigned int)fread(r, 1, _length, temp);
+	r[__length] = 0;
 	::fclose(temp);
-	return String<char>(r, _length, 0);
+	return String<char>(r, __length, _length+1);
 }
 inline String<char>File::readText(String<char>const& _name)const
 {

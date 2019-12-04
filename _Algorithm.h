@@ -146,6 +146,22 @@ template<class T>struct Interval
 		static_assert(NumType<R>::value == true, "Non-numeric type not supported yet!");
 		static_assert(NumType<S>::value == true, "Non-numeric type not supported yet!");
 	}
+	template<class R, class S>Interval(R const& _a, S&& _b)
+		:
+		a(_a),
+		b(_b)
+	{
+		static_assert(NumType<R>::value == true, "Non-numeric type not supported yet!");
+		static_assert(NumType<S>::value == true, "Non-numeric type not supported yet!");
+	}
+	template<class R, class S>Interval(R&& _a, S const& _b)
+		:
+		a(_a),
+		b(_b)
+	{
+		static_assert(NumType<R>::value == true, "Non-numeric type not supported yet!");
+		static_assert(NumType<S>::value == true, "Non-numeric type not supported yet!");
+	}
 	bool operator<(Interval<T> const& s)const
 	{
 		return a < s.a;

@@ -8,6 +8,7 @@
 
 /*
 	To add:
+
 	1. Concat some strings to construct
 	2. omit
 	3. if String<T>::data == nullptr, then operator+... do nothing
@@ -57,13 +58,16 @@ template<class T>struct String
 	template<class R>auto& operator+=(R);
 	//exchange
 	String<T>& exchange(String<T>&);
-	//findFirst
-	template<class R>int findFirst(String<R>const&);
-	int* getNext()const;
-	int KMP(String<T>const&)const;
-	template<class R>int findFirstKMP(String<R>const&);
-	template<class R>int findFirst(R const*);
 	//find
+	template<class R>int findFirst(String<R>const&);
+	int* getKmpNext()const;
+	int KMP(String<T>const&)const;
+	template<class R>int findFirstKMP(String<R>const&)const;
+	template<class R>int findFirst(R const*)const;
+	template<class R>int findNext(String<R>const&, int)const;
+	template<class R>int findNext(R const*,int)const;
+	template<class R>int findAhead(String<R>const&,int)const;
+	template<class R>int findAhead(R const*,int)const;
 	template<class R>Vector<int>find(String<R>const&)const;
 	template<class R>Vector<int>find(R const*)const;
 	//malloc
@@ -73,7 +77,13 @@ template<class T>struct String
 	String<T>  omit(int, int)const;
 	String<T>  omit(Interval<int>const&)const;
 	String<T>  omit(IntervalSet<int>const&)const;
-	template<class R>String<T>& omit(String<R>const&);
+	String<T>& omitSelf(int);
+	String<T>& omitSelf(int, int);
+	String<T>& omitSelf(Interval<int>const&);
+	String<T>& omitSelf(IntervalSet<int>const&);
+	template<class R>String<T>  omitSelf(String<R>const&)const;
+	template<class R>String<T>& omitSelf(R const*);
+	template<class R>String<T>& omitSelf(String<R>const&);
 	//truncate: if _length < 0: truncate the left
 	String<T>  truncate(int, int)const;
 	String<T>  truncate(Interval<int>const&)const;
@@ -790,23 +800,6 @@ template<class T>template<class R>	inline auto& String<T>::operator+=(R a)
 		return *this;
 	}
 }
-//findFirst
-template<class T>template<class R>	inline int String<T>::findFirst(String<R>const& a)
-{
-	T* temp;
-	if constexpr (IsSameType<T, R>::value)
-	{
-		if constexpr (IsSameType<T, char>::value) temp = strstr(data, a.data);
-		else temp = wcsstr(data, a.data);
-	}
-	else
-	{
-		if constexpr (IsSameType<T, char>::value) temp = strstr(data, String<char>::transfer(a.data));
-		else temp = wcsstr(data, String<wchar_t>::transfer(a.data));
-	}
-	if (temp)return int(temp - data);
-	return -1;
-}
 //exchange
 template<class T>					inline String<T>& String<T>::exchange(String<T>& a)
 {
@@ -821,7 +814,26 @@ template<class T>					inline String<T>& String<T>::exchange(String<T>& a)
 	lengthAll = n;
 	return *this;
 }
-template<class T>					inline int* String<T>::getNext()const
+//find
+template<class T>template<class R>	inline int String<T>::findFirst(String<R>const& a)
+{
+	T* temp;
+	if constexpr (IsSameType<T, R>::value)
+	{
+		if constexpr (IsSameType<T, char>::value) temp = strstr(data, a.data);
+		else temp = wcsstr(data, a.data);
+	}
+	else
+	{
+		void* tpp;
+		if constexpr (IsSameType<T, char>::value) temp = strstr(data, tpp = String<char>::transfer(a.data));
+		else temp = wcsstr(data, tpp = String<wchar_t>::transfer(a.data));
+		::free(tpp);
+	}
+	if (temp)return int(temp - data);
+	return -1;
+}
+template<class T>					inline int* String<T>::getKmpNext()const
 {
 	int* r((int*)::malloc(4 * length));
 	int c0(0), c1(-1);
@@ -838,7 +850,7 @@ template<class T>					inline int* String<T>::getNext()const
 }
 template<class T>					inline int String<T>::KMP(String<T>const& a)const
 {
-	int* next(a.getNext());
+	int* next(a.getKmpNext());
 	int c0(0), c1(0);
 	while ((c0 < length) && (c1 < int(a.length)))
 		if (c1 == -1 || data[c0] == a.data[c1])
@@ -850,19 +862,21 @@ template<class T>					inline int String<T>::KMP(String<T>const& a)const
 	if (c1 >= a.length)return c0 - a.length;
 	else return -1;
 }
-template<class T>template<class R>	inline int String<T>::findFirstKMP(String<R>const& a)
+template<class T>template<class R>	inline int String<T>::findFirstKMP(String<R>const& a)const
 {
 	int temp;
 	if constexpr (IsSameType<T, R>::value)
 		temp = KMP(a);
 	else
 	{
-		if constexpr (IsSameType<T, char>::value) temp = KMP(String<char>(String<char>::transfer(a.data)));
-		else temp = KMP(String<wchar_t>(String<wchar_t>::transfer(a.data)));
+		void* tpp;
+		if constexpr (IsSameType<T, char>::value) temp = KMP(String<char>(tpp = String<char>::transfer(a.data)));
+		else temp = KMP(String<wchar_t>(tpp = String<wchar_t>::transfer(a.data)));
+		::free(tpp);
 	}
 	return temp;
 }
-template<class T>template<class R>	inline int String<T>::findFirst(R const* a)
+template<class T>template<class R>	inline int String<T>::findFirst(R const* a)const
 {
 	static_assert(CharType<R>::value, "Wrong CharType!");
 	T* temp;
@@ -873,13 +887,15 @@ template<class T>template<class R>	inline int String<T>::findFirst(R const* a)
 	}
 	else
 	{
-		if constexpr (IsSameType<T, char>::value) temp = strstr(data, String<char>::transfer(a));
-		else temp = wcsstr(data, String<wchar_t>::transfer(a));
+
+		void* tpp;
+		if constexpr (IsSameType<T, char>::value) temp = strstr(data, tpp = String<char>::transfer(a));
+		else temp = wcsstr(data, tpp = String<wchar_t>::transfer(a));
+		::free(tpp);
 	}
 	if (temp)return int(temp - data);
 	return -1;
 }
-//find
 template<class T>template<class R>	inline Vector<int> String<T>::find(String<R>const& a)const
 {
 	Vector<int>temp;
@@ -920,6 +936,7 @@ template<class T>template<class R>	inline Vector<int> String<T>::find(String<R>c
 				temp.pushBack(tempAddress);
 				tempAddress = (flag = strstr(data + tempAddress + 1, ts)) - data;
 			}
+			::free(ts);
 			return temp;
 		}
 		else
@@ -931,6 +948,7 @@ template<class T>template<class R>	inline Vector<int> String<T>::find(String<R>c
 				temp.pushBack(tempAddress);
 				tempAddress = (flag = wcsstr(data + tempAddress + 1, ts)) - data;
 			}
+			::free(ts);
 			return temp;
 		}
 	}
@@ -976,6 +994,7 @@ template<class T>template<class R>	inline Vector<int> String<T>::find(R const* a
 				temp.pushBack(tempAddress);
 				tempAddress = int((flag = strstr(data + tempAddress + 1, ts)) - data);
 			}
+			::free(ts);
 			return temp;
 		}
 		else
@@ -987,6 +1006,7 @@ template<class T>template<class R>	inline Vector<int> String<T>::find(R const* a
 				temp.pushBack(tempAddress);
 				tempAddress = int((flag = wcsstr(data + tempAddress + 1, ts)) - data);
 			}
+			::free(ts);
 			return temp;
 		}
 	}
@@ -1005,22 +1025,53 @@ template<class T>inline String<T>& String<T>::malloc(unsigned int a)
 	return *this;
 }
 //omit
-
-template<class T>					inline String<T>& String<T>::omit(Interval<int> const& a)
+template<class T>					inline String<T>& String<T>::omitSelf(IntervalSet<int>const& a)
 {
-	
-	return String<T>();
-}
-template<class T>template<class R>	inline String<T>& String<T>::omit(String<R> const& a)
-{
-	Vector<int>temp(find(a));
-	if (temp.length)
+	IntervalSet<int>tp(a ^ Interval<int>(0, length - 1));
+	if (!tp.length)return*this;
+	unsigned int _length = length - tp.area(true);
+	if (!_length)
 	{
-		IntervalSet<int>is(temp, a.length);
-		//...
-
+		data = (T*)::realloc(data, sizeof(T));
+		data[0] = 0;
+		lengthAll = 1;
+		return *this;
 	}
+	int n(0);
+	int m(0);
+	for (int c0(0); c0 < tp.length; ++c0)
+	{
+		int dn(tp.data[c0].a - m);
+		if (!dn)
+		{
+			m = tp.data[c0].b + 1;
+			continue;
+		}
+		::memmove(data + n, data + m, dn * sizeof(T));
+		m = tp.data[c0].b + 1;
+		n += dn;
+	}
+	::memmove(data + n, data + m, (length - m) * sizeof(T));
+	data[length = _length] = 0;//bug here
+	lengthAll = length + 1;
+	data = (T*)::realloc(data, lengthAll * sizeof(T));
 	return *this;
+}
+template<class T>template<class R>  inline String<T>& String<T>::omitSelf(R const* a)
+{
+	static_assert(CharType<R>::value, "Wrong CharType!");
+	String<T> ar(a);
+	Vector<int>pos(find(ar));
+	IntervalSet<int>tp(pos, ar.length, true);
+	tp.simplify();
+	return omitSelf(tp);
+}
+template<class T>template<class R>  inline String<T>& String<T>::omitSelf(String<R> const& a)
+{
+	Vector<int>pos(find(a));
+	IntervalSet<int>tp(pos, a.length, true);
+	tp.simplify();
+	return omitSelf(tp);
 }
 //truncate: if _length < 0 then truncate the part in the left;
 //			if _head is out side the interval [0, length - 1], then do nothing
@@ -1064,10 +1115,10 @@ template<class T>					inline String<T>  String<T>::truncate(IntervalSet<int> con
 template<class T>					inline String<T>& String<T>::truncateSelf(int _head, int _length)
 {
 	if (_head < 0 || _head >= (int)length)return *this;
-	if (_head + _length > (int)length || _length <= 0) _length = length - _head;
-	while (lengthAll < _length + 1)lengthAll <<= 1;
-	::memmove(data, data + _head, _length * sizeof(T));
-	data[_length] = 0;
+	if (_head + _length > (int)length || _length <= 0) length -= _head;
+	while (lengthAll < length + 1)lengthAll <<= 1;
+	::memmove(data, data + _head, length * sizeof(T));
+	data[length] = 0;
 	::realloc(data, sizeof(T) * lengthAll);
 	return *this;
 }
@@ -1087,7 +1138,6 @@ template<class T>					inline String<T>& String<T>::truncateSelf(IntervalSet<int>
 		this->~String();
 		return *this;
 	}
-	malloc(length);
 	int n(0);
 	for (int c0(0); c0 < tp.length; ++c0)
 	{
@@ -1096,9 +1146,10 @@ template<class T>					inline String<T>& String<T>::truncateSelf(IntervalSet<int>
 		n += dn;
 	}
 	data[length] = 0;
+	lengthAll = length + 1;
+	data = (T*)::realloc(data, lengthAll * sizeof(T));
 	return *this;
 }
-
 //print
 template<class T>					inline void String<T>::print()const
 {
