@@ -81,6 +81,12 @@ namespace Expression
 		Vector<Expr> subExprs;
 		Expr() {}
 		Expr(String<char>const& a) :expr(a) {}
+		bool checkParentheses()const
+		{
+			if (!expr.length)return false;
+			if (expr.findFirst("(") == -1)return true;
+			else return false;
+		}
 		Vector<IntervalSet<int>> getParentheses()const
 		{
 			if (!expr.length)return Vector<IntervalSet<int>>();
@@ -105,9 +111,25 @@ namespace Expression
 			}
 			return tp;
 		}
-		Expr& preSimplify()
+		/*Expr& preSimplify()
+		{
+			if (checkParentheses())
+			{
+				Vector<IntervalSet<int>>vi(getParentheses());
+				int bg(0);
+				for (int c0(0); c0 < vi[0].length; ++c0)
+				{
+					if (vi[0][c0].a > bg)subExprs.pushBack(expr.truncate(bg, vi[0][c0].a - bg));
+					subExprs.pushBack(expr.truncate(vi[0][c0].a + 1, vi[0][c0].b - vi[0][c0].a - 1));
+					subExprs.end().preSimplify(vi, 0, c0);
+					bg = vi[0][c0].b + 1;
+				}
+				if (bg < expr.length)subExprs.pushBack(expr.truncate(bg, expr.length - bg));
+			}
+		}
+		Expr& preSimplify(Vector<IntervalSet<int>>& const vi, int depth, int pos)
 		{
 
-		}
+		}*/
 	};
 }

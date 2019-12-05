@@ -207,6 +207,14 @@ template<class T>struct Interval
 		return *this;
 	}
 	IntervalSet<T>  operator^(IntervalSet<T>const&)const;
+	Interval<T>  move(T x)const
+	{
+		return { a + x,b + x };
+	}
+	Interval<T>& moveSelf(T x)
+	{
+		a += x; b += x; return *this;
+	}
 	bool contains(Interval<T>const& s)const
 	{
 		if (valid())
@@ -509,6 +517,16 @@ template<class T>struct IntervalSet :Vector<Interval<T>>
 		else
 			as.concat(B::data + p, B::length - p);
 		as.moveTo(*this);
+		return *this;
+	}
+	IntervalSet<T>  move(T x)const
+	{
+		IntervalSet<T>tp(*this);
+		return tp.moveSelf(x);
+	}
+	IntervalSet<T>& moveSelf(T x)
+	{
+		for (int c0(0); c0 < B::length; ++c0)B::data[c0].moveSelf(x);
 		return *this;
 	}
 };
