@@ -2,6 +2,7 @@
 #include <_Vector.h>
 #include <_String.h>
 #include <cstdlib>
+#include <direct.h>
 #include <io.h>
 //#include <direct.h>
 
@@ -58,6 +59,7 @@ struct File
 	File& find(Vector<String<char>>const&);
 	File& find(Vector<String<char>>const&, int);
 	//Create file
+	File& createDirectory(String<char>const&);
 	File& createText(String<char>const&, String<char>const&);
 	File& createBinary(String<char>const&, void*, unsigned int);
 	File& createSTL(String<char>const&, STL const&);
@@ -289,6 +291,12 @@ inline File& File::find(Vector<String<char>>const& _path, int n)
 	return *(File*)nullptr;
 }
 //Create file
+inline File& File::createDirectory(String<char>const&_path)
+{
+	::_mkdir((property.path + _path).data);
+	build();
+	return *this;
+}
 inline File& File::createText(String<char>const& _name, String<char>const& _text)
 {
 	FILE* temp(::fopen((property.path + _name).data, "w+"));
