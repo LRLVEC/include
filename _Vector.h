@@ -407,7 +407,12 @@ template<class T>inline Vector<T>& Vector<T>::inverse()
 template<class T>inline Vector<T>  Vector<T>::omit(int a) const
 {
 	if (a < 0 || a >= length)return Vector<T>(*this);
-	if (a == length - 1)return Vector<T>(popBack());
+	if (a == length - 1)
+	{
+		Vector<T> temp(*this);
+		temp.popBack();
+		return temp;
+	}
 	Vector<T>tp;
 	tp.malloc(length - 1);
 	if (a)tp.concat(data, a);
