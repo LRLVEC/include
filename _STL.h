@@ -371,7 +371,8 @@ inline void STL::printInfo(bool a) const
 {
 	::printf("[");
 	name.print();
-	::printf(": num: %d]\n", triangles.length);
+	::printf(": num: %d, vertices(repeated) num: %d, normals num: %d]\n",
+		triangles.length, verticesRepeated.length, normals.length);
 	if (a)
 		triangles.traverse([](Triangle const& a)
 			{
@@ -399,7 +400,7 @@ inline STL File::readSTL() const
 	::fseek(temp, 0, SEEK_SET);
 	char t[100];
 	::fread(t, 1, 80, temp);
-	STL r(t);
+	STL r(property.file.name);
 	unsigned int _num;
 	::fread(&_num, 4, 1, temp);
 	int c(1);
