@@ -35,9 +35,9 @@ namespace OpenGL
 				float rn(0.3);
 				return
 				{
-					{r * cos(phi),r * sin(phi),1.0f * randReal(mt)},
+					{r * cos(phi),1.0f * randReal(mt) - 0.5f,r * sin(phi)},
 					randReal(mt) > 0.999f ? 100 : randReal(mt),
-					{-vk * sin(phi) / powf(r,rn),vk * cos(phi) / powf(r,rn),0},
+					{-vk * sin(phi) / powf(r,rn),0,vk * cos(phi) / powf(r,rn)},
 				};
 			}
 			Particle sphereGalaxyParticles()
@@ -84,7 +84,7 @@ namespace OpenGL
 			}
 			virtual unsigned int size()override
 			{
-				return sizeof(Particles::Particle)* (particles->particles.length);
+				return sizeof(Particles::Particle) * (particles->particles.length);
 			}
 		};
 
@@ -272,9 +272,9 @@ namespace OpenGL
 		{
 			switch (_button)
 			{
-			case GLFW_MOUSE_BUTTON_LEFT:trans.mouse.refreshButton(0, _action); break;
-			case GLFW_MOUSE_BUTTON_MIDDLE:trans.mouse.refreshButton(1, _action); break;
-			case GLFW_MOUSE_BUTTON_RIGHT:trans.mouse.refreshButton(2, _action); break;
+				case GLFW_MOUSE_BUTTON_LEFT:trans.mouse.refreshButton(0, _action); break;
+				case GLFW_MOUSE_BUTTON_MIDDLE:trans.mouse.refreshButton(1, _action); break;
+				case GLFW_MOUSE_BUTTON_RIGHT:trans.mouse.refreshButton(2, _action); break;
 			}
 		}
 		virtual void mousePos(double _x, double _y) override
@@ -286,18 +286,18 @@ namespace OpenGL
 			if (_y != 0.0)
 				trans.scroll.refresh(_y);
 		}
-		virtual void key(GLFWwindow * _window, int _key, int _scancode, int _action, int _mods) override
+		virtual void key(GLFWwindow* _window, int _key, int _scancode, int _action, int _mods) override
 		{
 			switch (_key)
 			{
-			case GLFW_KEY_ESCAPE:
-				if (_action == GLFW_PRESS)
-					glfwSetWindowShouldClose(_window, true);
-				break;
-			case GLFW_KEY_A:trans.key.refresh(0, _action); break;
-			case GLFW_KEY_D:trans.key.refresh(1, _action); break;
-			case GLFW_KEY_W:trans.key.refresh(2, _action); break;
-			case GLFW_KEY_S:trans.key.refresh(3, _action); break;
+				case GLFW_KEY_ESCAPE:
+					if (_action == GLFW_PRESS)
+						glfwSetWindowShouldClose(_window, true);
+					break;
+				case GLFW_KEY_A:trans.key.refresh(0, _action); break;
+				case GLFW_KEY_D:trans.key.refresh(1, _action); break;
+				case GLFW_KEY_W:trans.key.refresh(2, _action); break;
+				case GLFW_KEY_S:trans.key.refresh(3, _action); break;
 			}
 		}
 	};

@@ -1169,6 +1169,7 @@ namespace Math
 		{
 			printf("\t");
 			d.print();
+			printf("\n");
 		}
 		printf("]\n");
 	}
