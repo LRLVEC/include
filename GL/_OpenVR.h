@@ -1,5 +1,6 @@
 #pragma once
 #include <GL/OPENVR/openvr.h>
+#include <GL/_OpenGL.h>
 #pragma comment(lib, "GL/openvr_api.lib")
 
 #include <_String.h>
@@ -7,12 +8,52 @@
 
 namespace OpenGL
 {
+
 	struct OpenVRDefaultRenderer
 	{
 
 	};
 	namespace VR
 	{
+		struct FramebufferDesc
+		{
+			GLuint m_nDepthBufferId;
+			GLuint m_nRenderTextureId;
+			GLuint m_nRenderFramebufferId;
+			GLuint m_nResolveTextureId;
+			GLuint m_nResolveFramebufferId;
+		};
+		bool CreateFrameBuffer(int width, int height, FramebufferDesc& framebufferDesc)
+		{
+			glGenFramebuffers(1, &framebufferDesc.m_nRenderFramebufferId);
+			glBindFramebuffer(GL_FRAMEBUFFER, framebufferDesc.m_nRenderFramebufferId);
+
+			glGenRenderbuffers(1, &framebufferDesc.m_nDepthBufferId);
+			glBindRenderbuffer(GL_RENDERBUFFER, framebufferDesc.m_nDepthBufferId);
+			glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH_COMPONENT, width, height);
+			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, framebufferDesc.m_nDepthBufferId);
+
+			glGenTextures(1, &framebufferDesc.m_nRenderTextureId);
+			glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, framebufferDesc.m_nRenderTextureId);
+			glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA8, width, height, true);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, framebufferDesc.m_nRenderTextureId, 0);
+
+			glGenFramebuffers(1, &framebufferDesc.m_nResolveFramebufferId);
+			glBindFramebuffer(GL_FRAMEBUFFER, framebufferDesc.m_nResolveFramebufferId);
+
+			glGenTextures(1, &framebufferDesc.m_nResolveTextureId);
+			glBindTexture(GL_TEXTURE_2D, framebufferDesc.m_nResolveTextureId);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, framebufferDesc.m_nResolveTextureId, 0);
+
+			// check FBO status
+			GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+			if (status != GL_FRAMEBUFFER_COMPLETE)return false;
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			return true;
+		}
 		struct Object
 		{
 			unsigned int numDevice;
@@ -52,16 +93,16 @@ namespace OpenGL
 			}
 			void update(vr::TrackedDevicePose_t const& a)
 			{
-				/*Math::mat<float, 3, 4>m0(*(Math::mat<float, 3, 4>*) & a.mDeviceToAbsoluteTracking);
+				Math::mat<float, 3, 4>m0(*(Math::mat<float, 3, 4>*) & a.mDeviceToAbsoluteTracking);
 				Math::mat3<float>m1(m0);
 				pos = !m1;
 				Math::vec4<float>dr(-m0.column(3));
 				dr.data[3] = 0;
 				dr = (pos, dr);
 				dr.data[3] = 1;
-				pos.setCol(dr, 3);*/
-				new(&pos)Math::mat4<float>(*(Math::mat<float, 3, 4>*) & a.mDeviceToAbsoluteTracking);
-				pos.rowVec[3] = { 0,0,0,1.0f };
+				pos.setCol(dr, 3);
+				//new(&pos)Math::mat4<float>(*(Math::mat<float, 3, 4>*) & a.mDeviceToAbsoluteTracking);
+				//pos.rowVec[3] = { 0,0,0,1.0f };
 				velocity = *(Math::vec3<float>*) & a.vVelocity;
 				omega = *(Math::vec3<float>*) & a.vAngularVelocity;
 				trackingResult = a.eTrackingResult;
@@ -163,7 +204,7 @@ namespace OpenGL
 				double zNear;
 				double zFar;
 			};
-			struct SingleEye
+			struct SingleEye :Buffer::Data
 			{
 				vr::EVREye eye;
 				VRDevice* hmd;
@@ -214,6 +255,14 @@ namespace OpenGL
 				{
 					updateTrans(hmd->objects[0]);
 					answer = (proj, trans);
+				}
+				virtual void* pointer()override
+				{
+					return (void*)(answer.array);
+				}
+				virtual unsigned int size()override
+				{
+					return sizeof(answer);
 				}
 				void printInfo()const
 				{
