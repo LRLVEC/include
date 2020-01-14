@@ -225,7 +225,7 @@ namespace CUDA
 
 namespace OpenGL
 {
-	struct DefautRenderer : ::OpenGL::Program
+	struct OptiXDefautRenderer : ::OpenGL::Program
 	{
 		struct TriangleData : ::OpenGL::Buffer::Data
 		{
@@ -278,7 +278,7 @@ namespace OpenGL
 		VertexAttrib positions;
 		bool updated;
 
-		DefautRenderer(SourceManager* _sourceManage, FrameScale const& _size)
+		OptiXDefautRenderer(SourceManager* _sourceManage, FrameScale const& _size)
 			:
 			Program(_sourceManage, "Frame", Vector<VertexAttrib*>{&positions}),
 			triangles(),

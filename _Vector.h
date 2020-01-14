@@ -30,10 +30,12 @@ template<class T>struct Vector
 	Vector<T>& operator=	(const Vector<T>&);
 	Vector<T>& moveTo(Vector<T>&);
 	//opetrator+
-	Vector<T>	operator+	(const Vector<T>&);
+	Vector<T>  operator+	(const Vector<T>&);
 	Vector<T>& operator+=	(const Vector<T>&);
 	//malloc
 	Vector<T>& malloc(unsigned int);
+	//clear
+	Vector<T>& clear();
 	//element
 	T& begin();
 	T& end();
@@ -202,6 +204,14 @@ template<class T>inline Vector<T>& Vector<T>::malloc(unsigned int a)
 		free(data);
 		data = tp;
 	}
+	return *this;
+}
+//clear
+template<class T>inline Vector<T>& Vector<T>::clear()
+{
+	if (!length)return *this;
+	for (int c0 = 0; c0 < length; c0++)(data + c0)->~T();
+	length = 0;
 	return *this;
 }
 //element
