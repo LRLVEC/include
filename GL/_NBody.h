@@ -1,6 +1,7 @@
 #pragma once
 #include <GL/_OpenGL.h>
 #include <GL/_OpenVR.h>
+#include <time.h>
 #include <random>
 
 
@@ -319,6 +320,7 @@ namespace OpenGL
 			Particles() = delete;
 			Particles(unsigned int _num)
 				:
+				mt(time(NULL)),
 				num(_num),
 				randReal(0, 1)
 			{
@@ -328,13 +330,26 @@ namespace OpenGL
 				float r(100 * randReal(mt) + 0.1);
 				float phi(2 * Math::Pi * randReal(mt));
 				r = pow(r, 0.5);
-				float vk(2.0f);
+				float vk(3.0f);
 				float rn(0.3);
 				return
 				{
 					{r * cos(phi),1.0f * randReal(mt) - 0.5f,r * sin(phi)},
 					randReal(mt) > 0.999f ? 100 : randReal(mt),
 					{-vk * sin(phi) / powf(r,rn),0,vk * cos(phi) / powf(r,rn)},
+				};
+			}
+			Particle flatGalaxyParticlesOptimized(float blackHoleMass)
+			{
+				float r0(sqrtf(randReal(mt) + 0.01));
+				float phi(2 * Math::Pi * randReal(mt));
+				float r = r0 * 0.1;
+				float vk(sqrtf(0.001f * (r * calcForce(r0) + blackHoleMass / r)));
+				return
+				{
+					{r * cos(phi),.002f * randReal(mt) + 0.899f,r * sin(phi)},
+					randReal(mt),
+					{-vk * sin(phi) ,0,vk * cos(phi) },
 				};
 			}
 			Particle sphereGalaxyParticles()
@@ -351,6 +366,33 @@ namespace OpenGL
 					{-vk * sin(phi) / powf(r,rn),vk * cos(phi) / powf(r,rn),0},
 				};
 			}
+			Particle expFlatGalaxyParticles()
+			{
+				float r(100 * randReal(mt));
+				float phi(2 * Math::Pi * randReal(mt));
+				r = pow(r, 0.5);
+				float vk(3.0f);
+				float rn(0.3);
+				return
+				{
+					{r * cos(phi),r * sin(phi),1.0f * randReal(mt) - 0.5f},
+					randReal(mt),
+					{-vk * sin(phi) / powf(r,rn),vk * cos(phi) / powf(r,rn),0},
+				};
+			}
+			float calcForce(float r)
+			{
+				//r is in [0, 1], mass is uniformly distrubuted in [0, 1]
+				return (0.00434f + r * (-0.03039f +
+					r * (0.11616f + r * (-0.16195f + 0.08362f * r)))) * num;
+			}
+			void experimentGalaxy()
+			{
+				//This is used to create a distrubution without center black hole...
+				//to see how force is distrubuted.
+				unsigned int _num(num);
+				while (_num--)particles.pushBack(expFlatGalaxyParticles());
+			}
 			void randomGalaxy()
 			{
 				unsigned int _num(num - 1);
@@ -361,6 +403,21 @@ namespace OpenGL
 					{
 						{0,0,0},
 						8000,
+						{0,0,0},
+					}
+				);
+			}
+			void randomGalaxyOptimized()
+			{
+				unsigned int _num(num - 1);
+				float blackHoleMass(200000.0f);
+				while (_num--)
+					particles.pushBack(flatGalaxyParticlesOptimized(blackHoleMass));
+				particles.pushBack
+				(
+					{
+						{0,0.9,0},
+						blackHoleMass,
 						{0,0,0},
 					}
 				);
@@ -395,8 +452,8 @@ namespace OpenGL
 			VertexAttrib velocities;
 			VR::VRDevice* hmd;
 			VR::Trans* vrTrans;
-			VR::FramebufferDesc leftEyeDesc;
-			VR::FramebufferDesc rightEyeDesc;
+			VR::FrameBufferDesc leftEyeDesc;
+			VR::FrameBufferDesc rightEyeDesc;
 			FrameScale windowSize;
 
 			Renderer(SourceManager* _sm, Buffer* _particlesBuffer, Transform* _trans, VR::Trans* _vrTrans, VR::VRDevice* _hmd)
@@ -409,7 +466,9 @@ namespace OpenGL
 				positions(&particlesArray, 0, VertexAttrib::three, VertexAttrib::Float, false, sizeof(Particles::Particle), 0, 0),
 				velocities(&particlesArray, 1, VertexAttrib::three, VertexAttrib::Float, false, sizeof(Particles::Particle), 16, 0),
 				hmd(_hmd),
-				vrTrans(_vrTrans)
+				vrTrans(_vrTrans),
+				leftEyeDesc(hmd->frameScale),
+				rightEyeDesc(hmd->frameScale)
 			{
 				init();
 			}
@@ -422,30 +481,14 @@ namespace OpenGL
 				glEnable(GL_MULTISAMPLE);
 
 				// Left Eye
-				glBindFramebuffer(GL_FRAMEBUFFER, leftEyeDesc.m_nRenderFramebufferId);
+				glBindFramebuffer(GL_FRAMEBUFFER, leftEyeDesc.renderFramebuffer);
 				glViewport(0, 0, hmd->frameScale.w, hmd->frameScale.h);
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 				transBuffer.data = &vrTrans->leftEye;
 				transUniform.refreshData();
 				glDrawArrays(GL_POINTS, 0, particlesArray.buffer->data->size() / sizeof(Particles::Particle));
-				glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-				glDisable(GL_MULTISAMPLE);
-
-				glBindFramebuffer(GL_READ_FRAMEBUFFER, leftEyeDesc.m_nRenderFramebufferId);
-				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, leftEyeDesc.m_nResolveFramebufferId);
-
-				glBlitFramebuffer(0, 0, hmd->frameScale.w, hmd->frameScale.h,
-					0, 0, hmd->frameScale.w, hmd->frameScale.h,
-					GL_COLOR_BUFFER_BIT, GL_LINEAR);
-
-				glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-
-				glEnable(GL_MULTISAMPLE);
-
 				// Right Eye
-				glBindFramebuffer(GL_FRAMEBUFFER, rightEyeDesc.m_nRenderFramebufferId);
+				glBindFramebuffer(GL_FRAMEBUFFER, rightEyeDesc.renderFramebuffer);
 				glViewport(0, 0, hmd->frameScale.w, hmd->frameScale.h);
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 				transBuffer.data = &vrTrans->rightEye;
@@ -453,24 +496,16 @@ namespace OpenGL
 				glDrawArrays(GL_POINTS, 0, particlesArray.buffer->data->size() / sizeof(Particles::Particle));
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-				glDisable(GL_MULTISAMPLE);
+				leftEyeDesc.copyRenderBuffer();
+				rightEyeDesc.copyRenderBuffer();
 
-				glBindFramebuffer(GL_READ_FRAMEBUFFER, rightEyeDesc.m_nRenderFramebufferId);
-				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, rightEyeDesc.m_nResolveFramebufferId);
-
-				glBlitFramebuffer(0, 0, hmd->frameScale.w, hmd->frameScale.h,
-					0, 0, hmd->frameScale.w, hmd->frameScale.h,
-					GL_COLOR_BUFFER_BIT, GL_LINEAR);
-
-				glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-
-				vr::Texture_t leftEyeTexture = { (void*)(uintptr_t)leftEyeDesc.m_nResolveTextureId,
+				vr::Texture_t leftEyeTexture = { (void*)(uintptr_t)leftEyeDesc.resolveTexture,
 					vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
 				vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture);
-				vr::Texture_t rightEyeTexture = { (void*)(uintptr_t)rightEyeDesc.m_nResolveTextureId,
+				vr::Texture_t rightEyeTexture = { (void*)(uintptr_t)rightEyeDesc.resolveTexture,
 					vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
 				vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture);
+				glFlush();
 
 				glViewport(0, 0, windowSize.w, windowSize.h);
 				glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -552,7 +587,7 @@ namespace OpenGL
 			ComputeParticles(SourceManager* _sm, Buffer* _particlesBuffer, Particles* _particles)
 				:
 				particlesStorage(_particlesBuffer, ShaderStorageBuffer, 1),
-				parameterData({ 0.005f,0.001f,_particles->num }),
+				parameterData({ 0.00001f,0.001f,_particles->num }),
 				parameterBuffer(&parameterData),
 				parameterUniform(&parameterBuffer, UniformBuffer, 3),
 				velocityCalculation(_sm, &parameterData),
@@ -594,12 +629,13 @@ namespace OpenGL
 			particles(_groups << 10),
 			particlesData(&particles),
 			particlesBuffer(&particlesData),
+			hmd(false),
 			vrTrans(&hmd, { 0.01, 30 }),
-			trans({ {80.0,0.1,800},{0.8,0.8,0.1},{1},500.0 }),
+			trans({ {80.0,0.1,800},{0.01,0.9,0.001},{0.01},500.0 }),
 			renderer(&sm, &particlesBuffer, &trans, &vrTrans, &hmd),
 			computeParticles(&sm, &particlesBuffer, &particles)
 		{
-			particles.randomGalaxy();
+			particles.randomGalaxyOptimized();
 		}
 		virtual void init(FrameScale const& _size)override
 		{
@@ -610,8 +646,6 @@ namespace OpenGL
 			renderer.transUniform.dataInit();
 			renderer.particlesArray.dataInit();
 			computeParticles.init();
-			VR::CreateFrameBuffer(hmd.frameScale.w, hmd.frameScale.h, renderer.leftEyeDesc);
-			VR::CreateFrameBuffer(hmd.frameScale.w, hmd.frameScale.h, renderer.rightEyeDesc);
 		}
 		virtual void run()override
 		{

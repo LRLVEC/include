@@ -17,7 +17,7 @@
 __global__ void positionCalc(NBodyCUDAParticle* particles)
 {
 	unsigned int id = threadIdx.x + blockIdx.x * 1024;
-	particles[id].position += particles[id].velocity * 0.001f;
+	particles[id].position += particles[id].velocity * 0.00001f;
 }
 //__global__ void velocityCalc(NBodyCUDAParticle* particles)
 //{
@@ -50,13 +50,13 @@ __global__ void velocityCalc_Optimize1(NBodyCUDAParticle* particles)
 		for (int c1(0); c1 < blockDim.x; ++c1)
 		{
 			float3 dr = posM[c1].position - r;
-			float drr = rsqrtf(dr.x * dr.x + dr.y * dr.y + dr.z * dr.z + 0.0001f);
+			float drr = rsqrtf(dr.x * dr.x + dr.y * dr.y + dr.z * dr.z + 0.00000001f);
 			drr = drr * drr * drr;
 			dv += (posM[c1].mass * drr) * dr;
 		}
 		__syncthreads();
 	}
-	particles[id].velocity += dv * 0.001f * 0.001f;
+	particles[id].velocity += dv * 0.00001f * 0.001f;
 }
 __global__ void forceCalc(NBodyCUDAParticle* particles, ExpData* expData)
 {

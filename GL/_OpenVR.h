@@ -15,45 +15,60 @@ namespace OpenGL
 	};
 	namespace VR
 	{
-		struct FramebufferDesc
+		struct FrameBufferDesc
 		{
-			GLuint m_nDepthBufferId;
-			GLuint m_nRenderTextureId;
-			GLuint m_nRenderFramebufferId;
-			GLuint m_nResolveTextureId;
-			GLuint m_nResolveFramebufferId;
+			GLuint depthBuffer;
+			GLuint renderTexture;
+			GLuint renderFramebuffer;
+			GLuint resolveTexture;
+			GLuint resolveFramebuffer;
+			FrameScale size;
+
+			FrameBufferDesc(FrameScale _size)
+				:
+				size(_size)
+			{
+				glGenFramebuffers(1, &renderFramebuffer);
+				glBindFramebuffer(GL_FRAMEBUFFER, renderFramebuffer);
+
+				glGenRenderbuffers(1, &depthBuffer);
+				glBindRenderbuffer(GL_RENDERBUFFER, depthBuffer);
+				glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH_COMPONENT, _size.w, _size.h);
+				glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuffer);
+
+				glGenTextures(1, &renderTexture);
+				glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, renderTexture);
+				glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA8, _size.w, _size.h, true);
+				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, renderTexture, 0);
+
+				glGenFramebuffers(1, &resolveFramebuffer);
+				glBindFramebuffer(GL_FRAMEBUFFER, resolveFramebuffer);
+
+				glGenTextures(1, &resolveTexture);
+				glBindTexture(GL_TEXTURE_2D, resolveTexture);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, _size.w, _size.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, resolveTexture, 0);
+
+				glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+				// check FBO status
+				//GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+				//if (status != GL_FRAMEBUFFER_COMPLETE)return false;
+				//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+				//return true;
+			}
+			void copyRenderBuffer()
+			{
+				glDisable(GL_MULTISAMPLE);
+				glBindFramebuffer(GL_READ_FRAMEBUFFER, renderFramebuffer);
+				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, resolveFramebuffer);
+				glBlitFramebuffer(0, 0, size.w, size.h, 0, 0, size.w, size.h, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+				glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+			}
 		};
-		bool CreateFrameBuffer(int width, int height, FramebufferDesc& framebufferDesc)
-		{
-			glGenFramebuffers(1, &framebufferDesc.m_nRenderFramebufferId);
-			glBindFramebuffer(GL_FRAMEBUFFER, framebufferDesc.m_nRenderFramebufferId);
-
-			glGenRenderbuffers(1, &framebufferDesc.m_nDepthBufferId);
-			glBindRenderbuffer(GL_RENDERBUFFER, framebufferDesc.m_nDepthBufferId);
-			glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH_COMPONENT, width, height);
-			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, framebufferDesc.m_nDepthBufferId);
-
-			glGenTextures(1, &framebufferDesc.m_nRenderTextureId);
-			glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, framebufferDesc.m_nRenderTextureId);
-			glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA8, width, height, true);
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, framebufferDesc.m_nRenderTextureId, 0);
-
-			glGenFramebuffers(1, &framebufferDesc.m_nResolveFramebufferId);
-			glBindFramebuffer(GL_FRAMEBUFFER, framebufferDesc.m_nResolveFramebufferId);
-
-			glGenTextures(1, &framebufferDesc.m_nResolveTextureId);
-			glBindTexture(GL_TEXTURE_2D, framebufferDesc.m_nResolveTextureId);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, framebufferDesc.m_nResolveTextureId, 0);
-
-			// check FBO status
-			GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-			if (status != GL_FRAMEBUFFER_COMPLETE)return false;
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			return true;
-		}
 		struct Object
 		{
 			unsigned int numDevice;
@@ -133,7 +148,7 @@ namespace OpenGL
 			Object objects[vr::k_unMaxTrackedDeviceCount];
 			Vector<unsigned int>validObjects;
 
-			VRDevice()
+			VRDevice(bool useRecommendSize)
 				:
 				hmd(nullptr),
 				frameScale({ -1,-1 })
@@ -149,10 +164,18 @@ namespace OpenGL
 				}
 				if (hmd)
 				{
-					unsigned int width, height;
-					hmd->GetRecommendedRenderTargetSize(&width, &height);
-					frameScale.w = width;
-					frameScale.h = height;
+					if (useRecommendSize)
+					{
+						unsigned int width, height;
+						hmd->GetRecommendedRenderTargetSize(&width, &height);
+						frameScale.w = width;
+						frameScale.h = height;
+					}
+					else
+					{
+						frameScale.w = 1080;
+						frameScale.h = 1200;
+					}
 					getObjects();
 				}
 			}
@@ -210,7 +233,7 @@ namespace OpenGL
 				VRDevice* hmd;
 				Perspective* persp;
 				Math::mat4<float> proj;
-				//Normally doesn't until you change the distance between two eyes.
+				//Normally doesn't change until you change the distance between two eyes.
 				//In fact, we can use a vec3<float> instead because it's just an offset from eye to head in head space.
 				//Math::mat4<float> offset;
 				Math::vec3<float> offset;
