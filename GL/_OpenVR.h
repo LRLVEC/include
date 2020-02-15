@@ -60,7 +60,6 @@ namespace OpenGL
 			}
 			void copyRenderBuffer()
 			{
-				glDisable(GL_MULTISAMPLE);
 				glBindFramebuffer(GL_READ_FRAMEBUFFER, renderFramebuffer);
 				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, resolveFramebuffer);
 				glBlitFramebuffer(0, 0, size.w, size.h, 0, 0, size.w, size.h, GL_COLOR_BUFFER_BIT, GL_LINEAR);
@@ -123,6 +122,7 @@ namespace OpenGL
 				posValid = a.bPoseIsValid;
 				connected = a.bDeviceIsConnected;
 			}
+			void updateOptiX(vr::TrackedDevicePose_t const& a);
 			void printInfo()const
 			{
 				name.print();
@@ -207,6 +207,15 @@ namespace OpenGL
 					vr::TrackedDevicePose_t device;
 					vr::VRCompositor()->WaitGetPoses(&device, 1, NULL, 0);
 					objects[0].update(device);
+				}
+			}
+			void refreshHMDOptiX()
+			{
+				if (hmd)
+				{
+					vr::TrackedDevicePose_t device;
+					vr::VRCompositor()->WaitGetPoses(&device, 1, NULL, 0);
+					objects[0].updateOptiX(device);
 				}
 			}
 			operator vr::IVRSystem* ()

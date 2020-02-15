@@ -93,12 +93,3 @@ static __device__ __inline__ float3 randomDirectionCosN(float3 normal, float n, 
 	seed.x = powf(seed.x, 1.0f / (n + 1));
 	return sqrtf(1 - seed.x * seed.x) * (cosf(seed.y) * u + sin(seed.y) * v) + seed.x * normal;
 }
-
-struct TransInfo
-{
-	float4 row0;
-	float4 row1;
-	float4 row2;
-	float3 r0;
-	float z0;
-};

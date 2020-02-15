@@ -199,8 +199,11 @@ namespace CUDA
 		void copy(void* _src, size_t _size)
 		{
 			if (size == 0 && type != GLinterop)resize(_size);
-			if (size >= _size)
-				cudaMemcpy(device, _src, _size, cudaMemcpyHostToDevice);
+			if (_size)
+			{
+				if (size >= _size)cudaMemcpy(device, _src, _size, cudaMemcpyHostToDevice);
+			}
+			else cudaMemcpy(device, _src, size, cudaMemcpyHostToDevice);
 		}
 		void copy(Buffer& a)
 		{

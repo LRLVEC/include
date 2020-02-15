@@ -1,8 +1,7 @@
 #pragma once
 
-#include <GL/_OpenGL.h>
-#include <GL/_Texture.h>
 #include <GL/_OpenVR.h>
+#include <GL/_Texture.h>
 #include <_Math.h>
 #include <_Pair.h>
 #include <_Array.h>
@@ -15,9 +14,9 @@
 
 namespace OpenGL
 {
-	struct OptiXDefautRenderer : ::OpenGL::Program
+	struct OptiXRenderer : Program
 	{
-		struct TriangleData : ::OpenGL::Buffer::Data
+		struct TriangleData : Buffer::Data
 		{
 			using Vertex = Math::vec2<float>;
 			using Triangle = Array<Vertex, 3>;
@@ -37,7 +36,7 @@ namespace OpenGL
 				return sizeof(Triangle) * triangles.length;
 			}
 		};
-		struct PixelData : ::OpenGL::Buffer::Data
+		struct PixelData : Buffer::Data
 		{
 			Texture frameTexture;
 			TextureConfig<TextureStorage2D> frameConfig;
@@ -61,16 +60,15 @@ namespace OpenGL
 
 		TriangleData triangles;
 		PixelData pixelData;
-		::OpenGL::Buffer trianglesBuffer;
-		::OpenGL::Buffer pixelBuffer;
+		Buffer trianglesBuffer;
+		Buffer pixelBuffer;
 		BufferConfig bufferArray;
 		BufferConfig pixelPixel;
 		VertexAttrib positions;
-		bool updated;
 
-		OptiXDefautRenderer(SourceManager* _sourceManage, FrameScale const& _size)
+		OptiXRenderer(SourceManager* _sourceManager, FrameScale const& _size)
 			:
-			Program(_sourceManage, "Frame", Vector<VertexAttrib*>{&positions}),
+			Program(_sourceManager, "Frame", Vector<VertexAttrib*>{&positions}),
 			triangles(),
 			pixelData(_size),
 			trianglesBuffer(&triangles),
@@ -78,11 +76,35 @@ namespace OpenGL
 			bufferArray(&trianglesBuffer, ArrayBuffer),
 			pixelPixel(&pixelBuffer, PixelUnpackBuffer),
 			positions(&bufferArray, 0, VertexAttrib::two,
-				VertexAttrib::Float, false, sizeof(TriangleData::Vertex), 0, 0),
-			updated(false)
+				VertexAttrib::Float, false, sizeof(TriangleData::Vertex), 0, 0)
 		{
 			init();
 			prepare();
+		}
+		void prepare()
+		{
+			bufferArray.dataInit();
+			use();
+			pixelData.frameTexture.bindUnit();
+			pixelPixel.dataInit();
+		}
+		operator GLuint ()const
+		{
+			return pixelBuffer.buffer;
+		}
+		FrameScale size()const
+		{
+			return{ int(pixelData.frameConfig.width), int(pixelData.frameConfig.height) };
+		}
+	};
+	struct OptiXDefautRenderer : OptiXRenderer
+	{
+		bool updated;
+		OptiXDefautRenderer(SourceManager* _sourceManager, FrameScale const& _size)
+			:
+			OptiXRenderer(_sourceManager, _size),
+			updated(false)
+		{
 		}
 		virtual void initBufferData()override
 		{
@@ -100,29 +122,259 @@ namespace OpenGL
 			glClear(GL_COLOR_BUFFER_BIT);
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 		}
-		void prepare()
-		{
-			bufferArray.dataInit();
-			use();
-			pixelData.frameTexture.bindUnit();
-			pixelPixel.dataInit();
-		}
 		void resize(FrameScale const& _size)
 		{
 			glViewport(0, 0, _size.w, _size.h);
 			pixelData.frameConfig.resize(_size.w, _size.h);
 			pixelPixel.dataInit();
 		}
-		FrameScale size()const
-		{
-			return{ int(pixelData.frameConfig.width), int(pixelData.frameConfig.height) };
-		}
-		operator GLuint ()const
-		{
-			return pixelBuffer.buffer;
-		}
 	};
+	namespace VR
+	{
+		struct OptiXFrameBufferDesc
+		{
+			//GLuint renderTexture;
+			//GLuint renderFramebuffer;
+			GLuint resolveTexture;
+			GLuint resolveFramebuffer;
+			FrameScale size;
 
+			OptiXFrameBufferDesc(FrameScale _size)
+				:
+				size(_size)
+			{
+				//glGenFramebuffers(1, &renderFramebuffer);
+				//glBindFramebuffer(GL_FRAMEBUFFER, renderFramebuffer);
+
+				//glGenTextures(1, &renderTexture);
+				//glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, renderTexture);
+				//glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA8, _size.w, _size.h, true);
+				//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, renderTexture, 0);
+
+				glGenFramebuffers(1, &resolveFramebuffer);
+				glBindFramebuffer(GL_FRAMEBUFFER, resolveFramebuffer);
+
+				glGenTextures(1, &resolveTexture);
+				glBindTexture(GL_TEXTURE_2D, resolveTexture);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, _size.w, _size.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+				glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, resolveTexture, 0);
+
+				glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+				// check FBO status
+				//GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+				//if (status != GL_FRAMEBUFFER_COMPLETE)return false;
+				//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+				//return true;
+			}
+			void copyRenderBuffer()
+			{
+				glBindFramebuffer(GL_READ_FRAMEBUFFER, resolveFramebuffer);
+				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+				glBlitFramebuffer(0, 0, size.w, size.h, 0, 0, size.w, size.h, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+				glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+			}
+		};
+		void Object::updateOptiX(vr::TrackedDevicePose_t const& a)
+		{
+			float const(*m)[4](a.mDeviceToAbsoluteTracking.m);
+			pos.array[0][0] = m[0][0]; pos.array[0][1] = m[0][1]; pos.array[0][2] = m[0][2];
+			pos.array[1][0] = m[1][0]; pos.array[1][1] = m[1][1]; pos.array[1][2] = m[1][2];
+			pos.array[2][0] = m[2][0]; pos.array[2][1] = m[2][1]; pos.array[2][2] = m[2][2];
+			pos.array[3][0] = m[0][3]; pos.array[3][1] = m[1][3]; pos.array[3][2] = m[2][3];
+			pos.array[3][3] = 1;
+			velocity = *(Math::vec3<float>*) & a.vVelocity;
+			omega = *(Math::vec3<float>*) & a.vAngularVelocity;
+			trackingResult = a.eTrackingResult;
+			posValid = a.bPoseIsValid;
+			connected = a.bDeviceIsConnected;
+		}
+		struct OptiXTrans
+		{
+			struct TransInfo
+			{
+				Math::mat<float, 3, 4>ans;
+				Math::vec3<float>r0;
+				float z0;
+			};
+			struct Perspective
+			{
+				double zNear;
+				double zFar;
+			};
+			struct SingleEye
+			{
+				vr::EVREye eye;
+				VRDevice* hmd;
+				Perspective* persp;
+				float d0;
+				//Normally doesn't change until you change the distance between two eyes.
+				//In fact, we can use a vec3<float> instead because it's just an offset from eye to head in head space.
+				//Math::mat4<float> offset;
+				Math::vec3<float> offset;
+				Math::mat4<float> trans;
+				Math::mat4<float> answer;
+
+				SingleEye() = delete;
+				SingleEye(VRDevice* _hmd, vr::EVREye _eye, Perspective* _persp)
+					:
+					hmd(_hmd),
+					eye(_eye),
+					persp(_persp)
+				{
+					updateD0();
+					updateAll();
+				}
+				void updateD0()
+				{
+					vr::HmdMatrix44_t projMat4 = hmd->hmd->GetProjectionMatrix(eye, persp->zNear, persp->zFar);
+					d0 = hmd->frameScale.h * projMat4.m[1][1] / 2.0f;
+				}
+				void updateOffset()
+				{
+					vr::HmdMatrix34_t offsetMat4 = hmd->hmd->GetEyeToHeadTransform(eye);
+					offset = { offsetMat4.m[0][3],offsetMat4.m[1][3], offsetMat4.m[2][3] };
+				}
+				void updateTrans(Object const& _hmd)
+				{
+					trans = _hmd.pos;
+					trans.rowVec[3] += (_hmd.pos, offset);
+					trans.array[3][3] = d0;
+				}
+				void updateAll()//if proj or offset changes, use this
+				{
+					updateD0();
+					updateOffset();
+					updateTrans(hmd->objects[0]);
+				}
+				void update()
+				{
+					updateTrans(hmd->objects[0]);
+				}
+				void printInfo()const
+				{
+					::printf(eye == vr::Eye_Left ? "Left eye:\n" : "Right eye:\n");
+					offset.printInfo("Offset: ");
+					trans.printInfo("\nTrans: ");
+				}
+			};
+			CUDA::Buffer buffer;
+			VRDevice* hmd;
+			Perspective persp;
+			SingleEye leftEye;
+			SingleEye rightEye;
+
+			OptiXTrans() = delete;
+			OptiXTrans(VRDevice* _hmd, Perspective _persp)
+				:
+				hmd(_hmd),
+				persp(_persp),
+				leftEye(_hmd, vr::Eye_Left, &persp),
+				rightEye(_hmd, vr::Eye_Right, &persp),
+				buffer(CUDA::Buffer::Device, sizeof(TransInfo))
+			{
+				updateAll();
+			}
+			void update()
+			{
+				hmd->refreshHMD();
+				leftEye.update();
+				rightEye.update();
+			}
+			void updateAll()
+			{
+				hmd->refreshHMDOptiX();
+				leftEye.updateAll();
+				rightEye.updateAll();
+			}
+			void operate(bool isRightEye)
+			{
+				if (!isRightEye)buffer.copy(&leftEye.trans, 0);
+				else buffer.copy(&rightEye.trans, 0);
+			}
+		};
+		struct OptiXVRRenderer : OptiXRenderer
+		{
+			VRDevice* hmd;
+			OptiXFrameBufferDesc leftEyeDesc;
+			OptiXFrameBufferDesc rightEyeDesc;
+			FrameScale windowSize;
+
+			OptiXVRRenderer(SourceManager* _sourceManager, FrameScale const& _size, VRDevice* _hmd)
+				:
+				OptiXRenderer(_sourceManager, _hmd->frameScale),
+				hmd(_hmd),
+				leftEyeDesc(hmd->frameScale),
+				rightEyeDesc(hmd->frameScale),
+				windowSize(_size)
+			{
+				init();
+				prepare();
+			}
+			void prepare()
+			{
+				bufferArray.dataInit();
+				use();
+				pixelData.frameTexture.bindUnit();
+				pixelPixel.dataInit();
+				pixelData.frameConfig.resize(hmd->frameScale.w, hmd->frameScale.h);
+				pixelPixel.dataInit();
+			}
+			void resize(FrameScale const& _size)
+			{
+				windowSize = _size;
+			}
+			FrameScale size()const
+			{
+				return{ int(pixelData.frameConfig.width), int(pixelData.frameConfig.height) };
+			}
+			operator GLuint ()const
+			{
+				return pixelBuffer.buffer;
+			}
+			virtual void initBufferData()override
+			{
+			}
+			virtual void run()override
+			{
+			}
+			void render(bool isRightEye)
+			{
+				pixelPixel.bind();
+				pixelData.frameConfig.dataInit(0, TextureInputRGBA, TextureInputFloat);
+				pixelPixel.unbind();
+				vr::EVREye eye;
+				vr::Texture_t eyeTexture;
+				if (!isRightEye)
+				{
+					glBindFramebuffer(GL_FRAMEBUFFER, 0);
+					glViewport(0, 0, windowSize.w, windowSize.h);
+					glDrawArrays(GL_TRIANGLES, 0, 6);
+					glBindFramebuffer(GL_FRAMEBUFFER, leftEyeDesc.resolveFramebuffer);
+					eye = vr::Eye_Left;
+					eyeTexture = { (void*)(uintptr_t)leftEyeDesc.resolveTexture,
+						vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
+				}
+				else
+				{
+					glBindFramebuffer(GL_FRAMEBUFFER, rightEyeDesc.resolveFramebuffer);
+					eye = vr::Eye_Right;
+					eyeTexture = { (void*)(uintptr_t)rightEyeDesc.resolveTexture,
+						vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
+				}
+				glViewport(0, 0, hmd->frameScale.w, hmd->frameScale.h);
+				glDrawArrays(GL_TRIANGLES, 0, 6);
+				vr::VRCompositor()->Submit(eye, &eyeTexture);
+				glFlush();
+			}
+		};
+	}
+}
+
+namespace CUDA
+{
 	namespace OptiX
 	{
 		template <class T>struct SbtRecord
@@ -525,7 +777,7 @@ namespace OpenGL
 			Scroll scroll;
 			Key key;
 			Mouse mouse;
-			CUDA::Buffer buffer;
+			Buffer buffer;
 			Math::vec3<double>dr;
 			Math::mat3<double>trans;
 			double depth;
@@ -541,7 +793,7 @@ namespace OpenGL
 				mouse(),
 				moved(true),
 				updated(false),
-				buffer(CUDA::Buffer::Device, sizeof(TransInfo)),
+				buffer(Buffer::Device, sizeof(TransInfo)),
 				dr(_data.initialPosition),
 				trans(Math::mat3<double>::id()),
 				depth(_data.depth)
@@ -600,15 +852,7 @@ namespace OpenGL
 		struct RayTracer
 		{
 			virtual void run() = 0;
-			virtual void resize(FrameScale const& _size, GLuint _gl) = 0;
-		};
-	}
-
-	namespace VR
-	{
-		struct OptiXTrans
-		{
-
+			virtual void resize(OpenGL::FrameScale const& _size, GLuint _gl) = 0;
 		};
 	}
 }
