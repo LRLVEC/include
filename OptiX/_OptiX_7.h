@@ -2,6 +2,7 @@
 
 #include <GL/_OpenGL.h>
 #include <GL/_Texture.h>
+#include <GL/_OpenVR.h>
 #include <_Math.h>
 #include <_Pair.h>
 #include <_Array.h>
@@ -600,6 +601,14 @@ namespace OpenGL
 		{
 			virtual void run() = 0;
 			virtual void resize(FrameScale const& _size, GLuint _gl) = 0;
+		};
+	}
+
+	namespace VR
+	{
+		struct OptiXTrans
+		{
+
 		};
 	}
 }

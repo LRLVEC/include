@@ -8,7 +8,6 @@
 
 namespace OpenGL
 {
-
 	struct OpenVRDefaultRenderer
 	{
 
@@ -292,7 +291,7 @@ namespace OpenGL
 					::printf(eye == vr::Eye_Left ? "Left eye:\n" : "Right eye:\n");
 					proj.printInfo("Proj: ");
 					offset.printInfo("Offset: ");
-					trans.printInfo("Trans: ");
+					trans.printInfo("\nTrans: ");
 				}
 			};
 			VRDevice* hmd;
