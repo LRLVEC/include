@@ -141,9 +141,9 @@ namespace Math
 		template<class R, unsigned int _rowDim1, unsigned int _colDim1>auto operator*(mat<R, _rowDim1, _colDim1>const&)const;
 		template<class R, unsigned int _rowDim1, unsigned int _colDim1>auto operator/(mat<R, _rowDim1, _colDim1>const&)const;
 		//vec transfer
-		template<class R, unsigned int _dim>auto operator,(vec<R, _dim>const&);
+		template<class R, unsigned int _dim>auto operator,(vec<R, _dim>const&)const;
 		//mat transfer
-		template<class R, unsigned int _rowDim1, unsigned int _colDim1>auto operator,(mat<R, _rowDim1, _colDim1>const&);
+		template<class R, unsigned int _rowDim1, unsigned int _colDim1>auto operator,(mat<R, _rowDim1, _colDim1>const&)const;
 		//id
 		static auto id();
 		static auto id(T);
@@ -153,7 +153,7 @@ namespace Math
 		//inverse
 		auto operator~();
 		//transposition
-		mat<T, _colDim, _rowDim> operator!();
+		mat<T, _colDim, _rowDim> operator!()const;
 		//print
 		void print()const;
 		void printInfo(char const*)const;
@@ -999,7 +999,7 @@ namespace Math
 		return temp;
 	}
 	//vec transfer
-	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R, unsigned int _dim>inline auto mat<T, _rowDim, _colDim>::operator,(vec<R, _dim> const& a)
+	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R, unsigned int _dim>inline auto mat<T, _rowDim, _colDim>::operator,(vec<R, _dim> const& a)const
 	{
 		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
 		vec<HigherType, _rowDim>temp;
@@ -1008,7 +1008,7 @@ namespace Math
 		return temp;
 	}
 	//mat transfer
-	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R, unsigned int _rowDim1, unsigned int _colDim1>inline auto mat<T, _rowDim, _colDim>::operator,(mat<R, _rowDim1, _colDim1>const& a)
+	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R, unsigned int _rowDim1, unsigned int _colDim1>inline auto mat<T, _rowDim, _colDim>::operator,(mat<R, _rowDim1, _colDim1>const& a)const
 	{
 		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
 		mat<HigherType, _rowDim, _colDim1>temp;
@@ -1149,7 +1149,7 @@ namespace Math
 		}
 	}
 	//transposition
-	template<class T, unsigned int _rowDim, unsigned int _colDim>inline mat<T, _colDim, _rowDim> mat<T, _rowDim, _colDim>::operator!()
+	template<class T, unsigned int _rowDim, unsigned int _colDim>inline mat<T, _colDim, _rowDim> mat<T, _rowDim, _colDim>::operator!()const
 	{
 		int c0{ 0 };
 		mat<T, _colDim, _rowDim>temp;

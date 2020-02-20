@@ -62,6 +62,7 @@ namespace OpenGL
 			{
 				glBindFramebuffer(GL_READ_FRAMEBUFFER, renderFramebuffer);
 				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, resolveFramebuffer);
+				glBindTexture(GL_TEXTURE_2D, resolveTexture);
 				glBlitFramebuffer(0, 0, size.w, size.h, 0, 0, size.w, size.h, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 				glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);

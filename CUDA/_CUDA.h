@@ -61,6 +61,7 @@ namespace CUDA
 			:
 			type(GLinterop),
 			size(0),
+			hostSize(0),
 			graphics(nullptr),
 			device(nullptr),
 			host(nullptr)
@@ -70,6 +71,8 @@ namespace CUDA
 		template<class T>Buffer(T const& a, bool copy)
 			:
 			type(Device),
+			size(0),
+			hostSize(0),
 			graphics(nullptr),
 			device(nullptr),
 			host(nullptr)

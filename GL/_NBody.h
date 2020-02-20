@@ -1270,6 +1270,7 @@ namespace OpenGL
 				particlesBufferCUDA.resize(renderer.particlesArray.buffer->buffer);
 				glue.particles = (NBodyCUDAParticle*)particlesBufferCUDA.map();
 				vrTrans.leftEye.printInfo();
+				vrTrans.rightEye.printInfo();
 			}
 			virtual void run()override
 			{
@@ -1282,7 +1283,7 @@ namespace OpenGL
 				}
 				renderer.use();
 				renderer.run();
-				glFinish();
+				//glFinish();
 				glue.run();
 			}
 			virtual void frameSize(int _w, int _h) override
