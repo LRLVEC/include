@@ -26,11 +26,12 @@ struct BMP
 		{
 			::printf("BMP file info:\n");
 			::printf("\tFile Size:\t%u\n", fileSize);
+			::printf("\tBits Per Pixel:\t%u\n", bitsPerPixel);
 			::printf("\tWidth:\t\t%u\n", width);
 			::printf("\tHeight:\t\t%u\n", height);
 		}
 	};
-	struct Pixel
+	struct Pixel_24
 	{
 		unsigned char b;
 		unsigned char g;
@@ -44,22 +45,34 @@ struct BMP
 			return r | (g << 8) | (b << 16) | (255 << 24);
 		}
 	};
+	struct Pixel_32
+	{
+		unsigned char r;
+		unsigned char g;
+		unsigned char b;
+		unsigned char a;
+
+		Pixel_32(Pixel_24 tp) : r(tp.r), g(tp.g), b(tp.b), a(0) {}
+	};
 #pragma pack()
 
 	Header header;
-	Pixel* data;
+	Pixel_24* data_24;
+	Pixel_32* data_32;
 	unsigned char* textureData;
 
 	BMP()
 		:
 		header(),
-		data(nullptr),
+		data_24(nullptr),
+		data_32(nullptr),
 		textureData(nullptr)
 	{
 	}
 	BMP(String<char>const& _path)
 		:
-		data(nullptr),
+		data_24(nullptr),
+		data_32(nullptr),
 		textureData(nullptr)
 	{
 		FILE* temp(::fopen(_path.data, "rb+"));
@@ -68,22 +81,48 @@ struct BMP
 		::fseek(temp, header.dataOffset, SEEK_SET);
 		if (header.width % 4)
 		{
-			data = (BMP::Pixel*)::malloc(3u * header.width * header.height + 4);
+			data_24 = (BMP::Pixel_24*)::malloc(3u * header.width * header.height + 4);
 			for (int c0(0); c0 < header.height; ++c0)
-				::fread((data + header.width * c0), 4, 1 + header.width * 3 / 4, temp);
+				::fread((data_24 + header.width * c0), 4, 1 + header.width * 3 / 4, temp);
 		}
 		else
 		{
-			data = (BMP::Pixel*)::malloc(3u * header.width * header.height + 4);
+			data_24 = (BMP::Pixel_24*)::malloc(3u * header.width * header.height + 4);
 			for (int c0(0); c0 < header.height; ++c0)
-				::fread((data + header.width * c0), 4, header.width * 3 / 4, temp);
+				::fread((data_24 + header.width * c0), 4, header.width * 3 / 4, temp);
+		}
+		::fclose(temp);
+	}
+	BMP(String<char>const& _path, bool is32bit)//!!!!!!!!!!!!
+		:
+		data_24(nullptr),
+		data_32(nullptr),
+		textureData(nullptr)
+	{
+		FILE* temp(::fopen(_path.data, "rb+"));
+		::fseek(temp, 0, SEEK_SET);
+		::fread(&header, 1, 54, temp);
+		::fseek(temp, header.dataOffset, SEEK_SET);
+		data_32 = (BMP::Pixel_32*)::malloc(sizeof(BMP::Pixel_32) * header.width * header.height);
+		unsigned int rowSize((header.width * 3 + 3) / 4);
+		for (int c0(0); c0 < header.height; ++c0)
+		{
+			Pixel_32* ptr(data_32 + c0 * header.width);
+			::fread(ptr, 4, rowSize, temp);
+			for (int c1(header.width - 1); c1 >= 0; --c1)
+			{
+				Pixel_24 ahh(*(((Pixel_24*)ptr) + c1));
+				new(ptr + c1) Pixel_32(ahh);
+			}
 		}
 		::fclose(temp);
 	}
 	~BMP()
 	{
-		::free(data);
-		::free(textureData);
+		::free(data_24);
+		::free(data_32);
+		data_24 = nullptr;
+		data_32 = nullptr;
 	}
 
 	bool checkType()const
@@ -106,46 +145,20 @@ struct BMPCube
 inline BMP File::readBMP()const
 {
 	if (!this)return BMP();
-	BMP r;
-	FILE* temp(::fopen((property.path + property.file.name).data, "rb+"));
-	::fseek(temp, 0, SEEK_SET);
-	::fread(&r.header, 1, 54, temp);
-	::fseek(temp, r.header.dataOffset, SEEK_SET);
-	if (r.header.width % 4)
-	{
-		r.data = (BMP::Pixel*)::malloc(3u * r.header.width * r.header.height + 4);
-		for (int c0(0); c0 < r.header.height; ++c0)
-			::fread((r.data + r.header.width * c0), 4, 1 + r.header.width * 3 / 4, temp);
-	}
-	else
-	{
-		r.data = (BMP::Pixel*)::malloc(3u * r.header.width * r.header.height + 4);
-		for (int c0(0); c0 < r.header.height; ++c0)
-			::fread((r.data + r.header.width * c0), 4, r.header.width * 3 / 4, temp);
-	}
-	::fclose(temp);
-	return r;
+	return BMP(property.path + property.file.name);
 }
 inline BMP File::readBMP(String<char> const& _name)const
 {
 	if (!this)return BMP();
-	BMP r;
-	FILE* temp(::fopen((property.path + _name).data, "rb+"));
-	::fseek(temp, 0, SEEK_SET);
-	::fread(&r.header, 1, 54, temp);
-	::fseek(temp, r.header.dataOffset, SEEK_SET);
-	if (r.header.width % 4)
-	{
-		r.data = (BMP::Pixel*)::malloc(3u * r.header.width * r.header.height + 4);
-		for (int c0(0); c0 < r.header.height; ++c0)
-			::fread((r.data + r.header.width * c0), 4, 1 + r.header.width * 3 / 4, temp);
-	}
-	else
-	{
-		r.data = (BMP::Pixel*)::malloc(3u * r.header.width * r.header.height + 4);
-		for (int c0(0); c0 < r.header.height; ++c0)
-			::fread((r.data + r.header.width * c0), 4, r.header.width * 3 / 4, temp);
-	}
-	::fclose(temp);
-	return r;
+	return BMP(property.path + _name);
+}
+inline BMP File::readBMP32bit()const
+{
+	if (!this)return BMP();
+	return BMP(property.path + property.file.name, true);
+}
+inline BMP File::readBMP32bit(String<char> const& _name)const
+{
+	if (!this)return BMP();
+	return BMP(property.path + _name, true);
 }

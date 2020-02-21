@@ -1,8 +1,12 @@
 #pragma once
 #include <cuda_runtime.h>
+#ifndef __CUDACC__ 
+#define __CUDACC__
+#endif
 #include <device_launch_parameters.h>
 #include <optix_device.h>
 #include <OptiX/_vector_functions.hpp>
+#include <curand_kernel.h>
 
 static __forceinline__ __device__ void* uP(unsigned int i0, unsigned int i1)
 {
@@ -92,4 +96,83 @@ static __device__ __inline__ float3 randomDirectionCosN(float3 normal, float n, 
 	}
 	seed.x = powf(seed.x, 1.0f / (n + 1));
 	return sqrtf(1 - seed.x * seed.x) * (cosf(seed.y) * u + sin(seed.y) * v) + seed.x * normal;
+}
+
+struct curandStateMini
+{
+	unsigned int d, v[5];
+};
+static __device__ __forceinline__ unsigned int curand(curandStateMini* state)
+{
+	unsigned int t;
+	t = (state->v[0] ^ (state->v[0] >> 2));
+	state->v[0] = state->v[1];
+	state->v[1] = state->v[2];
+	state->v[2] = state->v[3];
+	state->v[3] = state->v[4];
+	state->v[4] = (state->v[4] ^ (state->v[4] << 4)) ^ (t ^ (t << 1));
+	state->d += 362437;
+	return state->v[4] + state->d;
+}
+static __device__ __forceinline__ float curand_uniform(curandStateMini* state)
+{
+	return _curand_uniform(curand(state));
+}
+static __device__ __forceinline__ float2 curand_uniform2(curandStateMini* state)
+{
+	return { _curand_uniform(curand(state)), _curand_uniform(curand(state)) };
+}
+static __device__ __forceinline__ void getCurandState(curandStateMini* dst, curandState* src)
+{
+	dst->d = src->d;
+#pragma unroll
+	for (int c0(0); c0 < 5; ++c0)
+		dst->v[c0] = src->v[c0];
+}
+static __device__ __forceinline__ void setCurandState(curandState* dst, curandStateMini* src)
+{
+	dst->d = src->d;
+#pragma unroll
+	for (int c0(0); c0 < 5; ++c0)
+		dst->v[c0] = src->v[c0];
+}
+static __device__ __forceinline__ curandStateMini getCurandStateFromPayload()
+{
+	curandStateMini tp;
+	tp.d = optixGetPayload_2();
+	tp.v[0] = optixGetPayload_3();
+	tp.v[1] = optixGetPayload_4();
+	tp.v[2] = optixGetPayload_5();
+	tp.v[3] = optixGetPayload_6();
+	tp.v[4] = optixGetPayload_7();
+	return tp;
+}
+static __device__ __forceinline__ void setCurandStateToPayload(curandStateMini* state)
+{
+	optixSetPayload_2(state->d);
+	optixSetPayload_3(state->v[0]);
+	optixSetPayload_4(state->v[1]);
+	optixSetPayload_5(state->v[2]);
+	optixSetPayload_6(state->v[3]);
+	optixSetPayload_7(state->v[4]);
+}
+static __device__ __forceinline__ float3 randomDirectionCosN(float3 normal, float n, curandStateMini* state)
+{
+	float3 u;
+	float3 v;
+	float x(powf(curand_uniform(state), 1.0f / (n + 1)));
+	float y(2.0 * M_PIf * curand_uniform(state));
+	if (fabsf(normal.x) > 0.7f)
+	{
+		float s = sqrtf(1 - normal.y * normal.y);
+		u = make_float3(-normal.z, 0, normal.x) / s;
+		v = make_float3(normal.x * normal.y / s, -s, normal.y * normal.z / s);
+	}
+	else
+	{
+		float s = sqrtf(1 - normal.x * normal.x);
+		u = make_float3(0, normal.z, -normal.y) / s;
+		v = make_float3(-s, normal.x * normal.y / s, normal.x * normal.z / s);
+	}
+	return sqrtf(1 - x * x) * (cosf(y) * u + sin(y) * v) + x * normal;
 }

@@ -185,15 +185,13 @@ namespace OpenGL
 					d0 = hmd->frameScale.w * projMat4.m[0][0] / 2.0f;
 					rayOffset = { hmd->frameScale.w * projMat4.m[0][2]  ,hmd->frameScale.h * projMat4.m[1][2] };
 					rayOffset /= 2.0f;
-					::printf("d0: %f\nrayOffset: [%f, %f]\n", d0, rayOffset.data[0], rayOffset.data[1]);
+					//::printf("d0: %f\nrayOffset: [%f, %f]\n", d0, rayOffset.data[0], rayOffset.data[1]);
 				}
 				void updateOffset()
 				{
 					vr::HmdMatrix34_t offsetMat4 = hmd->hmd->GetEyeToHeadTransform(eye);
 					Math::mat<float, 3, 4>m0(*(Math::mat<float, 3, 4>*) & offsetMat4);
-					m0.print();
 					eyeOffset = { offsetMat4.m[0][3],offsetMat4.m[1][3], offsetMat4.m[2][3] };
-					eyeOffset.print();
 				}
 				void updateTrans(Object const& _hmd)
 				{

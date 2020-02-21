@@ -6,6 +6,7 @@
 #include <cuda_gl_interop.h>
 #include <time.h>
 #include <random>
+#include <_BMP.h>
 
 namespace CUDA
 {
@@ -221,6 +222,41 @@ namespace CUDA
 		operator CUdeviceptr()const
 		{
 			return (CUdeviceptr)device;
+		}
+	};
+	struct CubeMap
+	{
+		BMP::Pixel_32* data;
+		unsigned int width;
+
+		CubeMap() :data(nullptr), width(0) {}
+		CubeMap(String<char>const& _path) :data(nullptr), width(0)
+		{
+			String<char> names[6]{ "right.bmp","left.bmp" ,"top.bmp" ,"bottom.bmp"  ,"back.bmp","front.bmp" };
+			BMP tp(_path + names[0], true);
+			width = tp.header.width;
+			size_t sz(sizeof(BMP::Pixel_32) * width * width);
+			data = (BMP::Pixel_32*)malloc(6 * sz);
+			memcpy(data, tp.data_32, sz);
+			for (int c0(1); c0 < 6; ++c0)
+			{
+				BMP ts(_path + names[c0], true);
+				memcpy(data + c0 * sz / 4, ts.data_32, sz);
+			}
+		}
+		~CubeMap()
+		{
+			::free(data);
+			data = nullptr;
+		}
+		void moveToGPU(cudaArray* _cuArray)
+		{
+			cudaMemcpy3DParms cpy3Dparams
+			{
+				nullptr,{0,0,0},{data, width * 4ll,width, width},
+				_cuArray,{0,0,0},{0},{ width, width, 6 }, cudaMemcpyHostToDevice
+			};
+			cudaMemcpy3D(&cpy3Dparams);
 		}
 	};
 	struct OpenGLDeviceInfo

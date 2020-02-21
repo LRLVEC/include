@@ -1,3 +1,4 @@
+//Deprecated
 #pragma once
 #include <GL/_OpenGL.h>
 #include <GL/_Texture.h>

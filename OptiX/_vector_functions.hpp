@@ -68,15 +68,15 @@
 #define M_1_PIf     0.318309886183790671538f
 #endif
 
-__VECTOR_FUNCTIONS_DECL__ int max(int a, int b)
-{
-	return a > b ? a : b;
-}
-
-__VECTOR_FUNCTIONS_DECL__ int min(int a, int b)
-{
-	return a < b ? a : b;
-}
+//__VECTOR_FUNCTIONS_DECL__ int max(int a, int b)
+//{
+//	return a > b ? a : b;
+//}
+//
+//__VECTOR_FUNCTIONS_DECL__ int min(int a, int b)
+//{
+//	return a < b ? a : b;
+//}
 
 /** lerp */
 __VECTOR_FUNCTIONS_DECL__ float lerp(const float a, const float b, const float t)

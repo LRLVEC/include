@@ -1,3 +1,4 @@
+//deprecated
 #pragma once
 #include <optix.h>
 #define NOMINMAX

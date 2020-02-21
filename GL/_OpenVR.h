@@ -8,10 +8,6 @@
 
 namespace OpenGL
 {
-	struct OpenVRDefaultRenderer
-	{
-
-	};
 	namespace VR
 	{
 		struct FrameBufferDesc
