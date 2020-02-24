@@ -11,6 +11,8 @@ struct Timer
 	Timer() = default;
 	void begin();
 	void end();
+	void wait(long long dt);
+	void wait(long long dt, void(*)());
 	void print();
 	void print(const char* a);
 	void print(long long minus);
@@ -45,12 +47,33 @@ inline void Timer::end()
 {
 	timespec_get(&ending, TIME_UTC);
 }
+inline void Timer::wait(long long _dt)
+{
+	begin();
+	long long dt(0);
+	do
+	{
+		end();
+		dt = 1000000000LL * (ending.tv_sec - begining.tv_sec) + (ending.tv_nsec - begining.tv_nsec);
+	} while (dt < _dt);
+}
+inline void Timer::wait(long long _dt, void(*p)())
+{
+	begin();
+	long long dt(0);
+	do
+	{
+		p();
+		end();
+		dt = 1000000000LL * (ending.tv_sec - begining.tv_sec) + (ending.tv_nsec - begining.tv_nsec);
+	} while (dt < _dt);
+}
 inline void Timer::print()
 {
 	constexpr unsigned long long e3{ 1000U };
 	constexpr unsigned long long e6{ 1000000U };
 	constexpr unsigned long long e9{ 1000000000U };
-	constexpr unsigned long long e12{ 100000000000U };
+	constexpr unsigned long long e12{ 100000000000ULL };
 	long long dt = e9 * (ending.tv_sec - begining.tv_sec) + (ending.tv_nsec - begining.tv_nsec);
 	if (dt < 0)printf("-");
 	unsigned long long dt1 = llabs(dt);
