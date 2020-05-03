@@ -73,7 +73,8 @@ struct File
 	BMP readBMP32bit()const;
 	BMP readBMP32bit(String<char>const&)const;
 	RayTracing::Model readModel()const;
-	void* readBinary(String<char>const&);
+	Vector<unsigned char> readBinary()const;
+	Vector<unsigned char> readBinary(String<char>const&)const;
 	//Print info
 	void print()const;
 };
@@ -172,7 +173,7 @@ inline File::Property::Property(String<char> const& _path)
 }
 inline File::Property::Property(__finddata64_t const& _file, String<char> const& _path)
 	:
-	isFolder(_file.attrib & _A_SUBDIR),
+	isFolder(_file.attrib& _A_SUBDIR),
 	path(_path),
 	file(_file),
 	filePtr(nullptr)
@@ -203,7 +204,7 @@ inline File::File(String<char>const& _path)
 {
 	build(_path);
 }
-inline File::File(__finddata64_t const& _file, String<char> const& _path, File * _father)
+inline File::File(__finddata64_t const& _file, String<char> const& _path, File* _father)
 	:
 	valid(true),
 	property(_file, _path),
@@ -293,7 +294,7 @@ inline File& File::find(Vector<String<char>>const& _path, int n)
 	return *(File*)nullptr;
 }
 //Create file
-inline File& File::createDirectory(String<char>const&_path)
+inline File& File::createDirectory(String<char>const& _path)
 {
 	::_mkdir((property.path + _path).data);
 	build();
@@ -327,7 +328,7 @@ inline String<char>File::readText()const
 	unsigned int __length = (unsigned int)fread(r, 1, _length, temp);
 	r[__length] = 0;
 	::fclose(temp);
-	return String<char>(r, __length, _length+1);
+	return String<char>(r, __length, _length + 1);
 }
 inline String<char>File::readText(String<char>const& _name)const
 {
@@ -342,6 +343,31 @@ inline String<char>File::readText(String<char>const& _name)const
 	::fclose(temp);
 	return String<char>(r, _length, 0);
 }
+inline Vector<unsigned char> File::readBinary()const
+{
+	if (!this)return Vector<unsigned char>();
+	FILE* temp(::fopen((property.path + property.file.name).data, "r+"));
+	::fseek(temp, 0, SEEK_END);
+	unsigned int _length((unsigned int)::ftell(temp) + 1);
+	unsigned char* r((unsigned char*)::malloc(_length + 1));
+	::fseek(temp, 0, SEEK_SET);
+	unsigned int __length = (unsigned int)fread(r, 1, _length, temp);
+	::fclose(temp);
+	return Vector<unsigned char>(r, __length, _length);
+}
+inline Vector<unsigned char> File::readBinary(String<char>const& _name)const
+{
+	if (!this)return Vector<unsigned char>();
+	FILE* temp(::fopen((property.path + _name).data, "r+"));
+	::fseek(temp, 0, SEEK_END);
+	unsigned int _length((unsigned int)::ftell(temp) + 1);
+	unsigned char* r((unsigned char*)::malloc(_length + 1));
+	::fseek(temp, 0, SEEK_SET);
+	unsigned int __length = (unsigned int)fread(r, 1, _length, temp);
+	::fclose(temp);
+	return Vector<unsigned char>(r, __length, _length);
+}
+
 //Print info
 inline void File::print()const
 {
