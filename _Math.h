@@ -524,16 +524,6 @@ namespace Math
 		double c{ cos(b) };
 		return ((1.0 - c) * (n, r))* n + c * r + sin(b) * (n | r);
 	}
-	template<class T, unsigned int _dim>template<class Y>inline mat3<double> vec<T, _dim>::rotMat(Y a)
-	{
-		static_assert(NumType<Y>::value, "Wrong NumType!");
-		static_assert(_dim >= 3, "Axis vec dimsion must be more than 2!");
-		if (this->square(3) == 0)return mat3<double>();
-		vec3<double>n{ *this };
-		n.normaliaze();
-		double c{ cos(a) };
-		return (1 - c)* (n ^ n) + mat3<double>::id(c) + sin(a) * n.crossMat();
-	}
 	//note: rotate the mat(other coordinate to this) in this coordinate.
 	template<class T, unsigned int _dim>template<class R, class Y, unsigned int _rowDim1, unsigned int _colDim1>auto& vec<T, _dim>::operator()(mat<R, _rowDim1, _colDim1>* a, Y b)
 	{
@@ -1177,6 +1167,17 @@ namespace Math
 	{
 		::printf("%s", a);
 		print();
+	}
+	//==============================================vec====================================
+	template<class T, unsigned int _dim>template<class Y>inline mat3<double> vec<T, _dim>::rotMat(Y a)
+	{
+		static_assert(NumType<Y>::value, "Wrong NumType!");
+		static_assert(_dim >= 3, "Axis vec dimsion must be more than 2!");
+		if (this->square(3) == 0)return mat3<double>();
+		vec3<double>n{ *this };
+		n.normaliaze();
+		double c{ cos(a) };
+		return (1 - c) * (n ^ n) + mat3<double>::id(c) + sin(a) * n.crossMat();
 	}
 	//==============================================test====================================
 	void testVecMat()

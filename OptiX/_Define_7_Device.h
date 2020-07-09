@@ -5,7 +5,7 @@
 #endif
 #include <device_launch_parameters.h>
 #include <optix_device.h>
-#include <OptiX/_vector_functions.hpp>
+//#include <OptiX/_vector_functions.hpp>
 #include <curand_kernel.h>
 
 static __forceinline__ __device__ void* uP(unsigned int i0, unsigned int i1)

@@ -45,17 +45,17 @@ namespace CUDA
 			size = _size;
 			switch (_type)
 			{
-				case Device:
-				case ZeroCopy:
-				{
-					resize(size_t(_size));
-					break;
-				}
-				case GLinterop:
-				{
-					resize(GLuint(_size));
-					break;
-				}
+			case Device:
+			case ZeroCopy:
+			{
+				resize(size_t(_size));
+				break;
+			}
+			case GLinterop:
+			{
+				resize(GLuint(_size));
+				break;
+			}
 			}
 		}
 		Buffer(GLuint _gl)
@@ -86,23 +86,23 @@ namespace CUDA
 			if (type != Unused)
 				switch (type)
 				{
-					case Device:
-					{
-						freeHost();
-						cudaFree(device);
-						break;
-					}
-					case GLinterop:
-					{
-						unmap();
-						freeHost();
-						break;
-					}
-					case ZeroCopy:
-					{
-						cudaFreeHost(host);
-						break;
-					}
+				case Device:
+				{
+					freeHost();
+					cudaFree(device);
+					break;
+				}
+				case GLinterop:
+				{
+					unmap();
+					freeHost();
+					break;
+				}
+				case ZeroCopy:
+				{
+					cudaFreeHost(host);
+					break;
+				}
 				}
 			type = Unused;
 			size = 0;
@@ -118,10 +118,10 @@ namespace CUDA
 			::printf("[Type: ");
 			switch (type)
 			{
-				case Device: ::printf("Device"); break;
-				case GLinterop: ::printf("GLinterop"); break;
-				case ZeroCopy: ::printf("ZeroCopy"); break;
-				case Unused: ::printf("Unused"); break;
+			case Device: ::printf("Device"); break;
+			case GLinterop: ::printf("GLinterop"); break;
+			case ZeroCopy: ::printf("ZeroCopy"); break;
+			case Unused: ::printf("Unused"); break;
 			}
 			::printf(", Size: %llu, HostSize: %llu, GR: 0x%p, GL: %u, Device: 0x%p, Host: 0x%p]\n",
 				size, hostSize, graphics, gl, device, host);
@@ -132,20 +132,20 @@ namespace CUDA
 			size = _size;
 			switch (type)
 			{
-				case Device:
-				{
-					cudaFree(device);
-					cudaMalloc(&device, _size);
-					break;
-				}
-				case ZeroCopy:
-				{
-					cudaFreeHost(host);
-					cudaHostAlloc(&host, _size, cudaHostAllocPortable | cudaHostAllocMapped);
-					cudaHostGetDevicePointer(&device, host, 0);
-					break;
-				}
-				case GLinterop:break;
+			case Device:
+			{
+				cudaFree(device);
+				cudaMalloc(&device, _size);
+				break;
+			}
+			case ZeroCopy:
+			{
+				cudaFreeHost(host);
+				cudaHostAlloc(&host, _size, cudaHostAllocPortable | cudaHostAllocMapped);
+				cudaHostGetDevicePointer(&device, host, 0);
+				break;
+			}
+			case GLinterop:break;
 			}
 		}
 		void resize(GLuint _gl)
@@ -223,6 +223,86 @@ namespace CUDA
 		{
 			return (CUdeviceptr)device;
 		}
+	};
+	template<unsigned int dim>struct Texture
+	{
+		static_assert(dim&& dim < 4, "Dim must be one of 1, 2, 3!");
+	};
+	template<> struct Texture<1>
+	{
+		cudaArray* data;
+		cudaTextureObject_t textureObj;
+		Texture(cudaChannelFormatDesc const& channelDesc, cudaTextureAddressMode addressMode,
+			cudaTextureFilterMode filterMode, cudaTextureReadMode readMode, bool normalizedCoords, size_t width)
+			:
+			data(nullptr),
+			textureObj(0)
+		{
+			if (width)
+			{
+				cudaMallocArray(&data, &channelDesc, 256);
+				cudaResourceDesc resDesc;
+				memset(&resDesc, 0, sizeof(resDesc));
+				resDesc.resType = cudaResourceTypeArray;
+				resDesc.res.array.array = data;
+				cudaTextureDesc texDesc;
+				memset(&texDesc, 0, sizeof(texDesc));
+				texDesc.addressMode[0] = addressMode;
+				texDesc.filterMode = filterMode;
+				texDesc.readMode = readMode;
+				texDesc.normalizedCoords = normalizedCoords;
+				cudaCreateTextureObject(&textureObj, &resDesc, &texDesc, nullptr);
+			}
+		}
+		Texture(cudaChannelFormatDesc const& channelDesc, cudaTextureAddressMode addressMode,
+			cudaTextureFilterMode filterMode, cudaTextureReadMode readMode, bool normalizedCoords,
+			void const* src, size_t width)
+			:
+			data(nullptr),
+			textureObj(0)
+		{
+			if (width)
+			{
+				cudaMallocArray(&data, &channelDesc, 256);
+				if (src)cudaMemcpyToArray(data, 0, 0, src,
+					width * (channelDesc.x + channelDesc.y + channelDesc.z + channelDesc.w) / 8,
+					cudaMemcpyHostToDevice);
+				cudaResourceDesc resDesc;
+				memset(&resDesc, 0, sizeof(resDesc));
+				resDesc.resType = cudaResourceTypeArray;
+				resDesc.res.array.array = data;
+				cudaTextureDesc texDesc;
+				memset(&texDesc, 0, sizeof(texDesc));
+				texDesc.addressMode[0] = addressMode;
+				texDesc.filterMode = filterMode;
+				texDesc.readMode = readMode;
+				texDesc.normalizedCoords = normalizedCoords;
+				cudaCreateTextureObject(&textureObj, &resDesc, &texDesc, nullptr);
+			}
+		}
+		~Texture()
+		{
+			if (textureObj)
+			{
+				cudaDestroyTextureObject(textureObj);
+				textureObj = 0;
+			}
+			if (data)
+			{
+				cudaFreeArray(data);
+				data = nullptr;
+			}
+		}
+		operator cudaTextureObject_t()const
+		{
+			return textureObj;
+		}
+	};
+	template<>struct Texture<2>
+	{
+	};
+	template<>struct Texture<3>
+	{
 	};
 	struct CubeMap
 	{

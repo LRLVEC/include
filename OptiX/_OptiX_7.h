@@ -391,8 +391,11 @@ namespace CUDA
 					:
 					name(_name)
 				{
+					char tp[1024];
+					size_t sa(1024);
 					optixModuleCreateFromPTX(_oc, _mco, _pco, _source,
-						_source.length, nullptr, nullptr, &module);
+						_source.length, tp, &sa, &module);
+					::printf("%s", tp);
 				}
 				bool operator==(String<char> const& _name)const
 				{
@@ -475,44 +478,47 @@ namespace CUDA
 				desc.kind = (OptixProgramGroupKind)_kind;
 				if (_name.length)switch (kind)
 				{
-					case RayGen:
-					{
-						desc.raygen.entryFunctionName = _name.data[0].data;
-						desc.raygen.module = moduleManager->getModule(_name.data[0]);
-						break;
-					}
-					case Miss:
-					{
-						desc.miss.entryFunctionName = _name.data[0].data;
-						desc.miss.module = moduleManager->getModule(_name.data[0]);
-						break;
-					}
-					case Exception:
-					{
-						desc.exception.entryFunctionName = _name.data[0].data;
-						desc.exception.module = moduleManager->getModule(_name.data[0]);
-						break;
-					}
-					case HitGroup:
-					{
-						desc.hitgroup.entryFunctionNameCH = _name.data[0].data;
-						if (_name.length > 1)desc.hitgroup.entryFunctionNameAH = _name.data[1].data;
-						if (_name.length > 2)desc.hitgroup.entryFunctionNameIS = _name.data[2].data;
-						desc.hitgroup.moduleCH = moduleManager->getModule(_name.data[0]);
-						if (_name.length > 1)desc.hitgroup.moduleAH = moduleManager->getModule(_name.data[1]);
-						if (_name.length > 2)desc.hitgroup.moduleIS = moduleManager->getModule(_name.data[2]);
-						break;
-					}
-					case Callables:
-					{
-						desc.callables.entryFunctionNameDC = _name.data[0].data;
-						if (_name.length > 1)desc.callables.entryFunctionNameCC = _name.data[1].data;
-						desc.callables.moduleDC = moduleManager->getModule(_name.data[0]);
-						if (_name.length > 1)desc.callables.moduleCC = moduleManager->getModule(_name.data[1]);
-						break;
-					}
+				case RayGen:
+				{
+					desc.raygen.entryFunctionName = _name.data[0].data;
+					desc.raygen.module = moduleManager->getModule(_name.data[0]);
+					break;
 				}
-				optixProgramGroupCreate(optixContext, &desc, 1, _options, nullptr, nullptr, &program);
+				case Miss:
+				{
+					desc.miss.entryFunctionName = _name.data[0].data;
+					desc.miss.module = moduleManager->getModule(_name.data[0]);
+					break;
+				}
+				case Exception:
+				{
+					desc.exception.entryFunctionName = _name.data[0].data;
+					desc.exception.module = moduleManager->getModule(_name.data[0]);
+					break;
+				}
+				case HitGroup:
+				{
+					desc.hitgroup.entryFunctionNameCH = _name.data[0].data;
+					if (_name.length > 1)desc.hitgroup.entryFunctionNameAH = _name.data[1].data;
+					if (_name.length > 2)desc.hitgroup.entryFunctionNameIS = _name.data[2].data;
+					desc.hitgroup.moduleCH = moduleManager->getModule(_name.data[0]);
+					if (_name.length > 1)desc.hitgroup.moduleAH = moduleManager->getModule(_name.data[1]);
+					if (_name.length > 2)desc.hitgroup.moduleIS = moduleManager->getModule(_name.data[2]);
+					break;
+				}
+				case Callables:
+				{
+					desc.callables.entryFunctionNameDC = _name.data[0].data;
+					if (_name.length > 1)desc.callables.entryFunctionNameCC = _name.data[1].data;
+					desc.callables.moduleDC = moduleManager->getModule(_name.data[0]);
+					if (_name.length > 1)desc.callables.moduleCC = moduleManager->getModule(_name.data[1]);
+					break;
+				}
+				}
+				char tp[1024];
+				size_t sa(1024);
+				optixProgramGroupCreate(optixContext, &desc, 1, _options, tp, &sa, &program);
+				::printf("%s Program Create: %s\n", _name.data[0].data, tp);
 			}
 			operator OptixProgramGroup()const
 			{
@@ -525,8 +531,11 @@ namespace CUDA
 			Pipeline(OptixDeviceContext _oc, OptixPipelineCompileOptions* _pco,
 				OptixPipelineLinkOptions* _plo, Vector<OptixProgramGroup>const& _programs)
 			{
+				char tp[1024];
+				size_t sa(1024);
 				optixPipelineCreate(_oc, _pco, _plo, _programs.data,
-					_programs.length, nullptr, nullptr, &pipeline);
+					_programs.length, tp, &sa, &pipeline);
+				::printf("Pipeline Create: %s", tp);
 			}
 			operator OptixPipeline()const
 			{
@@ -654,10 +663,10 @@ namespace CUDA
 				{
 					switch (_key)
 					{
-						case 0:left = _operation; break;
-						case 1:right = _operation; break;
-						case 2:up = _operation; break;
-						case 3:down = _operation; break;
+					case 0:left = _operation; break;
+					case 1:right = _operation; break;
+					case 2:up = _operation; break;
+					case 3:down = _operation; break;
 					}
 				}
 				Math::vec2<double> operate()
@@ -724,9 +733,9 @@ namespace CUDA
 				{
 					switch (_button)
 					{
-						case 0:	left = _operation; break;
-						case 1:	middle = _operation; break;
-						case 2:	right = _operation; break;
+					case 0:	left = _operation; break;
+					case 1:	middle = _operation; break;
+					case 2:	right = _operation; break;
 					}
 
 				}

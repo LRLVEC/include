@@ -5,19 +5,26 @@
 #ifndef __CUDACC__ 
 #define __CUDACC__
 #endif
+//#ifndef __CUDA_LIBDEVICE__
+//#define __CUDA_LIBDEVICE__
+//#endif
 
 #include <device_launch_parameters.h>
 #include <device_functions.h>
 #include <math_functions.h>
 #include <CUDA/helper_math.h>
+//#include <host_defines.h>
+
+#define __launch_bounds__(...) \
+        __annotate__(launch_bounds(__VA_ARGS__))
 
 //__constant__ float dt;
 //__constant__ float G;
 //__constant__ unsigned int num;
-__global__ void positionCalc(NBodyCUDAParticle* particles)
+__global__ __launch_bounds__(1024) void positionCalc(NBodyCUDAParticle* particles)
 {
 	unsigned int id = threadIdx.x + blockIdx.x * 1024;
-	particles[id].position += particles[id].velocity * 0.00001f;
+	particles[id].position += particles[id].velocity * 0.001f;
 }
 //__global__ void velocityCalc(NBodyCUDAParticle* particles)
 //{
@@ -56,7 +63,7 @@ __global__ void velocityCalc_Optimize1(NBodyCUDAParticle* particles)
 		}
 		__syncthreads();
 	}
-	particles[id].velocity += dv * 0.00001f * 0.001f;
+	particles[id].velocity += dv * 0.001f * 0.001f;
 }
 __global__ void forceCalc(NBodyCUDAParticle* particles, ExpData* expData)
 {
