@@ -395,12 +395,13 @@ namespace CUDA
 					size_t sa(1024);
 					optixModuleCreateFromPTX(_oc, _mco, _pco, _source,
 						_source.length, tp, &sa, &module);
-					::printf("%s", tp);
+					::printf("optixModuleCreateFromPTX: %s\n", tp);
 				}
 				bool operator==(String<char> const& _name)const
 				{
 					for (int c0(0); c0 < functions.length; ++c0)
 						if (_name == functions.data[c0])return true;
+					return false;
 				}
 			};
 			File* folder;
@@ -518,7 +519,7 @@ namespace CUDA
 				char tp[1024];
 				size_t sa(1024);
 				optixProgramGroupCreate(optixContext, &desc, 1, _options, tp, &sa, &program);
-				::printf("%s Program Create: %s\n", _name.data[0].data, tp);
+				::printf("Program Create (%s): %s\n", _name.data[0].data, tp);
 			}
 			operator OptixProgramGroup()const
 			{
@@ -536,6 +537,24 @@ namespace CUDA
 				optixPipelineCreate(_oc, _pco, _plo, _programs.data,
 					_programs.length, tp, &sa, &pipeline);
 				::printf("Pipeline Create: %s", tp);
+
+				OptixStackSizes stack_sizes = {};
+				for (unsigned int c0(0); c0 < _programs.length; ++c0)
+					optixUtilAccumulateStackSizes(_programs.data[c0], &stack_sizes);
+
+				uint32_t direct_callable_stack_size_from_traversal;
+				uint32_t direct_callable_stack_size_from_state;
+				uint32_t continuation_stack_size;
+				//...
+				optixUtilComputeStackSizes(&stack_sizes, _plo->maxTraceDepth,
+					0,  // maxCCDepth
+					0,  // maxDCDEpth
+					&direct_callable_stack_size_from_traversal,
+					&direct_callable_stack_size_from_state, &continuation_stack_size);
+				optixPipelineSetStackSize(pipeline, direct_callable_stack_size_from_traversal,
+					direct_callable_stack_size_from_state, continuation_stack_size,
+					1  // maxTraversableDepth
+				);
 			}
 			operator OptixPipeline()const
 			{

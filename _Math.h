@@ -3,6 +3,7 @@
 #include <cstring>
 #include <initializer_list>
 #include <_TemplateMeta.h>
+#define NOMINMAX
 
 namespace Math
 {

@@ -150,6 +150,7 @@ namespace CUDA
 		}
 		void resize(GLuint _gl)
 		{
+			//bug here!!!!!
 			cudaGraphicsGLRegisterBuffer(&graphics, gl = _gl, cudaGraphicsRegisterFlagsNone);
 			//map();
 			//unmap();
@@ -170,7 +171,11 @@ namespace CUDA
 		}
 		void unmap()
 		{
-			if (type == GLinterop)cudaGraphicsUnmapResources(1, &graphics);
+			if (type == GLinterop)
+			{
+				cudaGraphicsUnmapResources(1, &graphics);
+				device = nullptr;
+			}
 			else cudaStreamSynchronize(0);
 		}
 		void freeHost()
