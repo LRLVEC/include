@@ -1,8 +1,8 @@
 #pragma once
 #include <_Vector.h>
-
 //TODO: 
 
+//sort
 template<class T>inline bool judgeUp(T* const a, int p, int q)
 {
 	for (int c0(p); c0 < q - 1; ++c0)
@@ -112,6 +112,7 @@ template<class T>inline void qsort(T* const a, int p, int q)
 	}
 }
 
+//interval
 template<class T>struct Interval
 {
 	static_assert(NumType<T>::value == true, "Non-numeric type not supported yet!");
@@ -399,15 +400,15 @@ template<class T>struct IntervalSet :Vector<Interval<T>>
 		}
 		switch (q - p)
 		{
-			case 1:return IntervalSet<T>();
-			case 2:return tp.data[p + 1] ^ s;
-			default:
-			{
-				tp.truncateSelf(p + 1, q - p - 1);
-				tp.begin() ^= s;
-				tp.end() ^= s;
-				return tp;
-			}
+		case 1:return IntervalSet<T>();
+		case 2:return tp.data[p + 1] ^ s;
+		default:
+		{
+			tp.truncateSelf(p + 1, q - p - 1);
+			tp.begin() ^= s;
+			tp.end() ^= s;
+			return tp;
+		}
 		}
 	}
 	IntervalSet<T>  operator^(IntervalSet<T>const& s)const
@@ -471,20 +472,20 @@ template<class T>struct IntervalSet :Vector<Interval<T>>
 		}
 		switch (q - p)
 		{
-			case 1:this->B::~Vector(); break;
-			case 2:
-			{
-				Interval<T>tp(B::data[p + 1] ^ s);
-				this->B::~Vector();
-				B::pushBack(tp);
-				break;
-			}
-			default:
-			{
-				B::truncateSelf(p + 1, q - p - 1);
-				B::begin() ^= s;
-				B::end() ^= s;
-			}
+		case 1:this->B::~Vector(); break;
+		case 2:
+		{
+			Interval<T>tp(B::data[p + 1] ^ s);
+			this->B::~Vector();
+			B::pushBack(tp);
+			break;
+		}
+		default:
+		{
+			B::truncateSelf(p + 1, q - p - 1);
+			B::begin() ^= s;
+			B::end() ^= s;
+		}
 		}
 		return *this;
 	}
@@ -588,3 +589,32 @@ template<class T>inline Vector<T>& Vector<T>::truncateSelf(IntervalSet<int> cons
 			}
 	return *this;
 }
+
+//phi
+unsigned long long phi(unsigned long long a)
+{
+	unsigned long long res = a;
+	for (unsigned long long i = 2; i * i <= a; i++)
+	{
+		if (a % i == 0)
+			res = (res / i) * (i - 1);
+		while (a % i == 0)
+			a /= i;
+	}
+	if (a > 1)
+		res = (res / a) * (a - 1);
+	return res;
+}
+//quick pow
+unsigned long long qpow(unsigned long long a, unsigned long long n, unsigned long long _mod)
+{
+	unsigned long long ans = 1;
+	while (n)
+	{
+		if (n & 1)ans = (ans * a) % _mod;
+		n >>= 1;
+		a = (a * a) % _mod;
+	}
+	return ans;
+}
+

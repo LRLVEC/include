@@ -229,32 +229,67 @@ namespace CUDA
 			return (CUdeviceptr)device;
 		}
 	};
+	struct CubeMap
+	{
+		BMP::Pixel_32* data;
+		unsigned int width;
+
+		CubeMap() :data(nullptr), width(0) {}
+		CubeMap(String<char>const& _path) :data(nullptr), width(0)
+		{
+			String<char> names[6]{ "right.bmp","left.bmp" ,"top.bmp" ,"bottom.bmp"  ,"back.bmp","front.bmp" };
+			BMP tp(_path + names[0], true);
+			width = tp.header.width;
+			size_t sz(sizeof(BMP::Pixel_32) * width * width);
+			data = (BMP::Pixel_32*)malloc(6 * sz);
+			memcpy(data, tp.data_32, sz);
+			for (int c0(1); c0 < 6; ++c0)
+			{
+				BMP ts(_path + names[c0], true);
+				memcpy(data + c0 * sz / 4, ts.data_32, sz);
+			}
+		}
+		~CubeMap()
+		{
+			::free(data);
+			data = nullptr;
+		}
+		void moveToGPU(cudaArray* _cuArray)const
+		{
+			cudaMemcpy3DParms cpy3Dparams
+			{
+				nullptr,{0,0,0},{data, width * 4ll,width, width},
+				_cuArray,{0,0,0},{0},{ width, width, 6 }, cudaMemcpyHostToDevice
+			};
+			cudaMemcpy3D(&cpy3Dparams);
+		}
+	};
 	template<unsigned int dim>struct Texture
 	{
 		static_assert(dim&& dim < 4, "Dim must be one of 1, 2, 3!");
 	};
-	template<> struct Texture<1>
+	template<>struct Texture<1>
 	{
 		cudaArray* data;
 		cudaTextureObject_t textureObj;
-		Texture(cudaChannelFormatDesc const& channelDesc, cudaTextureAddressMode addressMode,
-			cudaTextureFilterMode filterMode, cudaTextureReadMode readMode, bool normalizedCoords, size_t width)
+		Texture(cudaChannelFormatDesc const& _cd, cudaTextureAddressMode _am,
+			cudaTextureFilterMode _fm, cudaTextureReadMode _rm, bool normalizedCoords, size_t width)
 			:
 			data(nullptr),
 			textureObj(0)
 		{
 			if (width)
 			{
-				cudaMallocArray(&data, &channelDesc, 256);
+				cudaMallocArray(&data, &_cd, 256);
 				cudaResourceDesc resDesc;
 				memset(&resDesc, 0, sizeof(resDesc));
 				resDesc.resType = cudaResourceTypeArray;
 				resDesc.res.array.array = data;
 				cudaTextureDesc texDesc;
 				memset(&texDesc, 0, sizeof(texDesc));
-				texDesc.addressMode[0] = addressMode;
-				texDesc.filterMode = filterMode;
-				texDesc.readMode = readMode;
+				texDesc.addressMode[0] = _am;
+				texDesc.filterMode = _fm;
+				texDesc.readMode = _rm;
 				texDesc.normalizedCoords = normalizedCoords;
 				cudaCreateTextureObject(&textureObj, &resDesc, &texDesc, nullptr);
 			}
@@ -271,7 +306,7 @@ namespace CUDA
 				cudaMallocArray(&data, &channelDesc, 256);
 				if (src)cudaMemcpyToArray(data, 0, 0, src,
 					width * (channelDesc.x + channelDesc.y + channelDesc.z + channelDesc.w) / 8,
-					cudaMemcpyHostToDevice);
+					cudaMemcpyHostToDevice);//only for dim<3
 				cudaResourceDesc resDesc;
 				memset(&resDesc, 0, sizeof(resDesc));
 				resDesc.resType = cudaResourceTypeArray;
@@ -309,39 +344,53 @@ namespace CUDA
 	template<>struct Texture<3>
 	{
 	};
-	struct CubeMap
+	struct TextureCube
 	{
-		BMP::Pixel_32* data;
-		unsigned int width;
+		cudaArray* data;
+		cudaTextureObject_t textureObj;
 
-		CubeMap() :data(nullptr), width(0) {}
-		CubeMap(String<char>const& _path) :data(nullptr), width(0)
+		TextureCube(cudaChannelFormatDesc const& _cd, cudaTextureFilterMode _fm,
+			cudaTextureReadMode _rm, bool normalizedCoords, CubeMap const& cubeMap)
+			:
+			data(nullptr),
+			textureObj(0)
 		{
-			String<char> names[6]{ "right.bmp","left.bmp" ,"top.bmp" ,"bottom.bmp"  ,"back.bmp","front.bmp" };
-			BMP tp(_path + names[0], true);
-			width = tp.header.width;
-			size_t sz(sizeof(BMP::Pixel_32) * width * width);
-			data = (BMP::Pixel_32*)malloc(6 * sz);
-			memcpy(data, tp.data_32, sz);
-			for (int c0(1); c0 < 6; ++c0)
+			if (cubeMap.width)
 			{
-				BMP ts(_path + names[c0], true);
-				memcpy(data + c0 * sz / 4, ts.data_32, sz);
+				cudaExtent extent{ cubeMap.width, cubeMap.width, 6 };
+				cudaMalloc3DArray(&data, &_cd, extent, cudaArrayCubemap);
+				cubeMap.moveToGPU(data);
+				cudaResourceDesc resDesc;
+				cudaTextureDesc texDesc;
+				memset(&resDesc, 0, sizeof(resDesc));
+				memset(&texDesc, 0, sizeof(texDesc));
+				resDesc.resType = cudaResourceTypeArray;
+				resDesc.res.array.array = data;
+				texDesc.normalizedCoords = normalizedCoords;
+				texDesc.filterMode = _fm;
+				texDesc.addressMode[0] = cudaAddressModeWrap;
+				texDesc.addressMode[1] = cudaAddressModeWrap;
+				texDesc.addressMode[2] = cudaAddressModeWrap;
+				texDesc.readMode = _rm;
+				cudaCreateTextureObject(&textureObj, &resDesc, &texDesc, nullptr);
 			}
 		}
-		~CubeMap()
+		~TextureCube()
 		{
-			::free(data);
-			data = nullptr;
-		}
-		void moveToGPU(cudaArray* _cuArray)
-		{
-			cudaMemcpy3DParms cpy3Dparams
+			if (textureObj)
 			{
-				nullptr,{0,0,0},{data, width * 4ll,width, width},
-				_cuArray,{0,0,0},{0},{ width, width, 6 }, cudaMemcpyHostToDevice
-			};
-			cudaMemcpy3D(&cpy3Dparams);
+				cudaDestroyTextureObject(textureObj);
+				textureObj = 0;
+			}
+			if (data)
+			{
+				cudaFreeArray(data);
+				data = nullptr;
+			}
+		}
+		operator cudaTextureObject_t()const
+		{
+			return textureObj;
 		}
 	};
 	struct OpenGLDeviceInfo

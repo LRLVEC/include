@@ -561,6 +561,89 @@ namespace CUDA
 				return pipeline;
 			}
 		};
+		struct Denoiser
+		{
+			OptixDenoiser denoiser;
+			OptixDenoiserParams params;
+			OpenGL::FrameScale size;
+			OptixImage2D inputs[3];
+			OptixImage2D output;
+			CUdeviceptr scratch;
+			CUdeviceptr intensity;
+			CUdeviceptr state;
+			unsigned int scratchSize;
+			unsigned int stateSize;
+
+			Denoiser(OptixDeviceContext _oc, OptixDenoiserOptions* _do, OptixDenoiserModelKind _dmk,
+				OpenGL::FrameScale const& _size)
+				:
+				denoiser(nullptr),
+				params{},
+				size(_size),
+				inputs{},
+				output()
+			{
+				optixDenoiserCreate(_oc, _do, &denoiser);
+				optixDenoiserSetModel(denoiser, _dmk, nullptr, 0);
+				OptixDenoiserSizes denoiserSizes;
+				optixDenoiserComputeMemoryResources(denoiser, _size.w, _size.h, &denoiserSizes);
+				scratchSize = denoiserSizes.withoutOverlapScratchSizeInBytes;//default: not using tiled denoising
+				stateSize = denoiserSizes.stateSizeInBytes;
+				cudaMalloc((void**)&intensity, sizeof(float));
+				cudaMalloc((void**)&state, stateSize);
+				cudaMalloc((void**)&scratch, scratchSize);
+			}
+			void setup(float* inputRGB, float* inputAlbedo, float* inputNormal, CUstream cuStream)
+			{
+				inputs[0].data = (CUdeviceptr)inputRGB;
+				inputs[0].width = size.w;
+				inputs[0].height = size.h;
+				inputs[0].rowStrideInBytes = size.w * sizeof(float4);
+				inputs[0].pixelStrideInBytes = sizeof(float4);
+				inputs[0].format = OPTIX_PIXEL_FORMAT_FLOAT4;
+
+				inputs[1].data = 0;
+				if (inputAlbedo)
+				{
+					inputs[1].data = (CUdeviceptr)inputAlbedo;
+					inputs[1].width = size.w;
+					inputs[1].height = size.h;
+					inputs[1].rowStrideInBytes = size.w * sizeof(float4);
+					inputs[1].pixelStrideInBytes = sizeof(float4);
+					inputs[1].format = OPTIX_PIXEL_FORMAT_FLOAT4;
+				}
+
+				inputs[2].data = 0;
+				if (inputAlbedo)
+				{
+					inputs[2].data = (CUdeviceptr)inputNormal;
+					inputs[2].width = size.w;
+					inputs[2].height = size.h;
+					inputs[2].rowStrideInBytes = size.w * sizeof(float4);
+					inputs[2].pixelStrideInBytes = sizeof(float4);
+					inputs[2].format = OPTIX_PIXEL_FORMAT_FLOAT4;
+				}
+				optixDenoiserSetup(denoiser, cuStream, size.w, size.h,
+					state, stateSize, scratch, scratchSize);
+				params.denoiseAlpha = 0;
+				params.hdrIntensity = intensity;
+				params.blendFactor = 0.f;
+			}
+			void run(CUstream cuStream)
+			{
+				optixDenoiserComputeIntensity(denoiser, cuStream, inputs, intensity, scratch, scratchSize);
+				optixDenoiserInvoke(denoiser, cuStream, &params, state, stateSize,
+					inputs, inputs[2].data ? 3 : inputs[1].data ? 2 : 1,
+					0, 0, &output, scratch, scratchSize);
+			}
+			~Denoiser()
+			{
+				cudaFree((void*)intensity);
+				cudaFree((void*)state);
+				cudaFree((void*)scratch);
+				optixDenoiserDestroy(denoiser);
+			}
+		};
 		struct Trans
 		{
 			struct Data
