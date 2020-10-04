@@ -574,7 +574,7 @@ namespace CUDA
 			unsigned int scratchSize;
 			unsigned int stateSize;
 
-			Denoiser(OptixDeviceContext _oc, OptixDenoiserOptions* _do, OptixDenoiserModelKind _dmk,
+			Denoiser(OptixDeviceContext _oc, OptixDenoiserOptions _do, OptixDenoiserModelKind _dmk,
 				OpenGL::FrameScale const& _size)
 				:
 				denoiser(nullptr),
@@ -583,7 +583,7 @@ namespace CUDA
 				inputs{},
 				output()
 			{
-				optixDenoiserCreate(_oc, _do, &denoiser);
+				optixDenoiserCreate(_oc, &_do, &denoiser);
 				optixDenoiserSetModel(denoiser, _dmk, nullptr, 0);
 				OptixDenoiserSizes denoiserSizes;
 				optixDenoiserComputeMemoryResources(denoiser, _size.w, _size.h, &denoiserSizes);
@@ -593,7 +593,7 @@ namespace CUDA
 				cudaMalloc((void**)&state, stateSize);
 				cudaMalloc((void**)&scratch, scratchSize);
 			}
-			void setup(float* inputRGB, float* inputAlbedo, float* inputNormal, CUstream cuStream)
+			void setup(float* inputRGB, float* inputAlbedo, float* inputNormal,float* _output, CUstream cuStream)
 			{
 				inputs[0].data = (CUdeviceptr)inputRGB;
 				inputs[0].width = size.w;
@@ -623,6 +623,13 @@ namespace CUDA
 					inputs[2].pixelStrideInBytes = sizeof(float4);
 					inputs[2].format = OPTIX_PIXEL_FORMAT_FLOAT4;
 				}
+				output.data = (CUdeviceptr)_output;
+				output.width = size.w;
+				output.height = size.h;
+				output.rowStrideInBytes = size.w * sizeof(float4);
+				output.pixelStrideInBytes = sizeof(float4);
+				output.format = OPTIX_PIXEL_FORMAT_FLOAT4;
+
 				optixDenoiserSetup(denoiser, cuStream, size.w, size.h,
 					state, stateSize, scratch, scratchSize);
 				params.denoiseAlpha = 0;

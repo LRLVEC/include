@@ -4,7 +4,7 @@
 #include <_String.h>
 #include <cstdlib>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <direct.h>
 #include <io.h>
 struct STL;

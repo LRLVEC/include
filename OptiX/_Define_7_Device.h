@@ -176,3 +176,11 @@ static __device__ __forceinline__ float3 randomDirectionCosN(float3 normal, floa
 	}
 	return sqrtf(1 - x * x) * (cosf(y) * u + sin(y) * v) + x * normal;
 }
+
+static __device__ __forceinline__ float3 transposeMult(float3 r0, float3 r1, float3 r2, float3 a)
+{
+	float3 t(a.x * r0);
+	t += a.y * r1;
+	t += a.z * r2;
+	return t;
+}
