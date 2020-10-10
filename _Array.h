@@ -90,7 +90,7 @@ template<class T, unsigned int _length>inline Array<T, _length>::~Array()
 	for (T& d : data)d.~T();
 }
 //operator=
-template<class T, unsigned int _length>inline Array<T, _length>& Array<T, _length>::operator=(Array<T, _length> && a)
+template<class T, unsigned int _length>inline Array<T, _length>& Array<T, _length>::operator=(Array<T, _length>&& a)
 {
 	for (T& d : data)
 	{
@@ -107,7 +107,7 @@ template<class T, unsigned int _length>inline Array<T, _length>& Array<T, _lengt
 	}
 }
 //operator+
-template<class T, unsigned int _length>template<unsigned int _length1>inline auto Array<T, _length>::operator+(Array<T, _length1> && a)
+template<class T, unsigned int _length>template<unsigned int _length1>inline auto Array<T, _length>::operator+(Array<T, _length1>&& a)
 {
 	Array<T, _length + _length1>r;
 	int c0 = 0;
@@ -124,7 +124,7 @@ template<class T, unsigned int _length>template<unsigned int _length1>inline aut
 	return r;
 }
 //element
-template<class T, unsigned int _length>inline T & Array<T, _length>::begin()
+template<class T, unsigned int _length>inline T& Array<T, _length>::begin()
 {
 	return *data;
 }
@@ -141,7 +141,7 @@ template<class T, unsigned int _length>inline T& Array<T, _length>::operator[](u
 	return data[a];
 }
 //Find pos
-template<class T, unsigned int _length>inline int Array<T, _length>::posFirst(const T & a) const
+template<class T, unsigned int _length>inline int Array<T, _length>::posFirst(const T& a) const
 {
 	for (T const& d : data)
 		if (d == a)return &d - data;
@@ -162,13 +162,13 @@ template<class T, unsigned int _length>inline T& Array<T, _length>::findFirst(T 
 		if (d == a)return d;
 	return *(T*)nullptr;
 }
-template<class T, unsigned int _length>inline T & Array<T, _length>::findFirst(bool(*cmp)(const T&, const T&), T const& a)
+template<class T, unsigned int _length>inline T& Array<T, _length>::findFirst(bool(*cmp)(const T&, const T&), T const& a)
 {
 	for (T const& d : data)
 		if (cmp(a, d))return d;
 	return *(T*)nullptr;
 }
-template<class T, unsigned int _length>inline T & Array<T, _length>::findFirst(bool(*cmp)(const T&, const T&), T && a)
+template<class T, unsigned int _length>inline T& Array<T, _length>::findFirst(bool(*cmp)(const T&, const T&), T&& a)
 {
 	for (T const& d : data)
 		if (cmp(a, d))return d;

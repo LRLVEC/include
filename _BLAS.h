@@ -49,7 +49,7 @@ namespace BLAS
 	}
 	inline unsigned long long ceiling4(unsigned long long width, unsigned long long height)
 	{
-		return ((((unsigned long long(width) - 1) >> 2) + 1) << 2) * height;
+		return ((((width - 1) >> 2) + 1) << 2) * height;
 	}
 	inline size_t ceiling256dSize(unsigned long long length)
 	{
@@ -98,11 +98,11 @@ namespace BLAS
 
 	inline unsigned long long getPtrOffset64d(double* ptr)
 	{
-		return (unsigned long long(ptr) >> 3) & 3;
+		return ((unsigned long long)ptr >> 3) & 3;
 	}
 	inline double* getPtr256d(double* ptr)
 	{
-		return (double*)(unsigned long long(ptr) & -32);
+		return (double*)((unsigned long long)ptr & -32);
 	}
 
 	void givens(double x, double y, double& c, double& s, double& r)
@@ -542,7 +542,11 @@ namespace BLAS
 				if (beginning)
 				{
 					for (unsigned long long c1(beginning); c1 < finalDim && c1 < 4; ++c1)
+#ifdef _WIN32
 						aData[0].m256d_f64[c1] *= -1;
+#else
+						aData[0][c1] *= -1;
+#endif
 					++c0;
 				}
 				for (; c0 < dim4; ++c0)
@@ -591,14 +595,26 @@ namespace BLAS
 				{
 					tp = _mm256_add_pd(tp, aData[c0++]);
 					for (unsigned long long c1(0); c1 < beginning; ++c1)
+#ifdef _WIN32
 						tp.m256d_f64[c1] = 0;
+#else
+						tp[c1] = 0;
+#endif
 				}
 				for (unsigned long long c1(finalDim); c1 < 4; ++c1)
+#ifdef _WIN32
 					tp.m256d_f64[c1] = 0;
+#else
+					tp[c1] = 0;
+#endif
 				for (; c0 < dim4; ++c0)
 					tp = _mm256_add_pd(tp, aData[c0]);
 				for (unsigned long long c1(0); c1 < 4; ++c1)
+#ifdef _WIN32
 					s += tp.m256d_f64[c1];
+#else
+					s += tp[c1];
+#endif
 				for (unsigned long long c1(c0 << 2); c1 < finalDim; ++c1)
 					s += data[c1];
 				return s;
@@ -631,10 +647,18 @@ namespace BLAS
 					sqr = _mm256_mul_pd(sqr, sqr);
 					tp = _mm256_add_pd(tp, sqr);
 					for (unsigned long long c1(0); c1 < beginning; ++c1)
+#ifdef _WIN32
 						tp.m256d_f64[c1] = 0;
+#else
+						tp[c1] = 0;
+#endif
 				}
 				for (unsigned long long c1(finalDim); c1 < 4; ++c1)
+#ifdef _WIN32
 					tp.m256d_f64[c1] = 0;
+#else
+					tp[c1] = 0;
+#endif
 				for (; c0 < dim4; ++c0)
 				{
 					sqr = _mm256_min_pd(aData[c0], avgm);
@@ -642,7 +666,11 @@ namespace BLAS
 					tp = _mm256_add_pd(tp, sqr);
 				}
 				for (unsigned long long c1(0); c1 < 4; ++c1)
+#ifdef _WIN32
 					s += tp.m256d_f64[c1];
+#else
+					s += tp[c1];
+#endif
 				for (unsigned long long c1(c0 << 2); c1 < finalDim; ++c1)
 				{
 					double ss(data[c1] - avg);
@@ -695,8 +723,18 @@ namespace BLAS
 				if (m)
 				{
 					for (int c0(beginning + 1); c0 < 4; c0++)
-						if (data[c0] < k)id_l.m128i_i32[n_l++] = c0;
-						else id_geq.m128i_i32[n_geq++] = c0;
+						if (data[c0] < k)
+#ifdef _WIN32
+							id_l.m128i_i32[n_l++] = c0;
+#else
+							id_l[n_l++] = c0;
+#endif
+						else
+#ifdef _WIN32
+							id_geq.m128i_i32[n_geq++] = c0;
+#else
+							id_geq[n_geq++] = c0;
+#endif
 					m = 1;
 				}
 				for (; m < n;)
@@ -715,8 +753,24 @@ namespace BLAS
 							n_geq = 0;
 							vbm256[nb++] = _mm256_i32gather_pd(data, id_geq, 8);
 						}
-						if (rst.m256d_f64[c0] == 0)id_geq.m128i_i32[n_geq++] = c0 + im;
-						else id_l.m128i_i32[n_l++] = c0 + im;
+						if (
+#ifdef _WIN32
+							rst.m256d_f64[c0] == 0
+#else
+							rst[c0] == 0
+#endif
+							)
+#ifdef _WIN32
+							id_geq.m128i_i32[n_geq++] = c0 + im;
+#else
+							id_geq[n_geq++] = c0 + im;
+#endif
+						else
+#ifdef _WIN32
+							id_l.m128i_i32[n_l++] = c0 + im;
+#else
+							id_l[n_l++] = c0 + im;
+#endif
 					}
 				}
 				if ((m <<= 2) < ending)
@@ -733,8 +787,18 @@ namespace BLAS
 							n_geq = 0;
 							vbm256[nb++] = _mm256_i32gather_pd(data, id_geq, 8);
 						}
-						if (data[c0] < k)id_l.m128i_i32[n_l++] = c0;
-						else id_geq.m128i_i32[n_geq++] = c0;
+						if (data[c0] < k)
+#ifdef _WIN32
+							id_l.m128i_i32[n_l++] = c0;
+#else
+							id_l[n_l++] = c0;
+#endif
+						else
+#ifdef _WIN32
+							id_geq.m128i_i32[n_geq++] = c0;
+#else
+							id_geq[n_geq++] = c0;
+#endif
 					}
 				}
 				if (n_l)
@@ -742,14 +806,22 @@ namespace BLAS
 					if (n_l == 4)vam256[na] = _mm256_i32gather_pd(data, id_l, 8);
 					else
 						for (unsigned long long c0(0); c0 < n_l; ++c0)
+#ifdef _WIN32
 							va.data[na * 4 + c0] = data[id_l.m128i_i32[c0]];
+#else
+							va.data[na * 4 + c0] = data[id_l[c0]];
+#endif
 				}
 				if (n_geq)
 				{
 					if (n_geq == 4)vbm256[nb] = _mm256_i32gather_pd(data, id_geq, 8);
 					else
 						for (unsigned long long c0(0); c0 < n_geq; ++c0)
+#ifdef _WIN32
 							vb.data[nb * 4 + c0] = data[id_geq.m128i_i32[c0]];
+#else
+							vb.data[nb * 4 + c0] = data[id_geq[c0]];
+#endif
 				}
 				na = na * 4 + n_l;
 				nb = nb * 4 + n_geq;
@@ -785,8 +857,18 @@ namespace BLAS
 				if (m)
 				{
 					for (int c0(m + 1); c0 < 4; c0++)
-						if (odata[c0] < k)id_l.m128i_i32[n_l++] = c0;
-						else id_geq.m128i_i32[n_geq++] = c0;
+						if (odata[c0] < k)
+#ifdef _WIN32
+							id_l.m128i_i32[n_l++] = c0;
+#else
+							id_l[n_l++] = c0;
+#endif
+						else
+#ifdef _WIN32
+							id_geq.m128i_i32[n_geq++] = c0;
+#else
+							id_geq[n_geq++] = c0;
+#endif
 					m = 1;
 				}
 				for (; m < n;)
@@ -805,8 +887,24 @@ namespace BLAS
 							n_geq = 0;
 							vbm256[nb++] = _mm256_i32gather_pd(odata, id_geq, 8);
 						}
-						if (rst.m256d_f64[c0] == 0)id_geq.m128i_i32[n_geq++] = c0 + im;
-						else id_l.m128i_i32[n_l++] = c0 + im;
+						if (
+#ifdef _WIN32
+							rst.m256d_f64[c0] == 0
+#else
+							rst[c0] == 0
+#endif
+							)
+#ifdef _WIN32
+							id_geq.m128i_i32[n_geq++] = c0 + im;
+#else
+							id_geq[n_geq++] = c0 + im;
+#endif
+						else
+#ifdef _WIN32
+							id_l.m128i_i32[n_l++] = c0 + im;
+#else
+							id_l[n_l++] = c0 + im;
+#endif
 					}
 				}
 				if ((m <<= 2) < ending)
@@ -823,8 +921,18 @@ namespace BLAS
 							n_geq = 0;
 							vbm256[nb++] = _mm256_i32gather_pd(odata, id_geq, 8);
 						}
-						if (odata[c0] < k)id_l.m128i_i32[n_l++] = c0;
-						else id_geq.m128i_i32[n_geq++] = c0;
+						if (odata[c0] < k)
+#ifdef _WIN32
+							id_l.m128i_i32[n_l++] = c0;
+#else
+							id_l[n_l++] = c0;
+#endif
+						else
+#ifdef _WIN32
+							id_geq.m128i_i32[n_geq++] = c0;
+#else
+							id_geq[n_geq++] = c0;
+#endif
 					}
 				}
 				if (n_l)
@@ -832,14 +940,22 @@ namespace BLAS
 					if (n_l == 4)vam256[na] = _mm256_i32gather_pd(odata, id_l, 8);
 					else
 						for (unsigned long long c0(0); c0 < n_l; ++c0)
+#ifdef _WIN32
 							va.data[na * 4 + c0] = odata[id_l.m128i_i32[c0]];
+#else
+							va.data[na * 4 + c0] = odata[id_l[c0]];
+#endif
 				}
 				if (n_geq)
 				{
 					if (n_geq == 4)vbm256[nb] = _mm256_i32gather_pd(odata, id_geq, 8);
 					else
 						for (unsigned long long c0(0); c0 < n_geq; ++c0)
+#ifdef _WIN32
 							vb.data[nb * 4 + c0] = odata[id_geq.m128i_i32[c0]];
+#else
+							vb.data[nb * 4 + c0] = odata[id_geq[c0]];
+#endif
 				}
 				na = na * 4 + n_l;
 				nb = nb * 4 + n_geq;
@@ -865,7 +981,7 @@ namespace BLAS
 		{
 			if (p + 1 < q)
 			{
-				double& const k(data[p]);
+				double const& k(data[p]);
 				unsigned long long m(p + 1), n(p);
 				while (++n != q)
 					if (data[n] < k) { double t = data[m]; data[m++] = data[n]; data[n] = t; }
@@ -884,7 +1000,7 @@ namespace BLAS
 		{
 			if (p + 1 < q)
 			{
-				double& const k(data[p]);
+				double const& k(data[p]);
 				unsigned long long m(p + 1), n(p);
 				while (++n != q)
 					if (data[n] > k) { double t = data[m]; data[m++] = data[n]; data[n] = t; }
@@ -1072,19 +1188,34 @@ namespace BLAS
 				{
 					tp = _mm256_fmadd_pd(aData[c0], bData[c0], tp);
 					for (unsigned long long c1(0); c1 < maxB; ++c1)
+#ifdef _WIN32
 						tp.m256d_f64[c1] = 0;
+#else
+						tp[c1] = 0;
+#endif
 					++c0;
 				}
 				for (unsigned long long c1(minE); c1 < 4; ++c1)
+#ifdef _WIN32
 					tp.m256d_f64[c1] = 0;
+#else
+					tp[c1] = 0;
+#endif
 				for (; c0 < minDim4; ++c0)
 					tp = _mm256_fmadd_pd(aData[c0], bData[c0], tp);
 				for (unsigned long long c1(c0 << 2); c1 < minE; ++c1)
 					s += data[c1] * a.data[c1];
+#ifdef _WIN32
 				s += tp.m256d_f64[0];
 				s += tp.m256d_f64[1];
 				s += tp.m256d_f64[2];
 				s += tp.m256d_f64[3];
+#else
+				s += tp[0];
+				s += tp[1];
+				s += tp[2];
+				s += tp[3];
+#endif
 				return s;
 			}
 			else return 0;
@@ -1119,14 +1250,26 @@ namespace BLAS
 				{
 					tp = _mm256_add_pd(tp, _mm256_and_pd(gg, aData[c0++]));
 					for (unsigned long long c1(0); c1 < beginning; ++c1)
+#ifdef _WIN32
 						tp.m256d_f64[c1] = 0;
+#else
+						tp[c1] = 0;
+#endif
 				}
 				for (unsigned long long c1(finalDim); c1 < 4; ++c1)
+#ifdef _WIN32
 					tp.m256d_f64[c1] = 0;
+#else
+					tp[c1] = 0;
+#endif
 				for (; c0 < dim4; ++c0)
 					tp = _mm256_add_pd(tp, _mm256_and_pd(gg, aData[c0]));
 				for (unsigned long long c1(0); c1 < 4; ++c1)
+#ifdef _WIN32
 					s += tp.m256d_f64[c1];
+#else
+					s += tp[c1];
+#endif
 				for (unsigned long long c1(c0 << 2); c1 < finalDim; ++c1)
 					s += ::abs(data[c1]);
 				return s;
@@ -1148,10 +1291,18 @@ namespace BLAS
 					__m256d gg = aData[c0++];
 					tp = _mm256_fmadd_pd(gg, gg, tp);
 					for (unsigned long long c1(0); c1 < beginning; ++c1)
+#ifdef _WIN32
 						tp.m256d_f64[c1] = 0;
+#else
+						tp[c1] = 0;
+#endif
 				}
 				for (unsigned long long c1(finalDim); c1 < 4; ++c1)
+#ifdef _WIN32
 					tp.m256d_f64[c1] = 0;
+#else
+					tp[c1] = 0;
+#endif
 				for (; c0 < dim4; ++c0)
 				{
 					__m256d gg = aData[c0];
@@ -1159,10 +1310,17 @@ namespace BLAS
 				}
 				for (unsigned long long c1(c0 << 2); c1 < finalDim; ++c1)
 					s += data[c1] * data[c1];
+#ifdef _WIN32
 				s += tp.m256d_f64[0];
 				s += tp.m256d_f64[1];
 				s += tp.m256d_f64[2];
 				s += tp.m256d_f64[3];
+#else
+				s += tp[0];
+				s += tp[1];
+				s += tp[2];
+				s += tp[3];
+#endif
 				return s;
 			}
 			else return 0;
@@ -1190,20 +1348,41 @@ namespace BLAS
 				{
 					tp = _mm256_and_pd(gg, aData[c0++]);
 					for (unsigned long long c1(0); c1 < beginning; ++c1)
+#ifdef _WIN32
 						tp.m256d_f64[c1] = 0;
+#else
+						tp[c1] = 0;
+#endif
 				}
 				for (unsigned long long c1(finalDim); c1 < 4; ++c1)
+#ifdef _WIN32
 					tp.m256d_f64[c1] = 0;
+#else
+					tp[c1] = 0;
+#endif
 				for (; c0 < dim4; ++c0)
 					tp = _mm256_max_pd(tp, _mm256_and_pd(gg, aData[c0]));
 				for (unsigned long long c1(0); c1 < 4; ++c1)
-					if (s < tp.m256d_f64[c1])s = tp.m256d_f64[c1];
+					if (
+#ifdef _WIN32
+						s < tp.m256d_f64[c1]
+#else
+						s < tp[c1]
+#endif
+						)
+#ifdef _WIN32
+						s = tp.m256d_f64[c1];
+#else
+						s = tp[c1];
+#endif
 				for (unsigned long long c1(c0 << 2); c1 < finalDim; ++c1)
 					if (s < ::abs(data[c1]))s = ::abs(data[c1]);
 				return s;
 			}
 			return 0;
 		}
+		//only support for MSVC...
+#ifdef _WIN32
 		double normP(double p)const
 		{
 			if (dim && p)
@@ -1239,7 +1418,7 @@ namespace BLAS
 			}
 			return 0;
 		}
-
+#endif
 		void print(bool inRow = false)const
 		{
 			::printf("[");
@@ -1270,7 +1449,7 @@ namespace BLAS
 			case Type::Parasitic:str = "Parastic"; break;
 			case Type::Non32Aligened:str = "Non32Aligened"; break;
 			}
-			::printf("{dim: %u, beginning: %u, type: %s}\n", dim, beginning, str);
+			::printf("{dim: %llu, beginning: %llu, type: %s}\n", dim, beginning, str);
 		}
 		void printToTxt(char const* name)const
 		{
@@ -1473,7 +1652,7 @@ namespace BLAS
 		}
 		inline double& operator() (unsigned long long a, unsigned long long b)
 		{
-			return data[unsigned long long(a) * width4d + b];
+			return data[a * width4d + b];
 		}
 		inline vec row(unsigned long long a)
 		{
@@ -1482,22 +1661,22 @@ namespace BLAS
 		inline double  BandEle(unsigned long long a, unsigned long long b)const
 		{
 			if (a <= halfBandWidth)return data[a * width4d + b];
-			else return data[a * width4d + b - (long long(a - halfBandWidth) / 4) * 4];
+			else return data[a * width4d + b - ((long long)(a - halfBandWidth) / 4) * 4];
 		}
 		inline double& BandEleRef(unsigned long long a, unsigned long long b)
 		{
 			if (a <= halfBandWidth)return data[a * width4d + b];
-			else return data[a * width4d + b - (long long(a - halfBandWidth) / 4) * 4];
+			else return data[a * width4d + b - ((long long)(a - halfBandWidth) / 4) * 4];
 		}
 		inline double  LBandEle(unsigned long long a, unsigned long long b)const
 		{
 			if (a <= halfBandWidth)return data[a * width4d + b];
-			else return data[a * width4d + b - (long long(a - halfBandWidth) / 4) * 4];
+			else return data[a * width4d + b - ((long long)(a - halfBandWidth) / 4) * 4];
 		}
 		inline double& LBandEleRef(unsigned long long a, unsigned long long b)
 		{
 			if (a <= halfBandWidth)return data[a * width4d + b];
-			else return data[a * width4d + b - (long long(a - halfBandWidth) / 4) * 4];
+			else return data[a * width4d + b - ((long long)(a - halfBandWidth) / 4) * 4];
 		}
 		inline double  UBandEle(unsigned long long a, unsigned long long b)const
 		{
@@ -1510,12 +1689,12 @@ namespace BLAS
 		inline unsigned long long BandBeginOffset(unsigned long long a)const
 		{
 			if (a <= halfBandWidth)return 0;
-			else return a - (long long(a - halfBandWidth) / 4) * 4 - halfBandWidth;
+			else return a - ((long long)(a - halfBandWidth) / 4) * 4 - halfBandWidth;
 		}
 		inline unsigned long long LBandBeginOffset(unsigned long long a)const
 		{
 			if (a <= halfBandWidth)return 0;
-			else return a - (long long(a - halfBandWidth) / 4) * 4 - halfBandWidth;
+			else return a - ((long long)(a - halfBandWidth) / 4) * 4 - halfBandWidth;
 		}
 		inline unsigned long long UBandBeginOffset(unsigned long long a)const
 		{
@@ -1632,8 +1811,7 @@ namespace BLAS
 				}
 				else
 				{
-					if (unsigned long long(a.width4d) * a.height !=
-						unsigned long long(width4d) * height)
+					if (a.width4d * a.height != width4d * height)
 					{
 						_mm_free(data);
 						data = malloc256d(a.width, a.height);
@@ -1657,8 +1835,7 @@ namespace BLAS
 		{
 			if (type == Type::Native)
 			{
-				if (unsigned long long(a.width4d) * a.height !=
-					unsigned long long(width4d) * height)
+				if (a.width4d * a.height != width4d * height)
 				{
 					_mm_free(data);
 					data = malloc256d(a.width, a.height);
@@ -1979,7 +2156,11 @@ namespace BLAS
 								tp[c2] = bData[c1 + c2];
 							unsigned long long finalWidth(minDim - ((minDim >> 2) << 2));
 							for (unsigned long long c2(finalWidth); c2 < 4; ++c2)
+#ifdef _WIN32
 								tp[warpLeftFloor].m256d_f64[c2] = 0;
+#else
+								tp[warpLeftFloor][c2] = 0;
+#endif
 							for (unsigned long long c2(0); c2 < 4; ++c2, s += minWidth4)
 							{
 #pragma unroll(4)
@@ -1993,10 +2174,17 @@ namespace BLAS
 						__m256d s;
 						for (unsigned long long c1(0); c1 < 4; ++c1)
 						{
+#ifdef _WIN32
 							s.m256d_f64[c1] = ans[c1].m256d_f64[0];
 							s.m256d_f64[c1] += ans[c1].m256d_f64[1];
 							s.m256d_f64[c1] += ans[c1].m256d_f64[2];
 							s.m256d_f64[c1] += ans[c1].m256d_f64[3];
+#else
+							s[c1] = ans[c1][0];
+							s[c1] += ans[c1][1];
+							s[c1] += ans[c1][2];
+							s[c1] += ans[c1][3];
+#endif
 						}
 						rData[c0 >> 2] = s;
 					}
@@ -2030,7 +2218,11 @@ namespace BLAS
 								tp[c2] = bData[c1 + c2];
 							unsigned long long finalWidth(minDim - ((minDim >> 2) << 2));
 							for (unsigned long long c2(finalWidth); c2 < 4; ++c2)
+#ifdef _WIN32
 								tp[warpLeftFloor].m256d_f64[c2] = 0;
+#else
+								tp[warpLeftFloor][c2] = 0;
+#endif
 							for (unsigned long long c2(0); c2 < heightLeft; ++c2, s += minWidth4)
 							{
 #pragma unroll(4)
@@ -2044,10 +2236,17 @@ namespace BLAS
 						__m256d s;
 						for (unsigned long long c1(0); c1 < heightLeft; ++c1)
 						{
+#ifdef _WIN32
 							s.m256d_f64[c1] = ans[c1].m256d_f64[0];
 							s.m256d_f64[c1] += ans[c1].m256d_f64[1];
 							s.m256d_f64[c1] += ans[c1].m256d_f64[2];
 							s.m256d_f64[c1] += ans[c1].m256d_f64[3];
+#else
+							s[c1] = ans[c1][0];
+							s[c1] += ans[c1][1];
+							s[c1] += ans[c1][2];
+							s[c1] += ans[c1][3];
+#endif
 						}
 						rData[c0 >> 2] = s;
 					}
@@ -2450,7 +2649,7 @@ namespace BLAS
 				delta = b1; delta -= b0;
 				if (delta.norm1() < eps)
 				{
-					::printf("iters:\t%d\n", c0 * 10);
+					::printf("iters:\t%llu\n", c0 * 10);
 					return b;
 				}
 			}
@@ -2541,7 +2740,7 @@ namespace BLAS
 				unsigned long long len4(ceiling4(len + bgn));
 				vec tll(data + c0 * width4d, len4, Type::Parasitic);
 				vec bll(b.data, len4, Type::Parasitic);
-				unsigned long long tbgn(c0 <= halfBandWidth ? 0 : c0 - (long long(c0 - halfBandWidth) / 4) * 4);
+				unsigned long long tbgn(c0 <= halfBandWidth ? 0 : c0 - ((long long)(c0 - halfBandWidth) / 4) * 4);
 				vec pll(tp.data + ((c0 - len) & -4), len4, Type::Parasitic);
 				bll = tll; bll *= pll;
 				vec bn(b.data + bgn, len, Type::Non32Aligened);
@@ -2550,7 +2749,7 @@ namespace BLAS
 				for (; c1 < c0 + halfBandWidth && c1 < minDim; ++c1)
 				{
 					unsigned long long bgn1(LBandBeginOffset(c1));
-					unsigned long long end1(c1 <= halfBandWidth ? c0 : c0 - (long long(c1 - halfBandWidth) / 4) * 4);
+					unsigned long long end1(c1 <= halfBandWidth ? c0 : c0 - ((long long)(c1 - halfBandWidth) / 4) * 4);
 					if (c1 > halfBandWidth && bgn1 == 0)
 					{
 						bll.data += 4;
@@ -2562,7 +2761,7 @@ namespace BLAS
 				}
 				if (c1 == c0 + halfBandWidth && c1 < minDim)
 				{
-					unsigned long long end1(c1 <= halfBandWidth ? c0 : c0 - (long long(c1 - halfBandWidth) / 4) * 4);
+					unsigned long long end1(c1 <= halfBandWidth ? c0 : c0 - ((long long)(c1 - halfBandWidth) / 4) * 4);
 					uM.UBandEleRef(c0, c1) = data[c1 * width4d + end1] * tp[c0];
 				}
 			}
@@ -2640,7 +2839,7 @@ namespace BLAS
 			{
 				if (rNorm / minDim < _eps * _eps)
 				{
-					::printf("iters:\t%d\n", c0);
+					::printf("iters:\t%llu\n", c0);
 					return b;
 				}
 				(*this)(p, Ap);
@@ -3015,7 +3214,7 @@ namespace BLAS
 			case MatType::LBandMat:str = "LBandMat"; break;
 			case MatType::UBandMat:str = "UBandMat"; break;
 			}
-			::printf("{width: %u, height: %u, type: %s, matType: %s}\n", width, height,
+			::printf("{width: %llu, height: %llu, type: %s, matType: %s}\n", width, height,
 				type == Type::Native ? "Native" : "Parasitic", str);
 		}
 		void printToTxt(char const* name)const
@@ -3360,11 +3559,19 @@ namespace BLAS
 					tpRe = _mm256_fnmadd_pd(a2, b2, tpRe);
 					tpIm = _mm256_fmadd_pd(a1, b2, tpIm);
 					for (unsigned long long c1(0); c1 < maxB; ++c1)
+#ifdef _WIN32
 						tpRe.m256d_f64[c1] = tpIm.m256d_f64[c1] = 0;
+#else
+						tpRe[c1] = tpIm[c1] = 0;
+#endif
 					++c0;
 				}
 				for (unsigned long long c1(minE); c1 < 4; ++c1)
+#ifdef _WIN32
 					tpRe.m256d_f64[c1] = tpIm.m256d_f64[c1] = 0;
+#else
+					tpRe[c1] = tpIm[c1] = 0;
+#endif
 				for (; c0 < minDim4; ++c0)
 				{
 					__m256d a1 = aRe[c0];
@@ -3385,6 +3592,7 @@ namespace BLAS
 					sRe += a1 * b1 - a2 * b2;
 					sIm += a2 * b1 + a1 * b2;
 				}
+#ifdef _WIN32
 				sRe += tpRe.m256d_f64[0];
 				sRe += tpRe.m256d_f64[1];
 				sRe += tpRe.m256d_f64[2];
@@ -3393,6 +3601,16 @@ namespace BLAS
 				sIm += tpIm.m256d_f64[1];
 				sIm += tpIm.m256d_f64[2];
 				sIm += tpIm.m256d_f64[3];
+#else
+				sRe += tpRe[0];
+				sRe += tpRe[1];
+				sRe += tpRe[2];
+				sRe += tpRe[3];
+				sIm += tpIm[0];
+				sIm += tpIm[1];
+				sIm += tpIm[2];
+				sIm += tpIm[3];
+#endif
 				return { sRe,sIm };
 			}
 			else return { 0,0 };
@@ -3425,11 +3643,19 @@ namespace BLAS
 					tpRe = _mm256_fmadd_pd(a2, b2, tpRe);
 					tpIm = _mm256_fnmadd_pd(a2, b1, tpIm);
 					for (unsigned long long c1(0); c1 < maxB; ++c1)
+#ifdef _WIN32
 						tpRe.m256d_f64[c1] = tpIm.m256d_f64[c1] = 0;
+#else
+						tpRe[c1] = tpIm[c1] = 0;
+#endif
 					++c0;
 				}
 				for (unsigned long long c1(minE); c1 < 4; ++c1)
+#ifdef _WIN32
 					tpRe.m256d_f64[c1] = tpIm.m256d_f64[c1] = 0;
+#else
+					tpRe[c1] = tpIm[c1] = 0;
+#endif
 				for (; c0 < minDim4; ++c0)
 				{
 					__m256d a1 = aRe[c0];
@@ -3450,6 +3676,7 @@ namespace BLAS
 					sRe += a1 * b1 + a2 * b2;
 					sIm += a1 * b2 - a2 * b1;
 				}
+#ifdef _WIN32
 				sRe += tpRe.m256d_f64[0];
 				sRe += tpRe.m256d_f64[1];
 				sRe += tpRe.m256d_f64[2];
@@ -3458,6 +3685,16 @@ namespace BLAS
 				sIm += tpIm.m256d_f64[1];
 				sIm += tpIm.m256d_f64[2];
 				sIm += tpIm.m256d_f64[3];
+#else
+				sRe += tpRe[0];
+				sRe += tpRe[1];
+				sRe += tpRe[2];
+				sRe += tpRe[3];
+				sIm += tpIm[0];
+				sIm += tpIm[1];
+				sIm += tpIm[2];
+				sIm += tpIm[3];
+#endif
 				return { sRe,sIm };
 			}
 			else return { 0,0 };
@@ -3486,11 +3723,19 @@ namespace BLAS
 					tpIm = _mm256_add_pd(tpIm, tp);
 					tpRe = _mm256_fnmadd_pd(a2, a2, tpRe);
 					for (unsigned long long c1(0); c1 < beginning; ++c1)
+#ifdef _WIN32
 						tpRe.m256d_f64[c1] = tpIm.m256d_f64[c1] = 0;
+#else
+						tpRe[c1] = tpIm[c1] = 0;
+#endif
 					++c0;
 				}
 				for (unsigned long long c1(e0); c1 < 4; ++c1)
+#ifdef _WIN32
 					tpRe.m256d_f64[c1] = tpIm.m256d_f64[c1] = 0;
+#else
+					tpRe[c1] = tpIm[c1] = 0;
+#endif
 				for (; c0 < minDim4; ++c0)
 				{
 					__m256d a1 = aRe[c0];
@@ -3509,6 +3754,7 @@ namespace BLAS
 					sRe += a1 * a1 - a2 * a2;
 					sIm += 2 * a1 * a2;
 				}
+#ifdef _WIN32
 				sRe += tpRe.m256d_f64[0];
 				sRe += tpRe.m256d_f64[1];
 				sRe += tpRe.m256d_f64[2];
@@ -3517,6 +3763,16 @@ namespace BLAS
 				sIm += tpIm.m256d_f64[1];
 				sIm += tpIm.m256d_f64[2];
 				sIm += tpIm.m256d_f64[3];
+#else
+				sRe += tpRe[0];
+				sRe += tpRe[1];
+				sRe += tpRe[2];
+				sRe += tpRe[3];
+				sIm += tpIm[0];
+				sIm += tpIm[1];
+				sIm += tpIm[2];
+				sIm += tpIm[3];
+#endif
 				return { sRe,sIm };
 			}
 			else return { 0,0 };
@@ -3540,11 +3796,19 @@ namespace BLAS
 					tpRe = _mm256_fmadd_pd(a1, a1, tpRe);
 					tpRe = _mm256_fmadd_pd(a2, a2, tpRe);
 					for (unsigned long long c1(0); c1 < beginning; ++c1)
+#ifdef _WIN32
 						tpRe.m256d_f64[c1] = 0;
+#else
+						tpRe[c1] = 0;
+#endif
 					++c0;
 				}
 				for (unsigned long long c1(e0); c1 < 4; ++c1)
+#ifdef _WIN32
 					tpRe.m256d_f64[c1] = 0;
+#else
+					tpRe[c1] = 0;
+#endif
 				for (; c0 < minDim4; ++c0)
 				{
 					__m256d a1 = aRe[c0];
@@ -3558,10 +3822,17 @@ namespace BLAS
 					double a2 = im.data[c1];
 					sRe += a1 * a1 + a2 * a2;
 				}
+#ifdef _WIN32
 				sRe += tpRe.m256d_f64[0];
 				sRe += tpRe.m256d_f64[1];
 				sRe += tpRe.m256d_f64[2];
 				sRe += tpRe.m256d_f64[3];
+#else
+				sRe += tpRe[0];
+				sRe += tpRe[1];
+				sRe += tpRe[2];
+				sRe += tpRe[3];
+#endif
 				return { sRe,0 };
 			}
 			else return { 0,0 };
@@ -4194,7 +4465,7 @@ namespace BLAS
 				unsigned long long len4(ceiling4(len + bgn));
 				vecCplx tll(re.data + c0 * re.width4d, im.data + c0 * im.width4d, len4, Type::Parasitic);
 				vecCplx bll(b.re.data, b.im.data, len4, Type::Parasitic);
-				unsigned long long tbgn(c0 <= re.halfBandWidth ? 0 : c0 - (long long(c0 - re.halfBandWidth) / 4) * 4);
+				unsigned long long tbgn(c0 <= re.halfBandWidth ? 0 : c0 - ((long long)(c0 - re.halfBandWidth) / 4) * 4);
 				vecCplx pll(tp.re.data + ((c0 - len) & -4), tp.im.data + ((c0 - len) & -4), len4, Type::Parasitic);
 				bll = tll; bll *= pll;
 				vecCplx bn(b.re.data + bgn, b.im.data + bgn, len, Type::Non32Aligened);
@@ -4208,7 +4479,7 @@ namespace BLAS
 				for (; c1 < c0 + re.halfBandWidth && c1 < minDim; ++c1)
 				{
 					unsigned long long bgn1(re.LBandBeginOffset(c1));
-					unsigned long long end1(c1 <= re.halfBandWidth ? c0 : c0 - (long long(c1 - re.halfBandWidth) / 4) * 4);
+					unsigned long long end1(c1 <= re.halfBandWidth ? c0 : c0 - ((long long)(c1 - re.halfBandWidth) / 4) * 4);
 					if (c1 > re.halfBandWidth && bgn1 == 0)
 					{
 						bll.re.data += 4;
@@ -4227,7 +4498,7 @@ namespace BLAS
 				}
 				if (c1 == c0 + re.halfBandWidth && c1 < minDim)
 				{
-					unsigned long long end1(c1 <= re.halfBandWidth ? c0 : c0 - (long long(c1 - re.halfBandWidth) / 4) * 4);
+					unsigned long long end1(c1 <= re.halfBandWidth ? c0 : c0 - ((long long)(c1 - re.halfBandWidth) / 4) * 4);
 					dt = cplx(re.data[c1 * re.width4d + end1], im.data[c1 * im.width4d + end1]) *
 						cplx(tp.re[c0], tp.im[c0]);
 					uM.re.UBandEleRef(c0, c1) = dt.re;
@@ -4259,7 +4530,7 @@ namespace BLAS
 			{
 				if (abs(rNorm.re) + abs(rNorm.im) < minDim * _eps * _eps)
 				{
-					::printf("iters:\t%d\n", c0);
+					::printf("iters:\t%llu\n", c0);
 					return b;
 				}
 				(*this)(p, Ap);
@@ -4299,7 +4570,7 @@ namespace BLAS
 			{
 				if (rNorm < minDim * _eps * _eps)
 				{
-					::printf("iters:\t%d\n", c0);
+					::printf("iters:\t%llu\n", c0);
 					return b;
 				}
 				(*this)(p, tp);
@@ -4515,7 +4786,7 @@ namespace BLAS
 					for (unsigned long long c2(0); c2 < deltaMinDim; ++c2)
 					{
 						double b = source->data[c1 + c2];
-						tp[c2] = { b,b,b,b };
+						tp[c2] = _mm256_set1_pd(b);
 					}
 					__m256d* s(aData + width4 * c1 + c0);
 #pragma unroll(4)
@@ -4557,7 +4828,7 @@ namespace BLAS
 					for (unsigned long long c2(0); c2 < deltaMinDim; ++c2)
 					{
 						double b = source->data[c1 + c2];
-						tp[c2] = { b,b,b,b };
+						tp[c2] = _mm256_set1_pd(b);
 					}
 					__m256d* s(aData + width4 * c1 + c0);
 #pragma unroll(4)
