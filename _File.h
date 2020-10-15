@@ -190,6 +190,7 @@ struct File
 		build();
 		return *this;
 	}
+	File& createSTL(String<char>const& _name, STL const& _stl);
 	//Read file
 	String<char>readText()const
 	{
