@@ -102,12 +102,16 @@ struct FPS
 {
 	timespec t0;
 	timespec t1;
+	int timeStamp;
+	double accTime;
 	unsigned long long dt;
 	double fps;
 	char str[128];
 	bool valid;
 	FPS()
-		: valid(false)
+		: valid(false),
+		timeStamp(0),
+		accTime(0)
 	{
 	}
 	void refresh()
@@ -155,5 +159,16 @@ struct FPS
 	{
 		if (valid)
 			sprintf(str, "fps:%.*lf    frame time: %.*lf ms", a, fps, b, dt / 1000000.0);
+	}
+	void printAverageFrameTime()
+	{
+		timeStamp++;
+		if (timeStamp > 100)
+			accTime += dt / 1000000.0;
+		if (timeStamp == 200)
+		{
+			printf("accTime:%lf ms", accTime / 100);
+			exit(0);
+		}
 	}
 };

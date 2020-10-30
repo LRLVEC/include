@@ -183,6 +183,7 @@ namespace OpenGL
 				{
 					vr::HmdMatrix44_t projMat4 = hmd->hmd->GetProjectionMatrix(eye, persp->zNear, persp->zFar);
 					d0 = hmd->frameScale.w * projMat4.m[0][0] / 2.0f;
+					//offset of the beginning pixel in pixels
 					rayOffset = { hmd->frameScale.w * projMat4.m[0][2]  ,hmd->frameScale.h * projMat4.m[1][2] };
 					rayOffset /= 2.0f;
 					//::printf("d0: %f\nrayOffset: [%f, %f]\n", d0, rayOffset.data[0], rayOffset.data[1]);
@@ -196,7 +197,7 @@ namespace OpenGL
 				void updateTrans(Object const& _hmd)
 				{
 					trans = _hmd.pos;
-					trans.rowVec[3] += (_hmd.pos, eyeOffset);
+					trans.rowVec[3] += (_hmd.pos, eyeOffset);//transform from head space to world space
 					trans.array[3][3] = -d0;
 					trans.array[0][3] = rayOffset.data[0];
 					trans.array[1][3] = rayOffset.data[1];
@@ -251,6 +252,128 @@ namespace OpenGL
 			{
 				if (!isRightEye)buffer.copy(leftEye.trans);
 				else buffer.copy(rightEye.trans);
+			}
+		};
+		struct OptiXTransCrossfire
+		{
+			struct TransInfo
+			{
+				//rt left eye
+				Math::mat<float, 3, 4>ansLeft;
+				Math::vec3<float> r0Left;
+				float z0;
+				//rt right eye
+				Math::vec2<float>offsetRight;
+				unsigned int eye;
+				Math::vec3<float> r0Right;
+				//from world space to clipping space of the right eye
+				//answer is result divide by z'
+				Math::mat<float, 2, 4>projRight;
+			};
+			struct Perspective
+			{
+				double zNear;
+				double zFar;
+			};
+			struct Eyes
+			{
+				VRDevice* hmd;
+				Perspective* persp;
+				float d0;
+				Math::vec2<float> rayOffsetLeft;
+				Math::vec3<float> eyeOffsetLeft;
+				Math::vec3<float> eyeOffsetRight;
+				//store to TransInfo
+				Math::mat4<float> transLeft;
+				Math::vec2<float>offsetRight;
+				unsigned int eye;
+				Math::vec3<float>r0Right;
+				Math::mat<float, 2, 4>projRight;
+
+				Eyes() = delete;
+				Eyes(VRDevice* _hmd, Perspective* _persp)
+					:
+					hmd(_hmd),
+					persp(_persp)
+				{
+				}
+				void updateProj()
+				{
+					vr::HmdMatrix44_t projMat4 = hmd->hmd->GetProjectionMatrix(vr::Eye_Left, persp->zNear, persp->zFar);
+					d0 = hmd->frameScale.w * projMat4.m[0][0] / 2.0f;
+					//offset of the beginning pixel in pixels
+					rayOffsetLeft = { hmd->frameScale.w * projMat4.m[0][2]  ,hmd->frameScale.h * projMat4.m[1][2] };
+					rayOffsetLeft /= 2.0f;
+					projMat4 = hmd->hmd->GetProjectionMatrix(vr::Eye_Right, persp->zNear, persp->zFar);
+					//offset of the beginning pixel in pixels
+					offsetRight = { hmd->frameScale.w * projMat4.m[0][2]  ,hmd->frameScale.h * projMat4.m[1][2] };
+					offsetRight /= 2.0f;
+					projRight = *((Math::mat<float, 2, 4>*) & projMat4);
+					//::printf("d0: %f\nrayOffset: [%f, %f]\n", d0, rayOffset.data[0], rayOffset.data[1]);
+				}
+				void updateOffset()
+				{
+					vr::HmdMatrix34_t offsetMat4 = hmd->hmd->GetEyeToHeadTransform(vr::Eye_Left);
+					eyeOffsetLeft = { offsetMat4.m[0][3],offsetMat4.m[1][3], offsetMat4.m[2][3] };
+					offsetMat4 = hmd->hmd->GetEyeToHeadTransform(vr::Eye_Right);
+					eyeOffsetRight = { offsetMat4.m[0][3],offsetMat4.m[1][3], offsetMat4.m[2][3] };
+				}
+				void updateTrans(Object const& _hmd)
+				{
+					transLeft = _hmd.pos;
+					r0Right = transLeft.rowVec[3];
+					transLeft.rowVec[3] += (_hmd.pos, eyeOffsetLeft);//transform the offset from head space to world space
+					r0Right += (_hmd.pos, eyeOffsetRight);//transform the offset from head space to world space
+					transLeft.array[3][3] = -d0;
+					transLeft.array[0][3] = rayOffsetLeft.data[0];
+					transLeft.array[1][3] = rayOffsetLeft.data[1];
+				}
+				void updateAll()//if proj or offset changes, use this
+				{
+					updateProj();
+					updateOffset();
+					updateTrans(hmd->objects[0]);
+				}
+				void update()
+				{
+					updateTrans(hmd->objects[0]);
+				}
+				void printInfo()const
+				{
+					::printf("Left eye:\n");
+					eyeOffsetLeft.printInfo("Offset: ");
+					transLeft.printInfo("\nTrans: ");
+				}
+			};
+			CUDA::Buffer buffer;
+			VRDevice* hmd;
+			Perspective persp;
+			Eyes eyes;
+
+			OptiXTransCrossfire() = delete;
+			OptiXTransCrossfire(VRDevice* _hmd, Perspective _persp)
+				:
+				hmd(_hmd),
+				persp(_persp),
+				eyes(_hmd, &persp),
+				buffer(CUDA::Buffer::Device, sizeof(TransInfo))
+			{
+				updateAll();
+			}
+			void update()
+			{
+				hmd->refreshHMDOptiX();
+				eyes.update();
+			}
+			void updateAll()
+			{
+				hmd->refreshHMDOptiX();
+				eyes.updateAll();
+			}
+			void operate(bool isRightEye)
+			{
+				eyes.eye = isRightEye;
+				buffer.copy(&eyes.transLeft, sizeof(TransInfo));
 			}
 		};
 		struct OptiXVRRenderer : OptiXRenderer
@@ -343,6 +466,161 @@ namespace OpenGL
 				vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture);
 				glFlush();
 			}
+		};
+		struct OptiXVRRendererCrossfire :Program
+		{
+			struct TriangleData : Buffer::Data
+			{
+				using Vertex = Math::vec2<float>;
+				using Triangle = Array<Vertex, 3>;
+				Array<Triangle, 2> triangles;
+				TriangleData()
+					:
+					Data(StaticDraw),
+					triangles({ {{-1,-1},{1,-1},{1,1}},{{1,1},{-1,1},{-1,-1}} })
+				{
+				}
+				virtual void* pointer()override
+				{
+					return (void*)triangles.data;
+				}
+				virtual unsigned int size()override
+				{
+					return sizeof(Triangle) * triangles.length;
+				}
+			};
+			struct PixelData : Buffer::Data
+			{
+				Texture frameTexture;
+				TextureConfig<TextureStorage2D> frameConfig;
+
+				PixelData(FrameScale const& _size)
+					:
+					Data(StreamDraw),
+					frameTexture(nullptr, 0),
+					frameConfig(&frameTexture, Texture2D, RGBA32f, 1, _size.w, _size.h)
+				{
+				}
+				virtual void* pointer()override
+				{
+					return nullptr;
+				}
+				virtual unsigned int size()override
+				{
+					return frameConfig.width * frameConfig.height * 16;
+				}
+			};
+
+			TriangleData triangles;
+			PixelData pixelDataLeft;
+			PixelData pixelDataRight;
+			Buffer trianglesBuffer;
+			Buffer pixelBufferLeft;
+			Buffer pixelBufferRight;
+			BufferConfig bufferArray;
+			BufferConfig pixelPixelLeft;
+			BufferConfig pixelPixelRight;
+			VertexAttrib positions;
+
+			VRDevice* hmd;
+			FrameBufferDesc leftEyeDesc;
+			FrameBufferDesc rightEyeDesc;
+			FrameScale windowSize;
+
+			OptiXVRRendererCrossfire(SourceManager* _sourceManager, FrameScale const& _size, VRDevice* _hmd)
+				:
+				Program(_sourceManager, "Frame", Vector<VertexAttrib*>{&positions}),
+
+				triangles(),
+				pixelDataLeft(_size),
+				pixelDataRight(_size),
+				trianglesBuffer(&triangles),
+				pixelBufferLeft(&pixelDataLeft),
+				pixelBufferRight(&pixelDataRight),
+				bufferArray(&trianglesBuffer, ArrayBuffer),
+				pixelPixelLeft(&pixelBufferLeft, PixelUnpackBuffer),
+				pixelPixelRight(&pixelBufferRight, PixelUnpackBuffer),
+				positions(&bufferArray, 0, VertexAttrib::two,
+					VertexAttrib::Float, false, sizeof(TriangleData::Vertex), 0, 0),
+
+				hmd(_hmd),
+				leftEyeDesc(hmd->frameScale),
+				rightEyeDesc(hmd->frameScale),
+				windowSize(_size)
+			{
+				init();
+				prepare();
+				//glDisable(GL_DEPTH_TEST);
+			}
+			void prepare()
+			{
+				bufferArray.dataInit();
+				use();
+				pixelDataLeft.frameTexture.bindUnit();
+				pixelDataRight.frameTexture.bindUnit();
+				pixelPixelLeft.dataInit();
+				pixelPixelRight.dataInit();
+			}
+			void resize(FrameScale const& _size)
+			{
+				windowSize = _size;
+			}
+			virtual void initBufferData()override
+			{
+			}
+			virtual void run()override
+			{
+				//left (include window)
+				pixelPixelLeft.bind();
+				pixelDataLeft.frameConfig.dataInit(0, TextureInputRGBA, TextureInputFloat);
+				pixelPixelLeft.unbind();
+
+				glBindFramebuffer(GL_FRAMEBUFFER, leftEyeDesc.renderFramebuffer);
+				glViewport(0, 0, hmd->frameScale.w, hmd->frameScale.h);
+				pixelDataLeft.frameConfig.bind();
+				glDrawArrays(GL_TRIANGLES, 0, 6);
+				leftEyeDesc.copyRenderBuffer();
+
+				glBindFramebuffer(GL_READ_FRAMEBUFFER, leftEyeDesc.renderFramebuffer);
+				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+				glBlitFramebuffer(0, 0, leftEyeDesc.size.w, leftEyeDesc.size.h,
+					0, 0, leftEyeDesc.size.w, leftEyeDesc.size.h, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+				glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+				//right (include window)
+				pixelPixelRight.bind();
+				pixelDataRight.frameConfig.dataInit(0, TextureInputRGBA, TextureInputFloat);
+				pixelPixelRight.unbind();
+
+				glBindFramebuffer(GL_FRAMEBUFFER, rightEyeDesc.renderFramebuffer);
+				pixelDataRight.frameConfig.bind();
+				glDrawArrays(GL_TRIANGLES, 0, 6);
+				rightEyeDesc.copyRenderBuffer();
+
+				glBindFramebuffer(GL_READ_FRAMEBUFFER, rightEyeDesc.renderFramebuffer);
+				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+				glBlitFramebuffer(0, 0, rightEyeDesc.size.w, rightEyeDesc.size.h,
+					rightEyeDesc.size.w, 0, 2 * leftEyeDesc.size.w, rightEyeDesc.size.h, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+				glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+				commit();
+			}
+			void commit()
+			{
+				vr::Texture_t leftEyeTexture = { (void*)(uintptr_t)leftEyeDesc.resolveTexture,
+					vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
+				vr::Texture_t rightEyeTexture = { (void*)(uintptr_t)rightEyeDesc.resolveTexture,
+					vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
+				vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture);
+				vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture);
+				glFlush();
+			}
+		};
+		struct RayTracer
+		{
+			virtual void run() = 0;
+			virtual void resize(FrameScale const& _size, GLuint _glLeft, GLuint _glRight) = 0;
 		};
 	}
 }
@@ -450,6 +728,7 @@ namespace CUDA
 				for (int c0(0); c0 < modules.length; ++c0)
 					if (modules.data[c0] == _programName)
 						return modules.data[c0].module;
+				return nullptr;
 			}
 		};
 		struct Program
@@ -488,7 +767,8 @@ namespace CUDA
 				case Miss:
 				{
 					desc.miss.entryFunctionName = _name.data[0].data;
-					desc.miss.module = moduleManager->getModule(_name.data[0]);
+					if (_name.data[0].data)desc.miss.module = moduleManager->getModule(_name.data[0]);
+					else desc.miss.module = nullptr;
 					break;
 				}
 				case Exception:
@@ -593,7 +873,7 @@ namespace CUDA
 				cudaMalloc((void**)&state, stateSize);
 				cudaMalloc((void**)&scratch, scratchSize);
 			}
-			void setup(float* inputRGB, float* inputAlbedo, float* inputNormal,float* _output, CUstream cuStream)
+			void setup(float* inputRGB, float* inputAlbedo, float* inputNormal, float* _output, CUstream cuStream)
 			{
 				inputs[0].data = (CUdeviceptr)inputRGB;
 				inputs[0].width = size.w;

@@ -3,6 +3,7 @@
 #ifndef __CUDACC__ 
 #define __CUDACC__
 #endif
+#include <device_functions.h>
 #include <device_launch_parameters.h>
 #include <optix_device.h>
 #include <OptiX/_vector_functions.hpp>
@@ -176,6 +177,27 @@ static __device__ __forceinline__ float3 randomDirectionCosN(float3 normal, floa
 	}
 	return sqrtf(1 - x * x) * (cosf(y) * u + sin(y) * v) + x * normal;
 }
+static __device__ __forceinline__ float3 randomDirectionCosAngle(float3 normal, float cosAngle, curandStateMini* state)
+{
+	float3 u;
+	float3 v;
+	float x(curand_uniform(state) * (1 - cosAngle) + cosAngle);
+	float y(2.0 * M_PIf * curand_uniform(state));
+	if (fabsf(normal.x) > 0.7f)
+	{
+		float s = sqrtf(1 - normal.y * normal.y);
+		u = make_float3(-normal.z, 0, normal.x) / s;
+		v = make_float3(normal.x * normal.y / s, -s, normal.y * normal.z / s);
+	}
+	else
+	{
+		float s = sqrtf(1 - normal.x * normal.x);
+		u = make_float3(0, normal.z, -normal.y) / s;
+		v = make_float3(-s, normal.x * normal.y / s, normal.x * normal.z / s);
+	}
+	return sqrtf(1 - x * x) * (cosf(y) * u + sin(y) * v) + x * normal;
+}
+
 
 static __device__ __forceinline__ float3 transposeMult(float3 r0, float3 r1, float3 r2, float3 a)
 {
