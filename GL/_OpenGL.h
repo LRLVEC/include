@@ -1,4 +1,5 @@
 #pragma once
+#ifdef _WIN32
 #define GLEW_STATIC
 #include <GL/GLEW/glew.h>
 #include <GL/GLFW/glfw3.h>
@@ -10,6 +11,10 @@
 #else
 #pragma comment(lib,"GL/glew32s.lib")
 //#pragma comment(lib,"GL/glfw3dll.lib")
+#endif
+#else
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 #endif
 
 #include <_Vector.h>

@@ -34,9 +34,6 @@ namespace Math
 
 		vec();
 		vec(vec<T, _dim>const&) = default;
-#ifdef _WIN32
-		template<class R>vec(R const&);
-#else
 #define FUCKGCC(R) vec(R)
 		FUCKGCC(GetNumType< 1>::Result);
 		FUCKGCC(GetNumType< 2>::Result);
@@ -52,7 +49,7 @@ namespace Math
 		FUCKGCC(GetNumType<12>::Result);
 		FUCKGCC(GetNumType<13>::Result);
 #undef FUCKGCC
-#endif
+		// template<class R>vec(R const&);
 		template<class R, unsigned int _dim1>vec(vec<R, _dim1>const&);
 		vec(std::initializer_list<T>const&);
 		~vec() = default;
@@ -199,13 +196,6 @@ namespace Math
 		data{ 0 }
 	{
 	}
-#ifdef _WIN32
-	template<class T, unsigned int _dim>template<class R>						inline vec<T, _dim>::vec(R const& a)
-	{
-		CheckNumType(R);
-		for (auto& d : data)d = (T)a;
-	}
-#else
 #define FUCKGCC(R)\
 	template<class T, unsigned int _dim>										inline vec<T, _dim>::vec(R a)\
 	{\
@@ -225,7 +215,6 @@ namespace Math
 	FUCKGCC(GetNumType<12>::Result);
 	FUCKGCC(GetNumType<13>::Result);
 #undef FUCKGCC
-#endif
 	template<class T, unsigned int _dim>template<class R, unsigned int _dim1>	inline vec<T, _dim>::vec(vec<R, _dim1>const& a)
 	{
 		static constexpr unsigned int const MinDim = Min<unsigned int, _dim, _dim1>::value;
@@ -476,8 +465,7 @@ namespace Math
 		}
 	}
 	//append
-#ifdef _WIN32
-	template<class T, unsigned int _dim, class R>inline auto operator+(R const& a, vec<T, _dim>const& b)
+	/*template<class T, unsigned int _dim, class R>inline auto operator+(R const& a, vec<T, _dim>const& b)
 	{
 		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
 		vec<HigherType, _dim>temp{ b };
@@ -504,8 +492,7 @@ namespace Math
 		vec<HigherType, _dim>temp{ b };
 		for (HigherType& d : temp.data)d = HigherType(a) / d;
 		return temp;
-	}
-#else
+	}*/
 #define FUCKGCC(R)\
 	template<class T, unsigned int _dim>inline auto operator+(R a, vec<T, _dim>const& b)\
 	{\
@@ -550,7 +537,6 @@ namespace Math
 	FUCKGCC(GetNumType<12>::Result);
 	FUCKGCC(GetNumType<13>::Result);
 #undef FUCKGCC
-#endif
 	//dot
 	template<class T, unsigned int _dim>template<class R, unsigned int _dim1>	inline auto vec<T, _dim>::operator,(vec<R, _dim1>const& a)const
 	{
@@ -718,7 +704,7 @@ namespace Math
 			printf(str, data[c0]);
 		printf("]");
 	}
-	template<class T, unsigned int _dim>inline void vec<T, _dim>::printInfo(char const* a) const
+	template<class T, unsigned int _dim>inline void vec<T, _dim>::printInfo(char const* a)const
 	{
 		::printf("%s", a);
 		print();
@@ -1048,8 +1034,7 @@ namespace Math
 		}
 	}
 	//append
-#ifdef _WIN32
-	template<class T, unsigned int _rowDim, unsigned int _colDim, class R>inline auto operator+(R const& a, mat<T, _rowDim, _colDim>const& b)
+	/*template<class T, unsigned int _rowDim, unsigned int _colDim, class R>inline auto operator+(R const& a, mat<T, _rowDim, _colDim>const& b)
 	{
 		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
 		mat<HigherType, _rowDim, _colDim>temp{ b };
@@ -1084,8 +1069,7 @@ namespace Math
 			for (auto& d1 : d0)
 				d1 = (HigherType)a / d1;
 		return temp;
-	}
-#else
+	}*/
 #define FUCKGCC(R)\
 	template<class T, unsigned int _rowDim, unsigned int _colDim>inline auto operator+(R a, mat<T, _rowDim, _colDim>const& b)\
 	{\
@@ -1138,7 +1122,6 @@ namespace Math
 	FUCKGCC(GetNumType<12>::Result);
 	FUCKGCC(GetNumType<13>::Result);
 #undef FUCKGCC
-#endif
 	//vec transfer
 	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R, unsigned int _dim>inline auto mat<T, _rowDim, _colDim>::operator,(vec<R, _dim> const& a)const
 	{
@@ -1328,6 +1311,7 @@ namespace Math
 		vec3<double>n{ *this };
 		n.normaliaze();
 		double c{ cos(a) };
+		return mat3<double>::id(1);
 		return (1 - c) * (n ^ n) + mat3<double>::id(c) + sin(a) * n.crossMat();
 	}
 	//==============================================test====================================

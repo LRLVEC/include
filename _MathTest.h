@@ -1,7 +1,7 @@
 #pragma once
+#include <cstdio>
 #include <cmath>
 #include <cstring>
-#include <cstdio>
 #include <initializer_list>
 #include <_TemplateMeta.h>
 #define NOMINMAX
@@ -34,25 +34,7 @@ namespace Math
 
 		vec();
 		vec(vec<T, _dim>const&) = default;
-#ifdef _WIN32
 		template<class R>vec(R const&);
-#else
-#define FUCKGCC(R) vec(R)
-		FUCKGCC(GetNumType< 1>::Result);
-		FUCKGCC(GetNumType< 2>::Result);
-		FUCKGCC(GetNumType< 3>::Result);
-		FUCKGCC(GetNumType< 4>::Result);
-		FUCKGCC(GetNumType< 5>::Result);
-		FUCKGCC(GetNumType< 6>::Result);
-		FUCKGCC(GetNumType< 7>::Result);
-		FUCKGCC(GetNumType< 8>::Result);
-		FUCKGCC(GetNumType< 9>::Result);
-		FUCKGCC(GetNumType<10>::Result);
-		FUCKGCC(GetNumType<11>::Result);
-		FUCKGCC(GetNumType<12>::Result);
-		FUCKGCC(GetNumType<13>::Result);
-#undef FUCKGCC
-#endif
 		template<class R, unsigned int _dim1>vec(vec<R, _dim1>const&);
 		vec(std::initializer_list<T>const&);
 		~vec() = default;
@@ -60,41 +42,30 @@ namespace Math
 		vec<T, _dim>& operator=(vec<T, _dim>const&) = default;
 		template<class R>vec<T, _dim>& operator= (R const&);
 		template<class R>vec<T, _dim>& operator+=(R const&);
-		template<class R>vec<T, _dim>& operator-=(R const&);
-		template<class R>vec<T, _dim>& operator*=(R const&);
-		template<class R>vec<T, _dim>& operator/=(R const&);
 		bool operator==(vec<T, _dim>const&)const;
 		template<class R>bool operator==(R const&)const;
 		template<class R>bool operator!=(R const&)const;
 		template<class R, unsigned int _dim1>vec<T, _dim>& operator =(vec<R, _dim1>const&);
 		template<class R, unsigned int _dim1>vec<T, _dim>& operator+=(vec<R, _dim1>const&);
-		template<class R, unsigned int _dim1>vec<T, _dim>& operator-=(vec<R, _dim1>const&);
-		template<class R, unsigned int _dim1>vec<T, _dim>& operator*=(vec<R, _dim1>const&);
-		template<class R, unsigned int _dim1>vec<T, _dim>& operator/=(vec<R, _dim1>const&);
 
 		vec<T, _dim> operator-()const;
 		template<class R>auto operator+(R const&)const;
-		template<class R>auto operator-(R const&)const;
-		template<class R>auto operator*(R const&)const;
-		template<class R>auto operator/(R const&)const;
 		template<class R, unsigned int _dim1>auto operator+(vec<R, _dim1>const&)const;
-		template<class R, unsigned int _dim1>auto operator-(vec<R, _dim1>const&)const;
-		template<class R, unsigned int _dim1>auto operator*(vec<R, _dim1>const&)const;
-		template<class R, unsigned int _dim1>auto operator/(vec<R, _dim1>const&)const;
+		// template<class R>friend auto operator+(R const&, vec<T, _dim>const&);
 		//dot
 		template<class R, unsigned int _dim1>auto operator,(vec<R, _dim1>const&)const;
 		//cross
 		template<class R, unsigned int _dim1>auto operator|(vec<R, _dim1>const&);
 		mat3<T> crossMat();
 		//tensor product
-		template<class R, unsigned int _dim1>auto operator^(vec<R, _dim1>const&);
+		// template<class R, unsigned int _dim1>auto operator^(vec<R, _dim1>const&);
 		//transfer
 		template<class R, unsigned int _rowDim, unsigned int _colDim>auto operator()(mat<R, _rowDim, _colDim>const&);
 		//rotate
-		template<class R, class Y, unsigned int _dim1>auto operator()(vec<R, _dim1>const&, Y);
-		template<class Y>mat3<double> rotMat(Y);
-		template<class R, class Y, unsigned int _rowDim1, unsigned int _colDim1>auto& operator()(mat<R, _rowDim1, _colDim1>*, Y);
-		template<class R, class Y, unsigned int _rowDim1, unsigned int _colDim1>auto operator()(mat<R, _rowDim1, _colDim1>const&, Y);
+		// template<class R, class Y, unsigned int _dim1>auto operator()(vec<R, _dim1>const&, Y);
+		// template<class Y>mat3<double> rotMat(Y);
+		// template<class R, class Y, unsigned int _rowDim1, unsigned int _colDim1>auto& operator()(mat<R, _rowDim1, _colDim1>*, Y);
+		// template<class R, class Y, unsigned int _rowDim1, unsigned int _colDim1>auto operator()(mat<R, _rowDim1, _colDim1>const&, Y);
 		//square
 		T square()const;
 		T square(int)const;
@@ -145,22 +116,10 @@ namespace Math
 
 		template<class R>mat<T, _rowDim, _colDim>& operator= (R const&);
 		template<class R>mat<T, _rowDim, _colDim>& operator+=(R const&);
-		template<class R>mat<T, _rowDim, _colDim>& operator-=(R const&);
-		template<class R>mat<T, _rowDim, _colDim>& operator*=(R const&);
-		template<class R>mat<T, _rowDim, _colDim>& operator/=(R const&);
 		template<class R, unsigned int _rowDim1, unsigned int _colDim1>mat<T, _rowDim, _colDim>& operator =(mat<R, _rowDim1, _colDim1>const&);
 		template<class R, unsigned int _rowDim1, unsigned int _colDim1>mat<T, _rowDim, _colDim>& operator+=(mat<R, _rowDim1, _colDim1>const&);
-		template<class R, unsigned int _rowDim1, unsigned int _colDim1>mat<T, _rowDim, _colDim>& operator-=(mat<R, _rowDim1, _colDim1>const&);
-		template<class R, unsigned int _rowDim1, unsigned int _colDim1>mat<T, _rowDim, _colDim>& operator*=(mat<R, _rowDim1, _colDim1>const&);
-		template<class R, unsigned int _rowDim1, unsigned int _colDim1>mat<T, _rowDim, _colDim>& operator/=(mat<R, _rowDim1, _colDim1>const&);
 		template<class R>auto operator+(R const&)const;
-		template<class R>auto operator-(R const&)const;
-		template<class R>auto operator*(R const&)const;
-		template<class R>auto operator/(R const&)const;
 		template<class R, unsigned int _rowDim1, unsigned int _colDim1>auto operator+(mat<R, _rowDim1, _colDim1>const&)const;
-		template<class R, unsigned int _rowDim1, unsigned int _colDim1>auto operator-(mat<R, _rowDim1, _colDim1>const&)const;
-		template<class R, unsigned int _rowDim1, unsigned int _colDim1>auto operator*(mat<R, _rowDim1, _colDim1>const&)const;
-		template<class R, unsigned int _rowDim1, unsigned int _colDim1>auto operator/(mat<R, _rowDim1, _colDim1>const&)const;
 		//vec transfer
 		template<class R, unsigned int _dim>auto operator,(vec<R, _dim>const&)const;
 		//mat transfer
@@ -199,33 +158,11 @@ namespace Math
 		data{ 0 }
 	{
 	}
-#ifdef _WIN32
 	template<class T, unsigned int _dim>template<class R>						inline vec<T, _dim>::vec(R const& a)
 	{
 		CheckNumType(R);
 		for (auto& d : data)d = (T)a;
 	}
-#else
-#define FUCKGCC(R)\
-	template<class T, unsigned int _dim>										inline vec<T, _dim>::vec(R a)\
-	{\
-		for (auto& d : data)d = (T)a;\
-	}
-	FUCKGCC(GetNumType< 1>::Result);
-	FUCKGCC(GetNumType< 2>::Result);
-	FUCKGCC(GetNumType< 3>::Result);
-	FUCKGCC(GetNumType< 4>::Result);
-	FUCKGCC(GetNumType< 5>::Result);
-	FUCKGCC(GetNumType< 6>::Result);
-	FUCKGCC(GetNumType< 7>::Result);
-	FUCKGCC(GetNumType< 8>::Result);
-	FUCKGCC(GetNumType< 9>::Result);
-	FUCKGCC(GetNumType<10>::Result);
-	FUCKGCC(GetNumType<11>::Result);
-	FUCKGCC(GetNumType<12>::Result);
-	FUCKGCC(GetNumType<13>::Result);
-#undef FUCKGCC
-#endif
 	template<class T, unsigned int _dim>template<class R, unsigned int _dim1>	inline vec<T, _dim>::vec(vec<R, _dim1>const& a)
 	{
 		static constexpr unsigned int const MinDim = Min<unsigned int, _dim, _dim1>::value;
@@ -284,27 +221,6 @@ namespace Math
 		for (T& d : data)d += (T)a;
 		return *this;
 	}
-	template<class T, unsigned int _dim>template<class R>						inline vec<T, _dim>& vec<T, _dim>::operator-=(R const& a)
-	{
-		CheckNumType(T);
-		CheckNumType(R);
-		for (T& d : data)d -= (T)a;
-		return *this;
-	}
-	template<class T, unsigned int _dim>template<class R>						inline vec<T, _dim>& vec<T, _dim>::operator*=(R const& a)
-	{
-		CheckNumType(T);
-		CheckNumType(R);
-		for (T& d : data)d *= (T)a;
-		return *this;
-	}
-	template<class T, unsigned int _dim>template<class R>						inline vec<T, _dim>& vec<T, _dim>::operator/=(R const& a)
-	{
-		CheckNumType(T);
-		CheckNumType(R);
-		for (T& d : data)d /= (T)a;
-		return *this;
-	}
 	template<class T, unsigned int _dim>										inline bool vec<T, _dim>::operator==(vec<T, _dim> const& a)const
 	{
 		return !memcmp(data, a.data, sizeof(data));
@@ -347,24 +263,6 @@ namespace Math
 		for (int c1 = 0; c1 < MinDim; c1++)data[c1] += (T)a.data[c1];
 		return *this;
 	}
-	template<class T, unsigned int _dim>template<class R, unsigned int _dim1>	inline vec<T, _dim>& vec<T, _dim>::operator-=(vec<R, _dim1>const& a)
-	{
-		static constexpr unsigned int const MinDim = Min<unsigned int, _dim, _dim1>::value;
-		for (int c1 = 0; c1 < MinDim; c1++)data[c1] -= (T)a.data[c1];
-		return *this;
-	}
-	template<class T, unsigned int _dim>template<class R, unsigned int _dim1>	inline vec<T, _dim>& vec<T, _dim>::operator*=(vec<R, _dim1>const& a)
-	{
-		static constexpr unsigned int const MinDim = Min<unsigned int, _dim, _dim1>::value;
-		for (int c1 = 0; c1 < MinDim; c1++)data[c1] *= (T)a.data[c1];
-		return *this;
-	}
-	template<class T, unsigned int _dim>template<class R, unsigned int _dim1>	inline vec<T, _dim>& vec<T, _dim>::operator/=(vec<R, _dim1>const& a)
-	{
-		static constexpr unsigned int const MinDim = Min<unsigned int, _dim, _dim1>::value;
-		for (int c1 = 0; c1 < MinDim; c1++)data[c1] /= (T)a.data[c1];
-		return *this;
-	}
 	template<class T, unsigned int _dim>inline vec<T, _dim>vec<T, _dim>::operator-()const
 	{
 		vec<T, _dim> temp;
@@ -377,30 +275,6 @@ namespace Math
 		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
 		vec<HigherType, _dim>temp{ *this };
 		for (HigherType& d : temp.data)d += HigherType(a);
-		return temp;
-	}
-	template<class T, unsigned int _dim>template<class R>						inline auto vec<T, _dim>::operator-(R const& a)const
-	{
-		CheckNumType(R);
-		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
-		vec<HigherType, _dim>temp{ *this };
-		for (HigherType& d : temp.data)d -= HigherType(a);
-		return temp;
-	}
-	template<class T, unsigned int _dim>template<class R>						inline auto vec<T, _dim>::operator*(R const& a)const
-	{
-		CheckNumType(R);
-		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
-		vec<HigherType, _dim>temp{ *this };
-		for (HigherType& d : temp.data)d *= HigherType(a);
-		return temp;
-	}
-	template<class T, unsigned int _dim>template<class R>						inline auto vec<T, _dim>::operator/(R const& a)const
-	{
-		CheckNumType(R);
-		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
-		vec<HigherType, _dim>temp{ *this };
-		for (HigherType& d : temp.data)d /= HigherType(a);
 		return temp;
 	}
 	template<class T, unsigned int _dim>template<class R, unsigned int _dim1>	inline auto vec<T, _dim>::operator+(vec<R, _dim1>const& a)const
@@ -421,91 +295,15 @@ namespace Math
 			return temp;
 		}
 	}
-	template<class T, unsigned int _dim>template<class R, unsigned int _dim1>	inline auto vec<T, _dim>::operator-(vec<R, _dim1>const& a)const
-	{
-		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
-		static constexpr unsigned int const MaxDim = Max<unsigned int, _dim, _dim1>::value;
-		static constexpr unsigned int const MinDim = Min<unsigned int, _dim, _dim1>::value;
-		if constexpr (MaxDim == _dim)
-		{
-			vec<HigherType, MaxDim>temp{ *this };
-			for (int c1 = 0; c1 < MinDim; c1++)temp.data[c1] -= (HigherType)a.data[c1];
-			return temp;
-		}
-		else
-		{
-			vec<HigherType, MaxDim>temp{ a };
-			for (int c1 = 0; c1 < MinDim; c1++)temp.data[c1] -= (HigherType)data[c1];
-			return temp;
-		}
-	}
-	template<class T, unsigned int _dim>template<class R, unsigned int _dim1>	inline auto vec<T, _dim>::operator*(vec<R, _dim1>const& a)const
-	{
-		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
-		static constexpr unsigned int const MaxDim = Max<unsigned int, _dim, _dim1>::value;
-		static constexpr unsigned int const MinDim = Min<unsigned int, _dim, _dim1>::value;
-		if constexpr (MaxDim == _dim)
-		{
-			vec<HigherType, MaxDim>temp{ *this };
-			for (int c1 = 0; c1 < MinDim; c1++)temp.data[c1] *= (HigherType)a.data[c1];
-			return temp;
-		}
-		else
-		{
-			vec<HigherType, MaxDim>temp{ a };
-			for (int c1 = 0; c1 < MinDim; c1++)temp.data[c1] *= (HigherType)data[c1];
-			return temp;
-		}
-	}
-	template<class T, unsigned int _dim>template<class R, unsigned int _dim1>	inline auto vec<T, _dim>::operator/(vec<R, _dim1>const& a)const
-	{
-		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
-		static constexpr unsigned int const MaxDim = Max<unsigned int, _dim, _dim1>::value;
-		static constexpr unsigned int const MinDim = Min<unsigned int, _dim, _dim1>::value;
-		if constexpr (MaxDim == _dim)
-		{
-			vec<HigherType, MaxDim>temp{ *this };
-			for (int c1 = 0; c1 < MinDim; c1++)temp.data[c1] /= (HigherType)a.data[c1];
-			return temp;
-		}
-		else
-		{
-			vec<HigherType, MaxDim>temp{ a };
-			for (int c1 = 0; c1 < MinDim; c1++)temp.data[c1] /= (HigherType)data[c1];
-			return temp;
-		}
-	}
 	//append
-#ifdef _WIN32
-	template<class T, unsigned int _dim, class R>inline auto operator+(R const& a, vec<T, _dim>const& b)
+	/*template<class T, unsigned int _dim, class R>inline auto operator+(R a, vec<T, _dim>const& b)
 	{
+		CheckNumType(R);
 		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
 		vec<HigherType, _dim>temp{ b };
 		for (HigherType& d : temp.data)d += HigherType(a);
 		return temp;
-	}
-	template<class T, unsigned int _dim, class R>inline auto operator-(R const& a, vec<T, _dim>const& b)
-	{
-		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
-		vec<HigherType, _dim>temp{ b };
-		for (HigherType& d : temp.data)d = HigherType(a) - d;
-		return temp;
-	}
-	template<class T, unsigned int _dim, class R>inline auto operator*(R const& a, vec<T, _dim>const& b)
-	{
-		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
-		vec<HigherType, _dim>temp{ b };
-		for (HigherType& d : temp.data)d *= HigherType(a);
-		return temp;
-	}
-	template<class T, unsigned int _dim, class R>inline auto operator/(R const& a, vec<T, _dim>const& b)
-	{
-		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
-		vec<HigherType, _dim>temp{ b };
-		for (HigherType& d : temp.data)d = HigherType(a) / d;
-		return temp;
-	}
-#else
+	}*/
 #define FUCKGCC(R)\
 	template<class T, unsigned int _dim>inline auto operator+(R a, vec<T, _dim>const& b)\
 	{\
@@ -549,8 +347,7 @@ namespace Math
 	FUCKGCC(GetNumType<11>::Result);
 	FUCKGCC(GetNumType<12>::Result);
 	FUCKGCC(GetNumType<13>::Result);
-#undef FUCKGCC
-#endif
+
 	//dot
 	template<class T, unsigned int _dim>template<class R, unsigned int _dim1>	inline auto vec<T, _dim>::operator,(vec<R, _dim1>const& a)const
 	{
@@ -583,15 +380,15 @@ namespace Math
 		};
 	}
 	//tensor product
-	template<class T, unsigned int _dim>template<class R, unsigned int _dim1>inline auto vec<T, _dim>::operator^(vec<R, _dim1>const& a)
-	{
-		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
-		mat<HigherType, _dim, _dim1>temp;
-		int c1{ 0 };
-		for (auto& d : temp.rowVec)
-			d = HigherType(data[c1++]) * a;
-		return temp;
-	}
+	// template<class T, unsigned int _dim>template<class R, unsigned int _dim1>inline auto vec<T, _dim>::operator^(vec<R, _dim1>const& a)
+	// {
+	// 	using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
+	// 	mat<HigherType, _dim, _dim1>temp;
+	// 	int c1{ 0 };
+	// 	for (auto& d : temp.rowVec)
+	// 		d = HigherType(data[c1++]) * a;
+	// 	return temp;
+	// }
 	//transfer
 	template<class T, unsigned int _dim>template<class R, unsigned int _rowDim, unsigned int _colDim>auto vec<T, _dim>::operator()(mat<R, _rowDim, _colDim>const& a)
 	{
@@ -603,7 +400,7 @@ namespace Math
 		return temp;
 	}
 	//rotate
-	template<class T, unsigned int _dim>template<class R, class Y, unsigned int _dim1>inline auto vec<T, _dim>::operator()(vec<R, _dim1>const& a, Y b)
+	/*template<class T, unsigned int _dim>template<class R, class Y, unsigned int _dim1>inline auto vec<T, _dim>::operator()(vec<R, _dim1>const& a, Y b)
 	{
 		static_assert(NumType<Y>::value, "Wrong NumType!");
 		static_assert(_dim >= 3, "Axis vec dimsion must be more than 2!");
@@ -612,10 +409,10 @@ namespace Math
 		vec3<double>r{ a };
 		n.normaliaze();
 		double c{ cos(b) };
-		return ((1.0 - c) * (n, r)) * n + c * r + sin(b) * (n | r);
-	}
+		return ((1.0 - c) * (n, r))* n + c * r + sin(b) * (n | r);
+	}*/
 	//note: rotate the mat(other coordinate to this) in this coordinate.
-	template<class T, unsigned int _dim>template<class R, class Y, unsigned int _rowDim1, unsigned int _colDim1>auto& vec<T, _dim>::operator()(mat<R, _rowDim1, _colDim1>* a, Y b)
+	/*template<class T, unsigned int _dim>template<class R, class Y, unsigned int _rowDim1, unsigned int _colDim1>auto& vec<T, _dim>::operator()(mat<R, _rowDim1, _colDim1>* a, Y b)
 	{
 		CheckNumType(Y);
 		static_assert(_dim >= 3, "Axis vec dimsion must be more than 2!");
@@ -632,7 +429,7 @@ namespace Math
 		static_assert(MinDim >= 3, "Cannot rotate mat under 3 order!");
 		auto r{ rotMat(b) };
 		return  (r, a);
-	}
+	}*/
 	//square
 	template<class T, unsigned int _dim>inline T vec<T, _dim>::square()const
 	{
@@ -829,27 +626,6 @@ namespace Math
 			for (T& d1 : d0)d1 += (T)a;
 		return *this;
 	}
-	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R>inline mat<T, _rowDim, _colDim>& mat<T, _rowDim, _colDim>::operator-=(R const& a)
-	{
-		CheckNumType(R);
-		for (auto& d0 : array)
-			for (T& d1 : d0)d1 -= (T)a;
-		return *this;
-	}
-	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R>inline mat<T, _rowDim, _colDim>& mat<T, _rowDim, _colDim>::operator*=(R const& a)
-	{
-		CheckNumType(R);
-		for (auto& d0 : array)
-			for (T& d1 : d0)d1 *= (T)a;
-		return *this;
-	}
-	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R>inline mat<T, _rowDim, _colDim>& mat<T, _rowDim, _colDim>::operator/=(R const& a)
-	{
-		CheckNumType(R);
-		for (auto& d0 : array)
-			for (T& d1 : d0)d1 /= (T)a;
-		return *this;
-	}
 	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R, unsigned int _rowDim1, unsigned int _colDim1>inline mat<T, _rowDim, _colDim>& mat<T, _rowDim, _colDim>::operator= (mat<R, _rowDim1, _colDim1>const& a)
 	{
 		static constexpr unsigned int const MinRow = Min<unsigned int, _rowDim, _rowDim1>::value;
@@ -882,55 +658,6 @@ namespace Math
 				rowVec[c1] += a.rowVec[c1];
 		return *this;
 	}
-	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R, unsigned int _rowDim1, unsigned int _colDim1>inline mat<T, _rowDim, _colDim>& mat<T, _rowDim, _colDim>::operator-=(mat<R, _rowDim1, _colDim1>const& a)
-	{
-		static constexpr unsigned int const MinRow = Min<unsigned int, _rowDim, _rowDim1>::value;
-		if constexpr (IsSameType<T, R>::value)
-		{
-			if constexpr (_colDim == _colDim1)
-				memcpy(array, a.array, MinRow * sizeof(row));
-			else
-				for (int c1 = 0; c1 < MinRow; c1++)
-					rowVec[c1] -= a.rowVec[c1];
-
-		}
-		else
-			for (int c1 = 0; c1 < MinRow; c1++)
-				rowVec[c1] -= a.rowVec[c1];
-		return *this;
-	}
-	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R, unsigned int _rowDim1, unsigned int _colDim1>inline mat<T, _rowDim, _colDim>& mat<T, _rowDim, _colDim>::operator*=(mat<R, _rowDim1, _colDim1>const& a)
-	{
-		static constexpr unsigned int const MinRow = Min<unsigned int, _rowDim, _rowDim1>::value;
-		if constexpr (IsSameType<T, R>::value)
-		{
-			if constexpr (_colDim == _colDim1)
-				memcpy(array, a.array, MinRow * sizeof(row));
-			else
-				for (int c1 = 0; c1 < MinRow; c1++)
-					rowVec[c1] *= a.rowVec[c1];
-		}
-		else
-			for (int c1 = 0; c1 < MinRow; c1++)
-				rowVec[c1] *= a.rowVec[c1];
-		return *this;
-	}
-	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R, unsigned int _rowDim1, unsigned int _colDim1>inline mat<T, _rowDim, _colDim>& mat<T, _rowDim, _colDim>::operator/=(mat<R, _rowDim1, _colDim1>const& a)
-	{
-		static constexpr unsigned int const MinRow = Min<unsigned int, _rowDim, _rowDim1>::value;
-		if constexpr (IsSameType<T, R>::value)
-		{
-			if constexpr (_colDim == _colDim1)
-				memcpy(array, a.array, MinRow * sizeof(row));
-			else
-				for (int c1 = 0; c1 < MinRow; c1++)
-					rowVec[c1] /= a.rowVec[c1];
-		}
-		else
-			for (int c1 = 0; c1 < MinRow; c1++)
-				rowVec[c1] /= a.rowVec[c1];
-		return *this;
-	}
 	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R>inline auto mat<T, _rowDim, _colDim>::operator+(R const& a)const
 	{
 		CheckNumType(R);
@@ -939,36 +666,6 @@ namespace Math
 		for (auto& d0 : temp.array)
 			for (auto& d1 : d0)
 				d1 += (HigherType)a;
-		return temp;
-	}
-	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R>inline auto mat<T, _rowDim, _colDim>::operator-(R const& a)const
-	{
-		CheckNumType(R);
-		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
-		mat<HigherType, _rowDim, _colDim>temp{ *this };
-		for (auto& d0 : temp.array)
-			for (auto& d1 : d0)
-				d1 -= (HigherType)a;
-		return temp;
-	}
-	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R>inline auto mat<T, _rowDim, _colDim>::operator*(R const& a)const
-	{
-		CheckNumType(R);
-		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
-		mat<HigherType, _rowDim, _colDim>temp{ *this };
-		for (auto& d0 : temp.array)
-			for (auto& d1 : d0)
-				d1 *= (HigherType)a;
-		return temp;
-	}
-	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R>inline auto mat<T, _rowDim, _colDim>::operator/(R const& a)const
-	{
-		CheckNumType(R);
-		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
-		mat<HigherType, _rowDim, _colDim>temp{ *this };
-		for (auto& d0 : temp.array)
-			for (auto& d1 : d0)
-				d1 /= (HigherType)a;
 		return temp;
 	}
 	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R, unsigned int _rowDim1, unsigned int _colDim1>inline auto mat<T, _rowDim, _colDim>::operator+(mat<R, _rowDim1, _colDim1>const& a)const
@@ -990,66 +687,8 @@ namespace Math
 			return temp;
 		}
 	}
-	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R, unsigned int _rowDim1, unsigned int _colDim1>inline auto mat<T, _rowDim, _colDim>::operator-(mat<R, _rowDim1, _colDim1>const& a)const
-	{
-		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
-		static constexpr unsigned int const MaxRow = Max<unsigned int, _rowDim, _rowDim1>::value;
-		static constexpr unsigned int const MinRow = Min<unsigned int, _rowDim, _rowDim1>::value;
-		static constexpr unsigned int const MaxCol = Max<unsigned int, _colDim, _colDim1>::value;
-		if constexpr (MaxRow == _rowDim)
-		{
-			mat<HigherType, MaxRow, MaxCol>temp{ *this };
-			for (int c1 = 0; c1 < MinRow; c1++)temp.rowVec[c1] -= a.rowVec[c1];
-			return temp;
-		}
-		else if constexpr (MaxRow == _rowDim1)
-		{
-			mat<HigherType, MaxRow, MaxCol>temp{ a };
-			for (int c1 = 0; c1 < MinRow; c1++)temp.rowVec[c1] -= rowVec[c1];
-			return temp;
-		}
-	}
-	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R, unsigned int _rowDim1, unsigned int _colDim1>inline auto mat<T, _rowDim, _colDim>::operator*(mat<R, _rowDim1, _colDim1>const& a)const
-	{
-		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
-		static constexpr unsigned int const MaxRow = Max<unsigned int, _rowDim, _rowDim1>::value;
-		static constexpr unsigned int const MinRow = Min<unsigned int, _rowDim, _rowDim1>::value;
-		static constexpr unsigned int const MaxCol = Max<unsigned int, _colDim, _colDim1>::value;
-		if constexpr (MaxRow == _rowDim)
-		{
-			mat<HigherType, MaxRow, MaxCol>temp{ *this };
-			for (int c1 = 0; c1 < MinRow; c1++)temp.rowVec[c1] *= a.rowVec[c1];
-			return temp;
-		}
-		else if constexpr (MaxRow == _rowDim1)
-		{
-			mat<HigherType, MaxRow, MaxCol>temp{ a };
-			for (int c1 = 0; c1 < MinRow; c1++)temp.rowVec[c1] *= rowVec[c1];
-			return temp;
-		}
-	}
-	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R, unsigned int _rowDim1, unsigned int _colDim1>inline auto mat<T, _rowDim, _colDim>::operator/(mat<R, _rowDim1, _colDim1>const& a)const
-	{
-		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
-		static constexpr unsigned int const MaxRow = Max<unsigned int, _rowDim, _rowDim1>::value;
-		static constexpr unsigned int const MinRow = Min<unsigned int, _rowDim, _rowDim1>::value;
-		static constexpr unsigned int const MaxCol = Max<unsigned int, _colDim, _colDim1>::value;
-		if constexpr (MaxRow == _rowDim)
-		{
-			mat<HigherType, MaxRow, MaxCol>temp{ *this };
-			for (int c1 = 0; c1 < MinRow; c1++)temp.rowVec[c1] /= a.rowVec[c1];
-			return temp;
-		}
-		else if constexpr (MaxRow == _rowDim1)
-		{
-			mat<HigherType, MaxRow, MaxCol>temp{ a };
-			for (int c1 = 0; c1 < MinRow; c1++)temp.rowVec[c1] /= rowVec[c1];
-			return temp;
-		}
-	}
 	//append
-#ifdef _WIN32
-	template<class T, unsigned int _rowDim, unsigned int _colDim, class R>inline auto operator+(R const& a, mat<T, _rowDim, _colDim>const& b)
+	/*template<class T, unsigned int _rowDim, unsigned int _colDim, class R>inline auto operator+(R const& a, mat<T, _rowDim, _colDim>const& b)
 	{
 		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
 		mat<HigherType, _rowDim, _colDim>temp{ b };
@@ -1057,37 +696,9 @@ namespace Math
 			for (auto& d1 : d0)
 				d1 += (HigherType)a;
 		return temp;
-	}
-	template<class T, unsigned int _rowDim, unsigned int _colDim, class R>inline auto operator-(R const& a, mat<T, _rowDim, _colDim>const& b)
-	{
-		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
-		mat<HigherType, _rowDim, _colDim>temp{ b };
-		for (auto& d0 : temp.array)
-			for (auto& d1 : d0)
-				d1 = (HigherType)a - d1;
-		return temp;
-	}
-	template<class T, unsigned int _rowDim, unsigned int _colDim, class R>inline auto operator*(R const& a, mat<T, _rowDim, _colDim>const& b)
-	{
-		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
-		mat<HigherType, _rowDim, _colDim>temp{ b };
-		for (auto& d0 : temp.array)
-			for (auto& d1 : d0)
-				d1 *= (HigherType)a;
-		return temp;
-	}
-	template<class T, unsigned int _rowDim, unsigned int _colDim, class R>inline auto operator/(R const& a, mat<T, _rowDim, _colDim>const& b)
-	{
-		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
-		mat<HigherType, _rowDim, _colDim>temp{ b };
-		for (auto& d0 : temp.array)
-			for (auto& d1 : d0)
-				d1 = (HigherType)a / d1;
-		return temp;
-	}
-#else
-#define FUCKGCC(R)\
-	template<class T, unsigned int _rowDim, unsigned int _colDim>inline auto operator+(R a, mat<T, _rowDim, _colDim>const& b)\
+	}*/
+#define FUCKGPP(R)\
+	template<class T, unsigned int _rowDim, unsigned int _colDim>inline auto operator+(R const& a, mat<T, _rowDim, _colDim>const& b)\
 	{\
 		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;\
 		mat<HigherType, _rowDim, _colDim>temp{ b };\
@@ -1096,7 +707,7 @@ namespace Math
 				d1 += (HigherType)a;\
 		return temp;\
 	}\
-	template<class T, unsigned int _rowDim, unsigned int _colDim>inline auto operator-(R a, mat<T, _rowDim, _colDim>const& b)\
+	template<class T, unsigned int _rowDim, unsigned int _colDim>inline auto operator-(R const& a, mat<T, _rowDim, _colDim>const& b)\
 	{\
 		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;\
 		mat<HigherType, _rowDim, _colDim>temp{ b };\
@@ -1105,7 +716,7 @@ namespace Math
 				d1 = (HigherType)a - d1;\
 		return temp;\
 	}\
-	template<class T, unsigned int _rowDim, unsigned int _colDim>inline auto operator*(R a, mat<T, _rowDim, _colDim>const& b)\
+	template<class T, unsigned int _rowDim, unsigned int _colDim>inline auto operator*(R const& a, mat<T, _rowDim, _colDim>const& b)\
 	{\
 		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;\
 		mat<HigherType, _rowDim, _colDim>temp{ b };\
@@ -1114,7 +725,7 @@ namespace Math
 				d1 *= (HigherType)a;\
 		return temp;\
 	}\
-	template<class T, unsigned int _rowDim, unsigned int _colDim>inline auto operator/(R a, mat<T, _rowDim, _colDim>const& b)\
+	template<class T, unsigned int _rowDim, unsigned int _colDim>inline auto operator/(R const& a, mat<T, _rowDim, _colDim>const& b)\
 	{\
 		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;\
 		mat<HigherType, _rowDim, _colDim>temp{ b };\
@@ -1124,21 +735,20 @@ namespace Math
 		return temp;\
 	}
 
-	FUCKGCC(GetNumType< 1>::Result);
-	FUCKGCC(GetNumType< 2>::Result);
-	FUCKGCC(GetNumType< 3>::Result);
-	FUCKGCC(GetNumType< 4>::Result);
-	FUCKGCC(GetNumType< 5>::Result);
-	FUCKGCC(GetNumType< 6>::Result);
-	FUCKGCC(GetNumType< 7>::Result);
-	FUCKGCC(GetNumType< 8>::Result);
-	FUCKGCC(GetNumType< 9>::Result);
-	FUCKGCC(GetNumType<10>::Result);
-	FUCKGCC(GetNumType<11>::Result);
-	FUCKGCC(GetNumType<12>::Result);
-	FUCKGCC(GetNumType<13>::Result);
-#undef FUCKGCC
-#endif
+	FUCKGPP(GetNumType< 1>::Result);
+	FUCKGPP(GetNumType< 2>::Result);
+	FUCKGPP(GetNumType< 3>::Result);
+	FUCKGPP(GetNumType< 4>::Result);
+	FUCKGPP(GetNumType< 5>::Result);
+	FUCKGPP(GetNumType< 6>::Result);
+	FUCKGPP(GetNumType< 7>::Result);
+	FUCKGPP(GetNumType< 8>::Result);
+	FUCKGPP(GetNumType< 9>::Result);
+	FUCKGPP(GetNumType<10>::Result);
+	FUCKGPP(GetNumType<11>::Result);
+	FUCKGPP(GetNumType<12>::Result);
+	FUCKGPP(GetNumType<13>::Result);
+
 	//vec transfer
 	template<class T, unsigned int _rowDim, unsigned int _colDim>template<class R, unsigned int _dim>inline auto mat<T, _rowDim, _colDim>::operator,(vec<R, _dim> const& a)const
 	{
@@ -1320,7 +930,7 @@ namespace Math
 		print();
 	}
 	//==============================================vec====================================
-	template<class T, unsigned int _dim>template<class Y>inline mat3<double> vec<T, _dim>::rotMat(Y a)
+	/*template<class T, unsigned int _dim>template<class Y>inline mat3<double> vec<T, _dim>::rotMat(Y a)
 	{
 		static_assert(NumType<Y>::value, "Wrong NumType!");
 		static_assert(_dim >= 3, "Axis vec dimsion must be more than 2!");
@@ -1329,7 +939,7 @@ namespace Math
 		n.normaliaze();
 		double c{ cos(a) };
 		return (1 - c) * (n ^ n) + mat3<double>::id(c) + sin(a) * n.crossMat();
-	}
+	}*/
 	//==============================================test====================================
 	void testVecMat()
 	{
@@ -1342,43 +952,43 @@ namespace Math
 		vc.printInfo("vc:		", "\n");
 		::printf("vb[1]:		%lf\n", vb[1]);
 		(va += 3).printInfo("va += 3:	", "\n");
-		(va -= 3).printInfo("va -= 3:	", "\n");
-		(va *= 3).printInfo("va *= 3:	", "\n");
-		(va /= 3).printInfo("va /= 3:	", "\n");
+		// (va -= 3).printInfo("va -= 3:	");
+		// (va *= 3).printInfo("va *= 3:	");
+		// (va /= 3).printInfo("va /= 3:	");
 		(vb += 3).printInfo("vb += 3:	", "\n");
-		(vb -= 3).printInfo("vb -= 3:	", "\n");
-		(vb *= 3).printInfo("vb *= 3:	", "\n");
-		(vb /= 3).printInfo("vb /= 3:	", "\n");
+		// (vb -= 3).printInfo("vb -= 3:	");
+		// (vb *= 3).printInfo("vb *= 3:	");
+		// (vb /= 3).printInfo("vb /= 3:	");
 		(va = vb).printInfo("va = vb:	", "\n");
 		(vb = va).printInfo("vb = va:	", "\n");
 		(vb += va).printInfo("vb += va:	", "\n");
-		(vb -= va).printInfo("vb -= va:	", "\n");
-		(vb *= va).printInfo("vb *= va:	", "\n");
-		(vb /= va).printInfo("vb /= va:	", "\n");
+		// (vb -= va).printInfo("vb -= va:	");
+		// (vb *= va).printInfo("vb *= va:	");
+		// (vb /= va).printInfo("vb /= va:	");
 		(va += vb).printInfo("va += vb:	", "\n");
-		(va -= vb).printInfo("va -= vb:	", "\n");
-		(va *= vb).printInfo("va *= vb:	", "\n");
-		(va /= vb).printInfo("va /= vb:	", "\n");
+		// (va -= vb).printInfo("va -= vb:	");
+		// (va *= vb).printInfo("va *= vb:	");
+		// (va /= vb).printInfo("va /= vb:	");
 		(va + vb).printInfo("va + vb:	", "\n");
-		(va - vb).printInfo("va - vb:	", "\n");
-		(va * vb).printInfo("va * vb:	", "\n");
-		(va / vb).printInfo("va / vb:	", "\n");
+		// (va - vb).printInfo("va - vb:	");
+		// (va * vb).printInfo("va * vb:	");
+		// (va / vb).printInfo("va / vb:	");
 		(va + 3).printInfo("va + 3:		", "\n");
-		(va - 3).printInfo("va - 3:		", "\n");
-		(va * 3).printInfo("va * 3:		", "\n");
-		(va / 3).printInfo("va / 3:		", "\n");
+		// (va - 3).printInfo("va - 3:		");
+		// (va * 3).printInfo("va * 3:		");
+		// (va / 3).printInfo("va / 3:		");
 		(3 + va).printInfo("3 + va:		", "\n");
-		(3 - va).printInfo("3 - va:		", "\n");
-		(3 * va).printInfo("3 * va:		", "\n");
-		(3 / va).printInfo("3 / va:		", "\n");
+		// (3 - va).printInfo("3 - va:		");
+		// (3 * va).printInfo("3 * va:		");
+		// (3 / va).printInfo("3 / va:		");
 		(vb + 3).printInfo("vb + 3:		", "\n");
-		(vb - 3).printInfo("vb - 3:		", "\n");
-		(vb * 3).printInfo("vb * 3:		", "\n");
-		(vb / 3).printInfo("vb / 3:		", "\n");
-		(3 + vb).printInfo("3 + vb:		", "\n");
-		(3 - vb).printInfo("3 - vb:		", "\n");
-		(3 * vb).printInfo("3 * vb:		", "\n");
-		(3 / vb).printInfo("3 / vb:		", "\n");
+		// (vb - 3).printInfo("vb - 3:		");
+		// (vb * 3).printInfo("vb * 3:		");
+		// (vb / 3).printInfo("vb / 3:		");
+		// (3 + vb).printInfo("3 + vb:		");
+		// (3 - vb).printInfo("3 - vb:		");
+		// (3 * vb).printInfo("3 * vb:		");
+		// (3 / vb).printInfo("3 / vb:		");
 		::printf("(va, vb):	%lf\n", (va, vb));
 		(va = { 3,2,1 }).printInfo("va = {3,2,1}	", "\n");
 		(va | vb).printInfo("va | vb:	", "\n");
@@ -1391,13 +1001,13 @@ namespace Math
 		(vb = { 3,2,1,0 }).printInfo("vb = {3,2,1,0}:	", "\n");
 		va.normaliaze().printInfo("va.normaliaze:	", "\n");
 		vb.normaliaze().printInfo("vb.normaliaze:	", "\n");
-		(vc -= (vb, vc) * vb).printInfo("vc-=(vb,vc)*vb:	", "\n");
-		vb(vc, Pi).printInfo("vb(vc, Pi):	", "\n");
-		vb.rotMat(Pi).printInfo("vb.rotMat(Pi):\n");
-		(vb.rotMat(Pi), vc).printInfo("(vb.rotMat(Pi),vc):	", "\n");
+		// (vc -= (vb, vc) * vb).printInfo("vc-=(vb,vc)*vb:	");
+		// vb(vc, Pi).printInfo("vb(vc, Pi):	");
+		// vb.rotMat(Pi).printInfo("vb.rotMat(Pi):\n");
+		// (vb.rotMat(Pi), vc).printInfo("(vb.rotMat(Pi),vc):	");
 		(va = { 1,2,3 }).printInfo("va = {1,2,3}:	", "\n");
 		(vc = { 1,2,3 }).printInfo("vc = {1,2,3}:	", "\n");
-		(va ^ vc).printInfo("vb^vc:\n");
+		// (va ^ vc).printInfo("vb^vc:\n");
 		mat3<double>ma
 		{
 			{1,2,3},
@@ -1405,10 +1015,10 @@ namespace Math
 			{3,6,9}
 		};
 		ma.printInfo("ma:\n");
-		vec3<double>{1, 0, 0}(&ma, Pi).printInfo("vec3<double>{1,0,0}(&ma,Pi):\n");
-		vec3<double>{1, 0, 0}(mat3<double>{ { 1, 2, 3 }, { 4,5,6 }, { 7,8,9 }}, Pi).
-			printInfo("vec3<double>{1,0,0}(mat3<double>{{1,2,3},{4,5,6},{7,8,9}}, Pi):\n");
-		mat3<double>::id(2).printInfo("mat3<double>::id(2):\n");
+		// vec3<double>{1, 0, 0}(&ma, Pi).printInfo("vec3<double>{1,0,0}(&ma,Pi):\n");
+		// vec3<double>{1, 0, 0}(mat3<double>{ { 1, 2, 3 }, { 4,5,6 }, { 7,8,9 }}, Pi).
+			// printInfo("vec3<double>{1,0,0}(mat3<double>{{1,2,3},{4,5,6},{7,8,9}}, Pi):\n");
+		// mat3<double>::id(2).printInfo("mat3<double>::id(2):\n");
 	}
 }
 
