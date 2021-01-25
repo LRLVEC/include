@@ -8,21 +8,38 @@
 
 namespace Math
 {
-#define CheckNumType(T)	static_assert(NumType<T>::value, "Wrong NumType!")
-#define CheckDim		static_assert(_dim, "Dimension cannot be 0!")
-#define CheckRowDim		static_assert(_rowDim, "Dimension cannot be 0!")
-#define CheckColDim		static_assert(_colDim, "Dimension cannot be 0!")
+#define CheckNumType(T)		static_assert(NumType<T>::value, "Wrong NumType!")
+#define CheckFloatType(T)	static_assert(NumType<T>::numType==IsFloat, "Must be float!")
+#define CheckDim			static_assert(_dim, "Dimension cannot be 0!")
+#define CheckRowDim			static_assert(_rowDim, "Dimension cannot be 0!")
+#define CheckColDim			static_assert(_colDim, "Dimension cannot be 0!")
 	static constexpr double Pi = 3.14159265358979323846264338327950288L;
 	static constexpr double E = 2.71828182845904523536028747135266250L;
 
 	template<class T, unsigned int _dim>struct vec;
 	template<class T, unsigned int _row, unsigned int _col>struct mat;
+	template<class T>struct Quaternion;
 	template<class T>using vec2 = vec<T, 2>;
 	template<class T>using vec3 = vec<T, 3>;
 	template<class T>using vec4 = vec<T, 4>;
 	template<class T>using mat2 = mat<T, 2, 2>;
 	template<class T>using mat3 = mat<T, 3, 3>;
 	template<class T>using mat4 = mat<T, 4, 4>;
+	template<class T>using Q = Quaternion<T>;
+	using Qf = Quaternion<float>;
+	using Qd = Quaternion<double>;
+	using Old = Quaternion<long double>;
+
+	template<class T>T rad(T _degree)
+	{
+		CheckNumType(T);
+		CheckFloatType(T);
+		return (Pi * _degree) / 180.0;
+	}
+	template<class T>T degree(T _rad)
+	{
+		return (180.0 * _rad) / Pi;
+	}
 
 	template<class T, unsigned int _dim>struct vec
 	{
@@ -64,6 +81,7 @@ namespace Math
 		template<class R>vec<T, _dim>& operator*=(R const&);
 		template<class R>vec<T, _dim>& operator/=(R const&);
 		bool operator==(vec<T, _dim>const&)const;
+		bool operator!=(vec<T, _dim>const&)const;
 		template<class R>bool operator==(R const&)const;
 		template<class R>bool operator!=(R const&)const;
 		template<class R, unsigned int _dim1>vec<T, _dim>& operator =(vec<R, _dim1>const&);
@@ -84,7 +102,7 @@ namespace Math
 		//dot
 		template<class R, unsigned int _dim1>auto operator,(vec<R, _dim1>const&)const;
 		//cross
-		template<class R, unsigned int _dim1>auto operator|(vec<R, _dim1>const&);
+		template<class R, unsigned int _dim1>auto operator|(vec<R, _dim1>const&)const;
 		mat3<T> crossMat();
 		//tensor product
 		template<class R, unsigned int _dim1>auto operator^(vec<R, _dim1>const&);
@@ -107,9 +125,9 @@ namespace Math
 		//min
 		T min()const;
 		T min(int)const;
-		//normaliaze
-		vec<T, _dim>& normaliaze();
-		vec<T, _dim>& normaliaze(int);
+		//normalize
+		vec<T, _dim>& normalize();
+		vec<T, _dim>& normalize(int);
 		//print
 		void print()const;
 		void printInfo(char const*)const;
@@ -179,6 +197,263 @@ namespace Math
 		void print()const;
 		void printInfo(char const*)const;
 	};
+	template<class T>struct Quaternion
+	{
+		CheckNumType(T);
+		CheckFloatType(T);
+
+		union
+		{
+			struct
+			{
+				T s;
+				vec3<T>v;
+			};
+			vec4<T>q;
+		};
+		Quaternion() :q() {}
+		template<class R>Quaternion(Q<R>const& a) : q(a.q) {}
+		template<class R>Quaternion(vec4<R> const& _q) : q(_q) {}
+		template<class R>Quaternion(vec3<R> const& _v) : s(0), v(_v) {}
+		Quaternion(std::initializer_list<T>const& a)
+		{
+			if (4 > a.size())
+			{
+				memcpy(q.data, a.begin(), sizeof(T) * a.size());
+				memset(q.data + a.size(), 0, sizeof(T) * (4 - a.size()));
+			}
+			else
+				memcpy(q.data, a.begin(), sizeof(T) * 4);
+		}
+		template<class R, class S>Quaternion(R _s, vec3<S> const& _v) : s(_s), v(_v) { CheckNumType(R); }
+		~Quaternion() = default;
+
+		T& operator[](int a)
+		{
+			return q[a];
+		}
+		template<class R>Q<T>& operator= (R const& a)
+		{
+			CheckNumType(R);
+			s = a;
+			v = 0;
+			return *this;
+		}
+		template<class R>Q<T>& operator+=(R const& a)
+		{
+			CheckNumType(R);
+			s += a;
+			return *this;
+		}
+		template<class R>Q<T>& operator-=(R const& a)
+		{
+			CheckNumType(R);
+			s -= a;
+			return *this;
+		}
+		template<class R>Q<T>& operator*=(R const& a)
+		{
+			CheckNumType(R);
+			q *= a;
+			return *this;
+		}
+		template<class R>Q<T>& operator/=(R const& a)
+		{
+			CheckNumType(R);
+			q /= a;
+			return *this;
+		}
+		bool operator==(Q<T>const& a)const
+		{
+			return q == a.q;
+		}
+		bool operator!=(Q<T>const& a)const
+		{
+			return q != a.q;
+		}
+		template<class R>Q<T>& operator =(Q<R>const& a)
+		{
+			q = a.q;
+			return *this;
+		}
+		template<class R>Q<T>& operator+=(Q<R>const& a)
+		{
+			q += a.q;
+			return *this;
+		}
+		template<class R>Q<T>& operator-=(Q<R>const& a)
+		{
+			q -= a.q;
+			return *this;
+		}
+		template<class R>Q<T>& operator*=(Q<R>const& a)
+		{
+			using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
+			HigherType s0(s);
+			s = s * a.s - (v, a.v);
+			v = s0 * a.v + a.s * v + (v | a.v);
+			return *this;
+		}
+		//note: deprecated, a / b = (1 / b) * a
+		template<class R>Q<T>& operator/=(Q<R>const& a)
+		{
+			using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
+			HigherType l(Q<HigherType>(a).q.square());
+			HigherType s0(s);
+			s = (s * a.s + (v, a.v)) / l;
+			v = (a.s * v - s0 * a.v + (v | a.v)) / l;
+			return *this;
+		}
+
+		template<class R>Q<T>& operator =(vec3<R>const& a)
+		{
+			s = 0;
+			v = a;
+			return *this;
+		}
+		template<class R>Q<T>& operator+=(vec3<R>const& a)
+		{
+			v += a;
+			return *this;
+		}
+		template<class R>Q<T>& operator-=(vec3<R>const& a)
+		{
+			v -= a;
+			return *this;
+		}
+		template<class R>Q<T>& operator*=(vec3<R>const& a)
+		{
+			using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
+			HigherType s0(s);
+			s = -(v, a);
+			v = s0 * a + (v | a);
+			return *this;
+		}
+		//note: deprecated, a / b = (1 / b) * a
+		template<class R>Q<T>& operator/=(vec3<R>const& a)
+		{
+			using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
+			HigherType l(vec3<HigherType>(a).square());
+			HigherType s0(s);
+			s = (v, a) / l;
+			v = ((v | a) - s0 * a) / l;
+			return *this;
+		}
+
+		//template<class R>Q<T>& operator=(vec4<R>const& a)
+		//{
+		//	q = a;
+		//	return *this;
+		//}
+
+		Q<T> operator-()const
+		{
+			return { -q };
+		}
+
+		//+-*/
+		template<class R>auto operator+(R const& a)const
+		{
+			CheckNumType(R);
+			using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
+			Q<HigherType>temp{ *this };
+			return temp += a;
+		}
+		template<class R>auto operator-(R const& a)const
+		{
+			CheckNumType(R);
+			using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
+			Q<HigherType>temp{ *this };
+			return temp -= a;
+		}
+		template<class R>auto operator*(R const& a)const
+		{
+			CheckNumType(R);
+			using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
+			Q<HigherType>temp{ *this };
+			return temp *= a;
+		}
+		template<class R>auto operator/(R const& a)const
+		{
+			CheckNumType(R);
+			using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
+			Q<HigherType>temp{ *this };
+			return temp /= a;
+		}
+		template<class R>auto operator+(Q<R> const& a)const
+		{
+			using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
+			return Q<HigherType>(vec4<HigherType>(q) + vec4<HigherType>(a.q));
+		}
+		template<class R>auto operator-(Q<R> const& a)const
+		{
+			using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
+			return Q<HigherType>(vec4<HigherType>(q) - vec4<HigherType>(a.q));
+		}
+		template<class R>auto operator*(Q<R> const& a)const
+		{
+			using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
+			Q<HigherType> tp;
+			tp.s = s * a.s - (v, a.v);
+			tp.v = s * a.v + a.s * v + (v | a.v);
+			return tp;
+		}
+		//note: deprecated, a / b = (1 / b) * a
+		template<class R>auto operator/(Q<R> const& a)const
+		{
+			using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
+			Q<HigherType> tp;
+			HigherType l(vec4<HigherType>(a.q).square());
+			tp.s = (s * a.s + (v, a.v)) / l;
+			tp.v = (a.s * v - s * a.v + (v | a.v)) / l;
+			return tp;
+		}
+
+		//conjugate
+		Q<T> operator!()const
+		{
+			return { s, -v };
+		}
+		//inverse
+		Q<T> operator~()const
+		{
+			double l(s * s + v.square());
+			return { s / l, -v / l };
+		}
+		//operate on a (rotate)
+		template<class R>auto operator()(vec3<R>const& a, bool normalized = true)const
+		{
+			using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
+			if (normalized)
+			{
+				Q<HigherType> tp(a * !*this);
+				return (*this * tp).v;
+			}
+			else
+			{
+				HigherType l(q.square());
+				Q<HigherType> tp(a * !*this);
+				return (*this * tp).v / l;
+			}
+		}
+		//print
+		void print()const
+		{
+			printf("Q[");
+			char str[8] = { ", " };
+			strcat(str, NumType<T>::printInfo);
+			printf(NumType<T>::printInfo, s);
+			for (int c0(0); c0 < 3; ++c0)
+				printf(str, v.data[c0]);
+			printf("]");
+		}
+		void printInfo(char const* a, char const* b)const
+		{
+			::printf("%s", a);
+			print();
+			::printf("%s", b);
+		}
+	};
 
 	template<class T>vec3<T>eulerAngle(vec3<T>const& a)
 	{
@@ -193,6 +468,75 @@ namespace Math
 				s_theta* s_psi
 		};
 	}
+
+	//vec3 +-*/ Quaternion
+	template<class T, class R>auto operator+(vec3<T> const& a, Q<R>const& b)
+	{
+		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
+		Q<HigherType> tp(a);
+		return tp += b;
+	}
+	template<class T, class R>auto operator-(vec3<T> const& a, Q<R>const& b)
+	{
+		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
+		Q<HigherType> tp(a);
+		return tp -= b;
+	}
+	template<class T, class R>auto operator*(vec3<T> const& a, Q<R>const& b)
+	{
+		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
+		Q<HigherType> tp(a);
+		return tp *= b;
+	}
+	//note: deprecated, a / b = (1 / b) * a
+	template<class T, class R>auto operator/(vec3<T> const& a, Q<R>const& b)
+	{
+		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
+		Q<HigherType> tp(b);
+		return tp /= b;
+	}
+
+	//vec4 +-*/ Quaternion
+	template<class T, class R>auto operator+(vec4<T> const& a, Q<R>const& b)
+	{
+		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
+		Q<HigherType> tp(a);
+		return tp += b;
+	}
+	template<class T, class R>auto operator-(vec4<T> const& a, Q<R>const& b)
+	{
+		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
+		Q<HigherType> tp(a);
+		return tp -= b;
+	}
+	template<class T, class R>auto operator*(vec4<T> const& a, Q<R>const& b)
+	{
+		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
+		Q<HigherType> tp(a);
+		return tp *= b;
+	}
+	//note: deprecated, a / b = (1 / b) * a
+	template<class T, class R>auto operator/(vec4<T> const& a, Q<R>const& b)
+	{
+		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
+		Q<HigherType> tp(b);
+		return tp /= b;
+	}
+
+	//rotate around v for theta
+	template<class T, class R>static auto rotateQ(vec3<T>const& _v, R _theta, bool normalized = true)
+	{
+		CheckNumType(R);
+		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
+		Q<HigherType> tp;
+		vec3<HigherType>v(_v);
+		HigherType half_theta(HigherType(_theta) / 2);
+		tp.s = cos(half_theta);
+		if (!normalized)v.normalize();
+		tp.v = v * sin(half_theta);
+		return tp;
+	}
+
 	//==============================================vec====================================
 	template<class T, unsigned int _dim>										inline vec<T, _dim>::vec()
 		:
@@ -255,7 +599,7 @@ namespace Math
 	{
 		if (_dim > a.size())
 		{
-			memcpy(data, a.begin(), sizeof(T) * _dim);
+			memcpy(data, a.begin(), sizeof(T) * a.size());
 			memset(data + a.size(), 0, sizeof(T) * (_dim - a.size()));
 		}
 		else
@@ -308,6 +652,10 @@ namespace Math
 	template<class T, unsigned int _dim>										inline bool vec<T, _dim>::operator==(vec<T, _dim> const& a)const
 	{
 		return !memcmp(data, a.data, sizeof(data));
+	}
+	template<class T, unsigned int _dim>										inline bool vec<T, _dim>::operator!=(vec<T, _dim> const& a)const
+	{
+		return memcmp(data, a.data, sizeof(data));
 	}
 	template<class T, unsigned int _dim>template<class R>						inline bool vec<T, _dim>::operator==(R const& a)const
 	{
@@ -561,7 +909,7 @@ namespace Math
 		return temp;
 	}
 	//cross
-	template<class T, unsigned int _dim>template<class R, unsigned int _dim1>	inline auto vec<T, _dim>::operator|(vec<R, _dim1>const& a)
+	template<class T, unsigned int _dim>template<class R, unsigned int _dim1>	inline auto vec<T, _dim>::operator|(vec<R, _dim1>const& a)const
 	{
 		static_assert(_dim >= 3 && _dim1 >= 3, "Cannot cross vec whose dimension is lower than 3!");
 		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
@@ -610,7 +958,7 @@ namespace Math
 		if (this->square(3) == 0)return vec3<double>();
 		vec3<double>n{ *this };
 		vec3<double>r{ a };
-		n.normaliaze();
+		n.normalize();
 		double c{ cos(b) };
 		return ((1.0 - c) * (n, r)) * n + c * r + sin(b) * (n | r);
 	}
@@ -684,8 +1032,8 @@ namespace Math
 		for (int c0{ 0 }; c0 < a; ++c0)if (data[c0] < t)t = data[c0];
 		return t;
 	}
-	//normaliaze
-	template<class T, unsigned int _dim>inline vec<T, _dim>& vec<T, _dim>::normaliaze()
+	//normalize
+	template<class T, unsigned int _dim>inline vec<T, _dim>& vec<T, _dim>::normalize()
 	{
 		double temp(0);
 		if constexpr (NumType<T>::serial < 11)
@@ -696,7 +1044,7 @@ namespace Math
 		for (T& d : data)d /= temp;
 		return *this;
 	}
-	template<class T, unsigned int _dim>inline vec<T, _dim>& vec<T, _dim>::normaliaze(int a)
+	template<class T, unsigned int _dim>inline vec<T, _dim>& vec<T, _dim>::normalize(int a)
 	{
 		double temp(0);
 		if constexpr (NumType<T>::serial < 11)
@@ -1326,7 +1674,7 @@ namespace Math
 		static_assert(_dim >= 3, "Axis vec dimsion must be more than 2!");
 		if (this->square(3) == 0)return mat3<double>();
 		vec3<double>n{ *this };
-		n.normaliaze();
+		n.normalize();
 		double c{ cos(a) };
 		return (1 - c) * (n ^ n) + mat3<double>::id(c) + sin(a) * n.crossMat();
 	}
@@ -1389,8 +1737,8 @@ namespace Math
 		::printf("va.length():	%d\n", va.length());
 		::printf("vb.length():	%lf\n", vb.length());
 		(vb = { 3,2,1,0 }).printInfo("vb = {3,2,1,0}:	", "\n");
-		va.normaliaze().printInfo("va.normaliaze:	", "\n");
-		vb.normaliaze().printInfo("vb.normaliaze:	", "\n");
+		va.normalize().printInfo("va.normalize:	", "\n");
+		vb.normalize().printInfo("vb.normalize:	", "\n");
 		(vc -= (vb, vc) * vb).printInfo("vc-=(vb,vc)*vb:	", "\n");
 		vb(vc, Pi).printInfo("vb(vc, Pi):	", "\n");
 		vb.rotMat(Pi).printInfo("vb.rotMat(Pi):\n");
@@ -1409,6 +1757,92 @@ namespace Math
 		vec3<double>{1, 0, 0}(mat3<double>{ { 1, 2, 3 }, { 4,5,6 }, { 7,8,9 }}, Pi).
 			printInfo("vec3<double>{1,0,0}(mat3<double>{{1,2,3},{4,5,6},{7,8,9}}, Pi):\n");
 		mat3<double>::id(2).printInfo("mat3<double>::id(2):\n");
+	}
+	void testQuaternion()
+	{
+		using namespace Math;
+
+		vec3<double>vecA{ 1,2,3 };
+		vec4<double>vecB{ 1,2,3,4 };
+
+		Qd a{ 1.0, vecA };
+		Qd b{ 1.0,2.0,3.0,4.0 };
+		Qf c{ 1.0,2.0,3.0,4.0 };
+		Qd d{ vecA };
+
+		a.printInfo("a:\t", "\n");
+		b.printInfo("b:\t", "\n");
+		c.printInfo("c:\t", "\n");
+		d.printInfo("d:\t", "\n");
+
+		printf("a[2]: %f\n", a[2]);
+		printf("a == b: %d\n", a == b);
+		(-a).printInfo("-a:\t", "\n");
+
+		(a + b).printInfo("a + b:\t", "\n");
+		(a - b).printInfo("a - b:\t", "\n");
+		(a * b).printInfo("a * b:\t", "\n");
+		(a / b).printInfo("a / b:\t", "\n");
+
+		(a + c).printInfo("a + c:\t", "\n");
+		(a - c).printInfo("a - c:\t", "\n");
+		(a * c).printInfo("a * c:\t", "\n");
+		(a / c).printInfo("a / c:\t", "\n");
+
+		(c + a).printInfo("c + a:\t", "\n");
+		(c - a).printInfo("c - a:\t", "\n");
+		(c * a).printInfo("c * a:\t", "\n");
+		(c / a).printInfo("c / a:\t", "\n");
+
+		(a + 2).printInfo("a + 2:\t", "\n");
+		(a - 2).printInfo("a - 2:\t", "\n");
+		(a * 4).printInfo("a * 4:\t", "\n");
+		(a / 4).printInfo("a / 4:\t", "\n");
+
+		(a += b).printInfo("a += b:\t", "\n");
+		(a -= b).printInfo("a -= b:\t", "\n");
+		(a *= b).printInfo("a *= b:\t", "\n");
+		(a /= b).printInfo("a /= b:\t", "\n");
+		(a = b * a * ~b).printInfo("bab{^-1}:\t", "\n");
+
+		(a += c).printInfo("a += c:\t", "\n");
+		(a -= c).printInfo("a -= c:\t", "\n");
+		(a *= c).printInfo("a *= c:\t", "\n");
+		(a /= c).printInfo("a /= c:\t", "\n");
+		(a = c * a * ~c).printInfo("cac{^-1}:\t", "\n");
+
+		(c += a).printInfo("c += a:\t", "\n");
+		(c -= a).printInfo("c -= a:\t", "\n");
+		(c *= a).printInfo("c *= a:\t", "\n");
+		(c /= a).printInfo("c /= a:\t", "\n");
+		(c = a * c * ~a).printInfo("aca{^-1}:\t", "\n");
+
+		(b += vecA).printInfo("b += vecA:\t", "\n");
+		(b -= vecA).printInfo("b -= vecA:\t", "\n");
+		(b *= vecA).printInfo("b *= vecA:\t", "\n");
+		(b /= vecA).printInfo("b /= vecA:\t", "\n");
+		(b = vecA * b * ~Qd(vecA)).printInfo("vecA b vecA{^-1}:\t", "\n");
+
+		(vecA + b).printInfo("vecA + b:\t", "\n");
+		(vecA - b).printInfo("vecA - b:\t", "\n");
+		(vecA * b).printInfo("vecA * b:\t", "\n");
+		(vecA / b).printInfo("vecA / b:\t", "\n");
+
+		(vecB + b).printInfo("vecB + b:\t", "\n");
+		(vecB - b).printInfo("vecB - b:\t", "\n");
+		(vecB * b).printInfo("vecB * b:\t", "\n");
+		(vecB / b).printInfo("vecB / b:\t", "\n");
+
+		(a += 2).printInfo("a += 2:\t", "\n");
+		(a -= 2).printInfo("a -= 2:\t", "\n");
+		(a *= 4).printInfo("a *= 4:\t", "\n");
+		(a /= 4).printInfo("a /= 4:\t", "\n");
+		(a = 1).printInfo("a = 1:\t", "\n");
+
+		printf("a != b: %d\n", a != b);
+
+		b(vecA, false).printInfo("b(vecA, false):\t", "\n");
+		rotateQ(vecA, Pi / 4, false).printInfo("rotateQ(b, Pi/4, false):\t", "\n");
 	}
 }
 
