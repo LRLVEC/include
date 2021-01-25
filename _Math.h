@@ -28,7 +28,7 @@ namespace Math
 	template<class T>using Q = Quaternion<T>;
 	using Qf = Quaternion<float>;
 	using Qd = Quaternion<double>;
-	using Old = Quaternion<long double>;
+	using Qld = Quaternion<long double>;
 
 	template<class T>T rad(T _degree)
 	{
