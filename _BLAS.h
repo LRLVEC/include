@@ -43,7 +43,7 @@ namespace BLAS
 	{
 		return (((length - 1) >> 2) + 1) << 2;
 	}
-	inline unsigned long long floor(unsigned long long length)
+	inline unsigned long long floor4(unsigned long long length)
 	{
 		return (length >> 2) << 2;
 	}
@@ -59,7 +59,7 @@ namespace BLAS
 	{
 		return ((((size_t(width) - 1) >> 2) + 1) << 5) * height;
 	}
-	inline double* malloc64d(unsigned long long length)
+	inline double* malloc64d_256(unsigned long long length)
 	{
 		return (double*)_mm_malloc(length * sizeof(double), 32);
 	}
@@ -96,7 +96,7 @@ namespace BLAS
 		return ::memset(dst, val, ceiling256dSize(width, height));
 	}
 
-	inline unsigned long long getPtrOffset64d(double* ptr)
+	inline unsigned long long getPtrOffset64d_256(double* ptr)
 	{
 		return ((unsigned long long)ptr >> 3) & 3;
 	}
@@ -289,7 +289,7 @@ namespace BLAS
 			}
 		}
 		vec(double* _data, unsigned long long _length, Type _type)//Parasitic or Non32Aligened
-			:data(getPtr256d(_data)), dim(_length), beginning(getPtrOffset64d(_data)), type(_type) {}
+			:data(getPtr256d(_data)), dim(_length), beginning(getPtrOffset64d_256(_data)), type(_type) {}
 		vec(std::initializer_list<double>const& a)
 			:
 			data(a.size() ? malloc256d(a.size()) : nullptr),
@@ -1560,9 +1560,9 @@ namespace BLAS
 		{
 			if (_type == MatType::SparseMat && _elementNum)
 			{
-				data = malloc64d(_elementNum);
-				rowIndice = (unsigned long long*)malloc64d(_elementNum);
-				colIndice = (unsigned long long*)malloc64d(_elementNum);
+				data = malloc64d_256(_elementNum);
+				rowIndice = (unsigned long long*)malloc64d_256(_elementNum);
+				colIndice = (unsigned long long*)malloc64d_256(_elementNum);
 			}
 		}
 		mat(mat const& a)
@@ -1621,7 +1621,7 @@ namespace BLAS
 				if (w)
 				{
 					unsigned long long l(ceiling4(w, h));
-					data = malloc64d(l);
+					data = malloc64d_256(l);
 					memset64d(data, 0, l);
 					width = w;
 					height = h;
@@ -1764,7 +1764,7 @@ namespace BLAS
 				unsigned long long s(ceiling256dSize(_width, _height));
 				if (s)
 				{
-					data = (double*)malloc64d(s);
+					data = (double*)malloc64d_256(s);
 					if (_clear)memset64d(data, 0, s);
 					width = _width;
 					height = _height;
@@ -1775,9 +1775,9 @@ namespace BLAS
 		{
 			if (_elementNum > elementNum && matType == MatType::SparseMat)
 			{
-				double* _data(malloc64d(_elementNum));
-				unsigned long long* _r((unsigned long long*)malloc64d(_elementNum));
-				unsigned long long* _c((unsigned long long*)malloc64d(_elementNum));
+				double* _data(malloc64d_256(_elementNum));
+				unsigned long long* _r((unsigned long long*)malloc64d_256(_elementNum));
+				unsigned long long* _c((unsigned long long*)malloc64d_256(_elementNum));
 				memcpy64d(_data, data, elementNum);
 				memcpy64d(_r, rowIndice, elementNum);
 				memcpy64d(_c, colIndice, elementNum);
