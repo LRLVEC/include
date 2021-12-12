@@ -87,7 +87,7 @@ struct STLIndex
 		Math::vec3<float>normal;
 		void avergeNormal()
 		{
-			normal = (normal / ids.length).normaliaze();
+			normal = (normal / ids.length).normalize();
 		}
 	};
 	Vector<Triangle>triangles;
@@ -108,12 +108,12 @@ struct STLIndex
 			{
 				map.insert(std::make_pair(_Vertex(p, vertices.length), c0));
 				triangles[c0 / 3][c0 % 3] = vertices.length;
-				vertices.pushBack({ p, {{ c0 / 3,c0 % 3 }}, stl.triangles.data[c0 / 3].normal });
+				vertices.pushBack({ p, {{ c0 / 3,unsigned char(c0 % 3) }}, stl.triangles.data[c0 / 3].normal });
 			}
 			else
 			{
 				triangles[c0 / 3][c0 % 3] = it->first.id;
-				vertices[it->first.id].ids.pushBack({ c0 / 3,c0 % 3 });
+				vertices[it->first.id].ids.pushBack({ c0 / 3,unsigned char(c0 % 3) });
 				vertices[it->first.id].normal += stl.triangles.data[c0 / 3].normal;
 			}
 		}

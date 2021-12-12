@@ -268,6 +268,7 @@ namespace OpenGL
 			TextureConfigBase(_texture, _type, _format, _layers),
 			width(_width)
 		{
+			allocData();
 		}
 		void allocData()
 		{
@@ -444,7 +445,7 @@ namespace OpenGL
 		}
 		virtual void* pointer(unsigned int n)override
 		{
-			return bmp[n].textureData;
+			return bmp[n].data_24;
 		}
 	};
 }

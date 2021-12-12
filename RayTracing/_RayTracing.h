@@ -68,7 +68,7 @@ namespace RayTracing
 		}
 		virtual unsigned int size()override
 		{
-			return sizeof(Math::vec4<float>)*
+			return sizeof(Math::vec4<float>) *
 				frameSize->scale.data[0] *
 				frameSize->scale.data[1];
 		}
@@ -90,7 +90,8 @@ namespace RayTracing
 			};
 			struct Key
 			{
-				double ratio;
+				double transformRatio;
+				double rotateRatio;
 			};
 
 			Perspective persp;
@@ -106,7 +107,7 @@ namespace RayTracing
 			bool updated;
 			Perspective()
 				:
-				fovy(Math::Pi* 100.0 / 180.0),
+				fovy(Math::Pi * 100.0 / 180.0),
 				y(1024),
 				updated(false)
 			{
@@ -172,14 +173,20 @@ namespace RayTracing
 			bool right;
 			bool up;
 			bool down;
-			double ratio;
+			double transformRatio;
+			bool clockwise;
+			bool counterclockwise;
+			double rotateRatio;
 			Key()
 				:
 				left(false),
 				right(false),
 				up(false),
 				down(false),
-				ratio(0.05)
+				transformRatio(0.05),
+				clockwise(false),
+				counterclockwise(false),
+				rotateRatio(0.005)
 			{
 			}
 			Key(Data::Key const& _key)
@@ -188,27 +195,36 @@ namespace RayTracing
 				right(false),
 				up(false),
 				down(false),
-				ratio(_key.ratio)
+				transformRatio(_key.transformRatio),
+				clockwise(false),
+				counterclockwise(false),
+				rotateRatio(_key.rotateRatio)
 			{
 			}
 			void refresh(int _key, bool _operation)
 			{
 				switch (_key)
 				{
-					case 0:left = _operation; break;
-					case 1:right = _operation; break;
-					case 2:up = _operation; break;
-					case 3:down = _operation; break;
+				case 0:left = _operation; break;
+				case 1:right = _operation; break;
+				case 2:up = _operation; break;
+				case 3:down = _operation; break;
+				case 4:clockwise = _operation; break;
+				case 5:counterclockwise = _operation; break;
 				}
 			}
-			Math::vec2<double> operate()
+			Math::vec2<double> transformOperate()
 			{
 				Math::vec2<double>t
 				{
-					ratio * ((int)right - (int)left),
-					ratio * ((int)up - (int)down)
+					transformRatio * ((int)right - (int)left),
+					transformRatio * ((int)up - (int)down)
 				};
 				return t;
+			}
+			double rotateOperate()
+			{
+				return rotateRatio * ((int)counterclockwise - (int)clockwise);
 			}
 		};
 		struct Mouse
@@ -265,9 +281,9 @@ namespace RayTracing
 			{
 				switch (_button)
 				{
-					case 0:	left = _operation; break;
-					case 1:	middle = _operation; break;
-					case 2:	right = _operation; break;
+				case 0:	left = _operation; break;
+				case 1:	middle = _operation; break;
+				case 2:	right = _operation; break;
 				}
 
 			}
@@ -365,7 +381,8 @@ namespace RayTracing
 		}
 		void operate()
 		{
-			Math::vec3<double>dxyz(key.operate());
+			Math::vec3<double>dxyz(key.transformOperate());
+			double rAngle(key.rotateOperate());
 			dxyz.data[2] = -scroll.operate();
 			Math::vec2<double>axis(mouse.operate());
 			bool operated(false);
@@ -373,6 +390,11 @@ namespace RayTracing
 			{
 				dr += (trans, dxyz);
 				moved = true;
+				operated = true;
+			}
+			if (rAngle != 0.0)
+			{
+				trans = ((trans, Math::vec3<double>{0, 0, 1}).rotMat(rAngle), trans);
 				operated = true;
 			}
 			if (axis != 0.0)
@@ -611,7 +633,7 @@ namespace RayTracing
 				}
 				virtual unsigned int size()
 				{
-					return sizeof(TriangleOrigin)* trianglesOrigin.length;
+					return sizeof(TriangleOrigin) * trianglesOrigin.length;
 				}
 			};
 			struct TriangleGPUData :OpenGL::Buffer::Data
@@ -641,7 +663,7 @@ namespace RayTracing
 				}
 				virtual unsigned int size()
 				{
-					return sizeof(TriangleGPU)* num;
+					return sizeof(TriangleGPU) * num;
 				}
 			};
 			struct Info
@@ -727,7 +749,7 @@ namespace RayTracing
 				}
 				virtual unsigned int size()override
 				{
-					return sizeof(Sphere)* spheres.length;
+					return sizeof(Sphere) * spheres.length;
 				}
 			};
 			struct Info
@@ -777,8 +799,8 @@ namespace RayTracing
 					Color color;
 					void init()
 					{
-						plane.normaliaze(3);
-						e1.normaliaze(3);
+						plane.normalize(3);
+						e1.normalize(3);
 					}
 					Bound bound()const
 					{
@@ -814,7 +836,7 @@ namespace RayTracing
 				}
 				virtual unsigned int size()override
 				{
-					return sizeof(Circle)* circles.length;
+					return sizeof(Circle) * circles.length;
 				}
 			};
 			struct Info
@@ -865,8 +887,8 @@ namespace RayTracing
 					Color color;
 					void init()
 					{
-						n.normaliaze(3);
-						e1.normaliaze(3);
+						n.normalize(3);
+						e1.normalize(3);
 					}
 					Bound bound()const
 					{
@@ -898,7 +920,7 @@ namespace RayTracing
 				}
 				virtual unsigned int size()override
 				{
-					return sizeof(Cylinder)* cylinders.length;
+					return sizeof(Cylinder) * cylinders.length;
 				}
 			};
 			struct Info
@@ -949,8 +971,8 @@ namespace RayTracing
 					Color color;
 					void init()
 					{
-						n.normaliaze();
-						e1.normaliaze(3);
+						n.normalize();
+						e1.normalize(3);
 					}
 					Bound bound()const
 					{
@@ -983,7 +1005,7 @@ namespace RayTracing
 				}
 				virtual unsigned int size()override
 				{
-					return sizeof(Cone)* cones.length;
+					return sizeof(Cone) * cones.length;
 				}
 			};
 			struct Info
@@ -1041,7 +1063,7 @@ namespace RayTracing
 				}
 				virtual unsigned int size()override
 				{
-					return sizeof(PointLight)* pointLights.length;
+					return sizeof(PointLight) * pointLights.length;
 				}
 			};
 			struct Info
@@ -1311,7 +1333,7 @@ namespace RayTracing
 				}
 				virtual unsigned int size()override
 				{
-					return sizeof(Node::NodeGPU)* linearBVH.length;
+					return sizeof(Node::NodeGPU) * linearBVH.length;
 				}
 			};
 			struct Info
