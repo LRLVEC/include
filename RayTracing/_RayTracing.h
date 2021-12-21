@@ -777,8 +777,8 @@ namespace RayTracing
 					Color color;
 					void init()
 					{
-						plane.normaliaze(3);
-						e1.normaliaze(3);
+						plane.normalize(3);
+						e1.normalize(3);
 					}
 					Bound bound()const
 					{
@@ -865,8 +865,8 @@ namespace RayTracing
 					Color color;
 					void init()
 					{
-						n.normaliaze(3);
-						e1.normaliaze(3);
+						n.normalize(3);
+						e1.normalize(3);
 					}
 					Bound bound()const
 					{
@@ -949,8 +949,8 @@ namespace RayTracing
 					Color color;
 					void init()
 					{
-						n.normaliaze();
-						e1.normaliaze(3);
+						n.normalize();
+						e1.normalize(3);
 					}
 					Bound bound()const
 					{

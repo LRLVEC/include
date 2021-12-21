@@ -43,9 +43,9 @@ namespace OpenGL
 			TextureSwizzleG = GL_TEXTURE_SWIZZLE_G,
 			TextureSwizzleB = GL_TEXTURE_SWIZZLE_B,
 			TextureSwizzleA = GL_TEXTURE_SWIZZLE_A,
-			TextureWrapS = GL_TEXTURE_WRAP_S,
+			TextureWarpS = GL_TEXTURE_WRAP_S,
 			TextureWarpT = GL_TEXTURE_WRAP_T,
-			TextureWrapR = GL_TEXTURE_WRAP_R
+			TextureWarpR = GL_TEXTURE_WRAP_R
 		};
 		enum Parameter
 		{
@@ -268,6 +268,7 @@ namespace OpenGL
 			TextureConfigBase(_texture, _type, _format, _layers),
 			width(_width)
 		{
+			allocData();
 		}
 		void allocData()
 		{
@@ -431,7 +432,7 @@ namespace OpenGL
 		}
 		virtual void* pointer()
 		{
-			return bmp.textureData;
+			return bmp.data_24;
 		}
 	};
 	struct BMPCubeData :TextureCube::Data
@@ -444,7 +445,7 @@ namespace OpenGL
 		}
 		virtual void* pointer(unsigned int n)override
 		{
-			return bmp[n].textureData;
+			return bmp[n].data_24;
 		}
 	};
 }

@@ -426,13 +426,13 @@ namespace Math
 			using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
 			if (normalized)
 			{
-				Q<HigherType> tp(a * !*this);
+				Q<HigherType> tp(Q<HigherType>(a) * !*this);
 				return (*this * tp).v;
 			}
 			else
 			{
 				HigherType l(q.square());
-				Q<HigherType> tp(a * !*this);
+				Q<HigherType> tp(Q<HigherType>(a) * !*this);
 				return (*this * tp).v / l;
 			}
 		}
@@ -1821,17 +1821,17 @@ namespace Math
 		(b -= vecA).printInfo("b -= vecA:\t", "\n");
 		(b *= vecA).printInfo("b *= vecA:\t", "\n");
 		(b /= vecA).printInfo("b /= vecA:\t", "\n");
-		(b = vecA * b * ~Qd(vecA)).printInfo("vecA b vecA{^-1}:\t", "\n");
+		(b = Qd(vecA) * b * ~Qd(vecA)).printInfo("vecA b vecA{^-1}:\t", "\n");
 
-		(vecA + b).printInfo("vecA + b:\t", "\n");
-		(vecA - b).printInfo("vecA - b:\t", "\n");
-		(vecA * b).printInfo("vecA * b:\t", "\n");
-		(vecA / b).printInfo("vecA / b:\t", "\n");
+		(Qd(vecA) + b).printInfo("vecA + b:\t", "\n");
+		(Qd(vecA) - b).printInfo("vecA - b:\t", "\n");
+		(Qd(vecA) * b).printInfo("vecA * b:\t", "\n");
+		(Qd(vecA) / b).printInfo("vecA / b:\t", "\n");
 
-		(vecB + b).printInfo("vecB + b:\t", "\n");
-		(vecB - b).printInfo("vecB - b:\t", "\n");
-		(vecB * b).printInfo("vecB * b:\t", "\n");
-		(vecB / b).printInfo("vecB / b:\t", "\n");
+		(Qd(vecB) + b).printInfo("vecB + b:\t", "\n");
+		(Qd(vecB) - b).printInfo("vecB - b:\t", "\n");
+		(Qd(vecB) * b).printInfo("vecB * b:\t", "\n");
+		(Qd(vecB) / b).printInfo("vecB / b:\t", "\n");
 
 		(a += 2).printInfo("a += 2:\t", "\n");
 		(a -= 2).printInfo("a -= 2:\t", "\n");
