@@ -186,9 +186,8 @@ namespace CUDA
 		}
 		void moveToHost()
 		{
-			if (type == Device && size)
+			if (host && device)
 			{
-				resizeHost();
 				cudaMemcpy(host, device, size, cudaMemcpyDeviceToHost);
 			}
 		}
@@ -223,6 +222,10 @@ namespace CUDA
 			device = a.device;
 			host = a.host;
 			a.type = Unused;
+		}
+		void clearDevice(int val)
+		{
+			if (device)cudaMemset(device, val, size);
 		}
 		operator CUdeviceptr()const
 		{

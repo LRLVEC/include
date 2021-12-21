@@ -38,7 +38,7 @@ namespace KRPC
 			{
 				D1 = (P1 - P) / dt;
 				double only_pd(Kp * P1 + Kd * D1);
-				//if ((I > 0) ^ (only_pd <= cMin))
+				if ((I > 0 || only_pd > cMin) && ((I < 0 || only_pd < cMax)))
 					I += P * dt;
 				input1 = only_pd + Ki * I;
 			}
@@ -48,8 +48,7 @@ namespace KRPC
 			P = P1;
 			D = D1;
 			t = t1;
-			input = input1;
-			return input1;
+			return input = input1;
 		}
 	};
 }

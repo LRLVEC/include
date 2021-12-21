@@ -440,7 +440,7 @@ namespace OpenGL
 		BMP bmp[6];
 		BMPCubeData(String<char>const& _path)
 			:
-			bmp{ _path + "front.bmp",_path + "back.bmp",_path + "down.bmp",_path + "up.bmp",_path + "right.bmp",_path + "left.bmp" }
+			bmp{ _path + "right.bmp",_path + "left.bmp",_path + "front.bmp",_path + "back.bmp",_path + "up.bmp",_path + "down.bmp" }
 		{
 		}
 		virtual void* pointer(unsigned int n)override

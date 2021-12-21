@@ -163,6 +163,7 @@ namespace OpenGL
 			type(_type),
 			binding(-1)
 		{
+			bind();
 		}
 		BufferConfig(Buffer* _buffer, BufferType _type, int _binding)
 			:

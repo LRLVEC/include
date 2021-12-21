@@ -34,11 +34,11 @@ namespace Math
 	{
 		CheckNumType(T);
 		CheckFloatType(T);
-		return (Pi * _degree) / 180.0;
+		return _degree * (Pi / 180.0);
 	}
 	template<class T>T degree(T _rad)
 	{
-		return (180.0 * _rad) / Pi;
+		return _rad * (180.0 / Pi);
 	}
 
 	template<class T, unsigned int _dim>struct vec
@@ -455,6 +455,9 @@ namespace Math
 		}
 	};
 
+
+
+
 	template<class T>vec3<T>eulerAngle(vec3<T>const& a)
 	{
 		CheckNumType(T);
@@ -536,7 +539,12 @@ namespace Math
 		tp.v = v * sin(half_theta);
 		return tp;
 	}
-
+	template<class T, class R>static auto orthogonalQ(vec3<T>const& a, vec3<R>const& b)
+	{
+		using HigherType = typename GetNumType<HigherNumTypeTable[NumType<T>::serial][NumType<R>::serial]>::Result;
+		vec3<HigherType>a1(a), b1(b);
+		return rotateQ((a1 | b1).normalize(), acos((a1, b1) / (a1.length() * b1.length())));
+	}
 	//==============================================vec====================================
 	template<class T, unsigned int _dim>										inline vec<T, _dim>::vec()
 		:
